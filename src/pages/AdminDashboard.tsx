@@ -64,6 +64,10 @@ export default function AdminDashboard() {
     error: null,
   });
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(50);
+
   useEffect(() => {
     if (authLoading) return;
     checkAccess();
@@ -190,8 +194,7 @@ export default function AdminDashboard() {
         kyc_level,
         created_at
       `)
-      .order('created_at', { ascending: false })
-      .limit(50);
+      .order('created_at', { ascending: false });
 
     if (!profiles) return;
 
@@ -276,7 +279,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const filteredUsers = users
+  const allFilteredUsers = users
     .filter(u => {
       // Search filter
       const matchesSearch = u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -336,6 +339,18 @@ export default function AdminDashboard() {
           return 0;
       }
     });
+
+  // Paginate the filtered results
+  const totalFilteredUsers = allFilteredUsers.length;
+  const totalPages = Math.ceil(totalFilteredUsers / pageSize);
+  const startIndex = currentPage * pageSize;
+  const endIndex = startIndex + pageSize;
+  const filteredUsers = allFilteredUsers.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [searchTerm, filterVipTier, filterKycStatus, filterBalance, filterPositions, filterOnlineStatus, sortBy]);
 
   const clearFilters = () => {
     setFilterVipTier('all');
@@ -812,7 +827,7 @@ export default function AdminDashboard() {
                   </div>
 
                   <div className="mt-4 pt-4 border-t border-gray-700 text-sm text-gray-400">
-                    Showing {filteredUsers.length} of {users.length} users
+                    Showing {totalFilteredUsers} of {users.length} users
                   </div>
                 </div>
               )}
@@ -925,6 +940,87 @@ export default function AdminDashboard() {
                     <p className="text-gray-400">No users found matching your search.</p>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Pagination Controls */}
+            {totalFilteredUsers > 0 && (
+              <div className="bg-[#f0b90b]/10 border-2 border-[#f0b90b]/30 rounded-xl p-5 mt-6">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-300 font-medium text-sm">Show:</span>
+                      <select
+                        value={pageSize}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value);
+                          setPageSize(value);
+                          setCurrentPage(0);
+                        }}
+                        className="bg-[#0b0e11] border-2 border-[#f0b90b]/50 rounded-lg px-4 py-2 text-white font-medium text-sm outline-none focus:border-[#f0b90b]"
+                      >
+                        <option value="25">25 users</option>
+                        <option value="50">50 users</option>
+                        <option value="100">100 users</option>
+                        <option value="200">200 users</option>
+                        <option value="500">All users</option>
+                      </select>
+                    </div>
+                    <div className="h-6 w-px bg-[#f0b90b]/30"></div>
+                    <p className="text-gray-300 text-sm font-medium">
+                      Showing <span className="text-[#f0b90b] font-bold">{startIndex + 1}</span> to{' '}
+                      <span className="text-[#f0b90b] font-bold">{Math.min(endIndex, totalFilteredUsers)}</span> of{' '}
+                      <span className="text-[#f0b90b] font-bold">{totalFilteredUsers}</span> users
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(0)}
+                      disabled={currentPage === 0}
+                      className="px-4 py-2 bg-[#0b0e11] text-white rounded-lg disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#1f2329] transition-colors font-medium border border-[#f0b90b]/30"
+                    >
+                      First
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                      disabled={currentPage === 0}
+                      className="px-4 py-2 bg-[#0b0e11] text-white rounded-lg disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#1f2329] transition-colors font-medium border border-[#f0b90b]/30"
+                    >
+                      Previous
+                    </button>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-[#0b0e11] border-2 border-[#f0b90b]/50 rounded-lg">
+                      <span className="text-white font-medium text-sm">Page</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max={totalPages}
+                        value={currentPage + 1}
+                        onChange={(e) => {
+                          const newPage = parseInt(e.target.value) - 1;
+                          if (newPage >= 0 && newPage < totalPages) {
+                            setCurrentPage(newPage);
+                          }
+                        }}
+                        className="w-16 bg-[#1a1d24] border border-[#f0b90b]/50 rounded px-2 py-1 text-[#f0b90b] font-bold text-sm text-center outline-none focus:border-[#f0b90b]"
+                      />
+                      <span className="text-white font-medium text-sm">of {totalPages}</span>
+                    </div>
+                    <button
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      disabled={currentPage >= totalPages - 1}
+                      className="px-4 py-2 bg-[#0b0e11] text-white rounded-lg disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#1f2329] transition-colors font-medium border border-[#f0b90b]/30"
+                    >
+                      Next
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(totalPages - 1)}
+                      disabled={currentPage >= totalPages - 1}
+                      className="px-4 py-2 bg-[#0b0e11] text-white rounded-lg disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#1f2329] transition-colors font-medium border border-[#f0b90b]/30"
+                    >
+                      Last
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
