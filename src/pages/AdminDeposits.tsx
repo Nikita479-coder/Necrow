@@ -100,8 +100,7 @@ export default function AdminDeposits() {
       const { data: depositsData, error } = await supabase
         .from('crypto_deposits')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(500);
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 

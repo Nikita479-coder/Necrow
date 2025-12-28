@@ -82,8 +82,19 @@ function App() {
     }
 
     const urlParams = new URLSearchParams(window.location.search);
+
     if (urlParams.get('reset') === 'true') {
       setCurrentPage('resetpassword');
+      return;
+    }
+
+    const refCode = urlParams.get('ref');
+    if (refCode) {
+      const upperRefCode = refCode.toUpperCase();
+      localStorage.setItem('pendingReferralCode', upperRefCode);
+      setCurrentPage('signup');
+      setNavigationState({ referralCode: upperRefCode });
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
