@@ -66,6 +66,14 @@
     animation: slideInRight 0.3s ease-out;
   }
 
+  .animate-slide-in {
+    animation: slideIn 0.3s ease-out;
+  }
+
+  .animate-slide-out {
+    animation: slideOut 0.3s ease-in forwards;
+  }
+
   .animate-blob {
     animation: blob 7s infinite;
   }
@@ -160,6 +168,28 @@
   100% {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+@keyframes slideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(100%) scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes slideOut {
+  0% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(100%) scale(0.8);
   }
 }
 

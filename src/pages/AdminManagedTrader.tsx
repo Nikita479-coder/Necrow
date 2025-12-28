@@ -143,6 +143,20 @@ export default function AdminManagedTrader() {
   }, [tradeForm.entry_price, tradeForm.quantity, tradeForm.leverage, tradeForm.use_percentage, tradeForm.percentage, traderBalance]);
 
   useEffect(() => {
+    if (showCloseModal && selectedPosition) {
+      const symbol = selectedPosition.pair.replace('/', '');
+      const priceData = prices.get(symbol);
+
+      if (priceData && !closeForm.exit_price) {
+        setCloseForm(prev => ({
+          ...prev,
+          exit_price: priceData.price.toString()
+        }));
+      }
+    }
+  }, [showCloseModal, selectedPosition, prices]);
+
+  useEffect(() => {
     if (selectedPosition && closeForm.exit_price) {
       const exitPrice = parseFloat(closeForm.exit_price);
       const entryPrice = selectedPosition.entry_price;
@@ -991,6 +1005,7 @@ export default function AdminManagedTrader() {
                               <button
                                 onClick={() => {
                                   setSelectedPosition(position);
+                                  setCloseForm({ exit_price: '', pnl_percentage: '', auto_notify: true });
                                   setShowCloseModal(true);
                                 }}
                                 className="bg-[#f6465d] hover:bg-[#f6465d]/90 text-white px-3 py-1 rounded text-sm font-bold"

@@ -17,25 +17,24 @@ Deno.serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log('Starting daily trader performance update...');
+    console.log('Starting daily trader metrics recalculation...');
 
-    // Call the database function to process all traders
-    const { data, error } = await supabase.rpc('process_daily_trader_updates');
+    const { data, error } = await supabase.rpc('recalculate_all_active_trader_metrics');
 
     if (error) {
-      console.error('Error processing trader updates:', error);
+      console.error('Error recalculating trader metrics:', error);
       throw error;
     }
 
-    console.log('Successfully processed traders:', data);
+    console.log('Successfully recalculated trader metrics:', data);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Trader performance updated successfully',
+        message: 'Trader metrics recalculated successfully',
         data: data,
         timestamp: new Date().toISOString()
       }),
@@ -49,7 +48,7 @@ Deno.serve(async (req: Request) => {
     );
   } catch (error) {
     console.error('Error in update-trader-performance:', error);
-    
+
     return new Response(
       JSON.stringify({
         success: false,

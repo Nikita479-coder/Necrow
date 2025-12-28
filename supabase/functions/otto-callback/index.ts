@@ -147,33 +147,17 @@ Deno.serve(async (req: Request) => {
       if (resultError) {
         console.error('Error inserting verification result:', resultError);
       } else {
-        const { data: kycData } = await supabase
-          .from('kyc_verifications')
-          .select('kyc_status')
-          .eq('user_id', userId)
-          .single();
-
         if (verificationPassed) {
           const { error: kycUpdateError } = await supabase
             .from('kyc_verifications')
-            .upsert({
-              user_id: userId,
+            .update({
               otto_session_id: sessionId,
-              kyc_status: kycData ? kycData.kyc_status : 'pending',
               updated_at: new Date().toISOString(),
-            });
+            })
+            .eq('user_id', userId);
 
           if (kycUpdateError) {
             console.error('Error updating KYC verification:', kycUpdateError);
-          }
-
-          const { error: profileError } = await supabase
-            .from('user_profiles')
-            .update({ kyc_level: 1 })
-            .eq('user_id', userId);
-
-          if (profileError) {
-            console.error('Error updating user profile:', profileError);
           }
         } else {
           console.log('Verification failed:', {

@@ -155,6 +155,9 @@ export default function AdminKYC() {
 
   const updateVerification = async (docId: string, verified: boolean, notes: string) => {
     try {
+      const doc = documents.find(d => d.id === docId);
+      if (!doc) return;
+
       const { error } = await supabase
         .from('kyc_documents')
         .update({
@@ -165,6 +168,37 @@ export default function AdminKYC() {
         .eq('id', docId);
 
       if (error) throw error;
+
+      // If document was verified, check if user should be upgraded to level 2
+      if (verified) {
+        const { data: userDocs } = await supabase
+          .from('kyc_documents')
+          .select('id, document_type, verified')
+          .eq('user_id', doc.user_id);
+
+        // Count verified documents (excluding face verification as it's handled separately)
+        const verifiedDocs = userDocs?.filter(d =>
+          d.verified && d.document_type !== 'face_verification'
+        ) || [];
+
+        // If user has at least 2 verified documents, upgrade them to level 2
+        if (verifiedDocs.length >= 2) {
+          const { error: profileError } = await supabase
+            .from('user_profiles')
+            .update({
+              kyc_level: 2,
+              kyc_status: 'verified',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', doc.user_id);
+
+          if (profileError) {
+            console.error('Error updating user profile:', profileError);
+          } else {
+            console.log('User upgraded to KYC level 2 - bonus will be awarded automatically');
+          }
+        }
+      }
 
       // Reload data
       await loadData();

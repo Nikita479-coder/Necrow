@@ -37,6 +37,7 @@ import AdminSharkCards from './pages/AdminSharkCards';
 import AdminStaffManagement from './pages/AdminStaffManagement';
 import AdminTelegramCRM from './pages/AdminTelegramCRM';
 import AdminWithdrawals from './pages/AdminWithdrawals';
+import AdminDeposits from './pages/AdminDeposits';
 import EventDetails from './pages/EventDetails';
 import TermsPage from './pages/TermsPage';
 import BonusTermsPage from './pages/BonusTermsPage';
@@ -45,7 +46,7 @@ import LegalHub from './pages/LegalHub';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 
-type PageType = 'home' | 'markets' | 'futures' | 'profile' | 'swap' | 'swaphistory' | 'copytrading' | 'mocktrading' | 'activecopying' | 'traderprofile' | 'deposit' | 'withdraw' | 'kyc' | 'kycdocuments' | 'adminkyc' | 'wallet' | 'referral' | 'affiliate' | 'vip' | 'rewardshub' | 'earn' | 'signin' | 'signup' | 'forgotpassword' | 'resetpassword' | 'transactions' | 'admindashboard' | 'adminuser' | 'admintrader' | 'adminlogs' | 'admincrm' | 'adminemails' | 'adminbonuses' | 'adminsupport' | 'adminviptracking' | 'adminsharkcards' | 'adminstaff' | 'admintelegram' | 'adminwithdrawals' | 'event' | 'terms' | 'bonusterms' | 'support' | 'legal';
+type PageType = 'home' | 'markets' | 'futures' | 'profile' | 'swap' | 'swaphistory' | 'copytrading' | 'mocktrading' | 'activecopying' | 'traderprofile' | 'deposit' | 'withdraw' | 'kyc' | 'kycdocuments' | 'adminkyc' | 'wallet' | 'referral' | 'affiliate' | 'vip' | 'rewardshub' | 'earn' | 'signin' | 'signup' | 'forgotpassword' | 'resetpassword' | 'transactions' | 'admindashboard' | 'adminuser' | 'admintrader' | 'adminlogs' | 'admincrm' | 'adminemails' | 'adminbonuses' | 'adminsupport' | 'adminviptracking' | 'adminsharkcards' | 'adminstaff' | 'admintelegram' | 'adminwithdrawals' | 'admindeposits' | 'event' | 'terms' | 'bonusterms' | 'support' | 'legal';
 
 interface NavigationContextType {
   currentPage: PageType;
@@ -175,6 +176,8 @@ function App() {
         return <AdminTelegramCRM />;
       case 'adminwithdrawals':
         return <AdminWithdrawals />;
+      case 'admindeposits':
+        return <AdminDeposits />;
       case 'event':
         return <EventDetails />;
       case 'terms':
