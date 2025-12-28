@@ -9,7 +9,7 @@ import { countryCodes } from '../constants/countryCodes';
 type Step = 'register' | 'verify';
 
 function SignUp() {
-  const { navigateTo } = useNavigation();
+  const { navigateTo, navigationState } = useNavigation();
   const { signUp, isAuthenticated, loading: authLoading } = useAuth();
   const [step, setStep] = useState<Step>('register');
   const [formData, setFormData] = useState({
@@ -100,6 +100,16 @@ function SignUp() {
       }
     }
   };
+
+  useEffect(() => {
+    const refFromNav = navigationState?.referralCode;
+    const refFromStorage = localStorage.getItem('pendingReferralCode');
+    const referralCode = refFromNav || refFromStorage;
+
+    if (referralCode) {
+      setFormData(prev => ({ ...prev, referralCode }));
+    }
+  }, [navigationState]);
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
@@ -275,6 +285,7 @@ function SignUp() {
 
       await sendWelcomeEmail(formData.email, formData.name);
 
+      localStorage.removeItem('pendingReferralCode');
       navigateTo('home');
     } catch (err: any) {
       setError(err.message || 'Verification failed');
