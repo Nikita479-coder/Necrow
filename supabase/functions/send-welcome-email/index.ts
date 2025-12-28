@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const SMTP_CONFIG = {
-  host: Deno.env.get('SMTP_HOST') || 'smtppro.zoho.eu',
+  host: Deno.env.get('SMTP_HOST') || 'smtp.hostinger.com',
   port: parseInt(Deno.env.get('SMTP_PORT') || '465'),
   username: Deno.env.get('SMTP_USERNAME') || 'support@shark-trades.com',
   password: Deno.env.get('SMTP_PASSWORD') || '9$4.h3b5}Zz.',
