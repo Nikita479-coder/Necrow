@@ -256,10 +256,11 @@ function Profile() {
 
   useEffect(() => {
     if (user) {
-      loadRecentTransactions();
+      // Stagger data loading to reduce concurrent requests
       loadAssets();
-      loadSharkCardData();
-      loadVIPStatus();
+      setTimeout(() => loadRecentTransactions(), 300);
+      setTimeout(() => loadVIPStatus(), 600);
+      setTimeout(() => loadSharkCardData(), 900);
 
       const vipSubscription = supabase
         .channel('vip_status_updates')
@@ -385,7 +386,7 @@ function Profile() {
         .limit(1)
         .maybeSingle();
 
-      if (appError) {
+      if (appError && !appError.message?.includes('Failed to fetch')) {
         console.error('Error loading application:', appError);
       }
 
@@ -393,19 +394,24 @@ function Profile() {
         setSharkCardApplication(applicationData);
       }
 
+      // Add delay before next query
+      await new Promise(resolve => setTimeout(resolve, 200));
+
       const { data: cardData, error: cardError } = await supabase.rpc('get_user_shark_card', {
         p_user_id: user.id
       });
 
-      if (cardError) {
+      if (cardError && !cardError.message?.includes('Failed to fetch')) {
         console.error('Error loading card:', cardError);
       }
 
       if (cardData && cardData.has_card) {
         setSharkCard(cardData.card);
       }
-    } catch (error) {
-      console.error('Error loading shark card data:', error);
+    } catch (error: any) {
+      if (!error.message?.includes('Failed to fetch')) {
+        console.error('Error loading shark card data:', error);
+      }
     }
   };
 
@@ -419,11 +425,14 @@ function Profile() {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (vipError && vipError.code !== 'PGRST116') {
+      if (vipError && vipError.code !== 'PGRST116' && !vipError.message?.includes('Failed to fetch')) {
         console.error('Error loading VIP status:', vipError);
       }
 
       const levelNumber = vipStatus?.current_level || 1;
+
+      // Add delay before next query
+      await new Promise(resolve => setTimeout(resolve, 200));
 
       const { data: levelData, error: levelError } = await supabase
         .from('vip_levels')
@@ -431,7 +440,7 @@ function Profile() {
         .eq('level_number', levelNumber)
         .maybeSingle();
 
-      if (levelError) {
+      if (levelError && !levelError.message?.includes('Failed to fetch')) {
         console.error('Error loading VIP level:', levelError);
         return;
       }
@@ -441,8 +450,10 @@ function Profile() {
       } else {
         setVipTierName('Beginner');
       }
-    } catch (error) {
-      console.error('Error loading VIP status:', error);
+    } catch (error: any) {
+      if (!error.message?.includes('Failed to fetch')) {
+        console.error('Error loading VIP status:', error);
+      }
     }
   };
 

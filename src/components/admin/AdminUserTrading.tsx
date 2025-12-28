@@ -194,7 +194,7 @@ export default function AdminUserTrading({ userId, userData }: Props) {
                           </>
                         )}
                       </div>
-                      <p className="text-sm text-gray-400">Unrealized P&L • ROE: {parseFloat(position.roe || 0).toFixed(2)}%</p>
+                      <p className="text-sm text-gray-400">Unrealized P&L</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-4 gap-4 pt-3 border-t border-gray-800">

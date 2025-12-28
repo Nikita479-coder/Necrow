@@ -142,61 +142,95 @@ function Withdraw() {
   };
 
   const handleWithdraw = async () => {
+    console.log('=== WITHDRAW BUTTON CLICKED ===');
+    console.log('User:', user?.id);
+    console.log('Address:', address);
+    console.log('Amount:', amount);
+    console.log('Selected Crypto:', selectedCrypto);
+    console.log('Selected Network:', selectedNetwork);
+
     if (!user) {
+      console.error('No user logged in');
       showToast('Please sign in to withdraw', 'error');
       return;
     }
 
     if (!address || address.trim().length < 10) {
-      showToast('Please enter a valid wallet address', 'error');
+      console.error('Invalid address:', address);
+      showToast('Please enter a valid wallet address (minimum 10 characters)', 'error');
       return;
     }
 
     const withdrawAmount = parseFloat(amount);
     if (isNaN(withdrawAmount) || withdrawAmount <= 0) {
+      console.error('Invalid amount:', amount);
       showToast('Please enter a valid amount', 'error');
       return;
     }
 
     const minWithdraw = parseFloat(selectedCryptoData?.minWithdraw || '0');
     if (withdrawAmount < minWithdraw) {
+      console.error('Amount below minimum:', withdrawAmount, 'Min:', minWithdraw);
       showToast(`Minimum withdrawal is ${minWithdraw} ${selectedCrypto}`, 'error');
       return;
     }
 
     const availableBalance = walletBalances[selectedCrypto] || 0;
+    console.log('Available balance:', availableBalance, 'Requested:', withdrawAmount);
     if (withdrawAmount > availableBalance) {
+      console.error('Insufficient balance');
       showToast(`Insufficient balance. Available: ${availableBalance.toFixed(6)} ${selectedCrypto}`, 'error');
       return;
     }
 
+    console.log('✓ All validations passed. Submitting withdrawal...');
+
     setIsWithdrawing(true);
     try {
+      const requestBody = {
+        currency: selectedCrypto,
+        amount: withdrawAmount,
+        address: address.trim(),
+        network: selectedNetwork
+      };
+      console.log('Request body:', requestBody);
+
       const { data, error } = await supabase.functions.invoke('submit-withdrawal', {
-        body: {
-          currency: selectedCrypto,
-          amount: withdrawAmount,
-          address: address.trim(),
-          network: selectedNetwork
-        }
+        body: requestBody
       });
 
-      if (error) throw error;
+      console.log('=== WITHDRAWAL RESPONSE ===');
+      console.log('Data:', data);
+      console.log('Error:', error);
 
-      if (data.success) {
-        showToast(`Withdrawal request submitted for ${withdrawAmount} ${selectedCrypto}`, 'success');
+      if (error) {
+        console.error('Edge function error:', error);
+        showToast(error.message || 'Network error occurred', 'error');
+        return;
+      }
+
+      if (data && data.success) {
+        console.log('✓ Withdrawal successful!');
+        showToast(`Withdrawal request submitted! ${withdrawAmount} ${selectedCrypto} is pending approval`, 'success');
         setAmount('');
         setAddress('');
-        loadRecentWithdrawals();
-        loadWalletBalances();
+        await loadRecentWithdrawals();
+        await loadWalletBalances();
       } else {
-        showToast(data.error || 'Withdrawal failed', 'error');
+        const errorMessage = data?.error || 'Withdrawal request failed';
+        console.error('Withdrawal failed:', errorMessage);
+        showToast(errorMessage, 'error');
       }
     } catch (error: any) {
-      console.error('Withdrawal error:', error);
-      showToast(error.message || 'Failed to submit withdrawal request', 'error');
+      console.error('=== WITHDRAWAL EXCEPTION ===');
+      console.error('Error object:', error);
+      console.error('Error message:', error?.message);
+      console.error('Error description:', error?.error_description);
+      const errorMessage = error?.message || error?.error_description || 'Failed to submit withdrawal request. Please try again.';
+      showToast(errorMessage, 'error');
     } finally {
       setIsWithdrawing(false);
+      console.log('=== WITHDRAWAL PROCESS COMPLETE ===');
     }
   };
 
@@ -544,13 +578,30 @@ function Withdraw() {
                   </div>
                 </div>
 
+                {(!address || !amount || parseFloat(amount) <= 0) && !isWithdrawing && (
+                  <div className="bg-blue-900/20 border border-blue-700/30 rounded-xl p-3 text-sm text-blue-300">
+                    <div className="flex items-start gap-2">
+                      <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                      <div>
+                        {!address && !amount && "Please enter a wallet address and amount to continue"}
+                        {!address && amount && "Please enter a wallet address"}
+                        {address && !amount && "Please enter an amount"}
+                        {address && amount && parseFloat(amount) <= 0 && "Please enter a valid amount greater than 0"}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <button
                   onClick={handleWithdraw}
                   disabled={!address || !amount || parseFloat(amount) <= 0 || isWithdrawing}
                   className="w-full bg-gradient-to-r from-[#f0b90b] to-[#f8d12f] hover:from-[#f8d12f] hover:to-[#f0b90b] disabled:from-gray-700 disabled:to-gray-700 disabled:cursor-not-allowed text-black disabled:text-gray-500 font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#f0b90b]/20 disabled:shadow-none"
                 >
                   {isWithdrawing ? (
-                    <>Processing...</>
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-black"></div>
+                      Processing Withdrawal...
+                    </>
                   ) : (
                     <>
                       <Send className="w-5 h-5" />
