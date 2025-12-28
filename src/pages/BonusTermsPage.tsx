@@ -197,7 +197,83 @@ export default function BonusTermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4">5. Profit Calculation</h2>
+              <h2 className="text-xl font-bold text-white mb-4">5. Unlock Requirements</h2>
+              <div className="bg-gradient-to-r from-blue-900/30 to-blue-800/20 border border-blue-600/40 rounded-xl p-6 space-y-4">
+                <div className="flex items-start gap-3">
+                  <Shield className="w-6 h-6 text-blue-400 flex-shrink-0 mt-1" />
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-blue-400 mb-3">How to Unlock Your Bonus</h3>
+                    <p className="text-slate-300 text-sm mb-4">
+                      Locked bonuses can become fully withdrawable once you meet ALL of the following requirements:
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 ml-9">
+                  <div className="bg-slate-800/50 rounded-lg p-4 border border-blue-500/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <DollarSign className="w-5 h-5 text-[#f0b90b]" />
+                      <h4 className="font-semibold text-white">1. Deposit Requirement</h4>
+                    </div>
+                    <p className="text-slate-300 text-sm">
+                      Make a total deposit of at least <strong className="text-[#f0b90b]">$100 USD</strong> to your account.
+                      This can be in a single deposit or accumulated over multiple deposits.
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-800/50 rounded-lg p-4 border border-blue-500/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <TrendingUp className="w-5 h-5 text-[#f0b90b]" />
+                      <h4 className="font-semibold text-white">2. Trade Volume Requirement</h4>
+                    </div>
+                    <p className="text-slate-300 text-sm">
+                      Complete at least <strong className="text-[#f0b90b]">10 futures trades</strong>.
+                      Each trade must be properly executed and closed.
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-800/50 rounded-lg p-4 border border-blue-500/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Clock className="w-5 h-5 text-[#f0b90b]" />
+                      <h4 className="font-semibold text-white">3. Trade Duration Requirement</h4>
+                    </div>
+                    <p className="text-slate-300 text-sm mb-2">
+                      Your last <strong className="text-[#f0b90b]">5 trades</strong> must each be held open for
+                      at least <strong className="text-[#f0b90b]">60 minutes</strong> (1 hour).
+                    </p>
+                    <p className="text-slate-400 text-xs">
+                      This requirement ensures quality trading activity and prevents bonus abuse through rapid position flipping.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-emerald-900/20 border border-emerald-600/30 rounded-lg p-4 ml-9">
+                  <h4 className="font-semibold text-emerald-400 mb-2">Once Unlocked</h4>
+                  <ul className="list-disc list-inside text-slate-300 text-sm space-y-1">
+                    <li>The bonus amount becomes fully withdrawable</li>
+                    <li>You'll receive an instant notification</li>
+                    <li>The funds are automatically transferred to your futures margin wallet</li>
+                    <li>You can withdraw or continue trading with the unlocked amount</li>
+                  </ul>
+                </div>
+
+                <div className="bg-red-900/20 border border-red-600/30 rounded-lg p-4 ml-9">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="w-4 h-4 text-red-400" />
+                    <h4 className="font-semibold text-red-400">Important Notes</h4>
+                  </div>
+                  <ul className="list-disc list-inside text-slate-300 text-sm space-y-1">
+                    <li>All requirements must be met before the bonus expires (7 days)</li>
+                    <li>If the bonus expires before requirements are met, it cannot be unlocked</li>
+                    <li>Requirements are tracked automatically - no manual verification needed</li>
+                    <li>Progress toward unlocking can be viewed in your wallet</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-bold text-white mb-4">6. Profit Calculation</h2>
               <div className="bg-slate-700/50 rounded-lg p-4 text-slate-300">
                 <p className="mb-3">Profits from locked bonus trading are calculated as:</p>
                 <div className="bg-slate-800 rounded p-3 font-mono text-sm text-center text-[#f0b90b]">
@@ -213,7 +289,7 @@ export default function BonusTermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4">6. Expiration Policy</h2>
+              <h2 className="text-xl font-bold text-white mb-4">7. Expiration Policy</h2>
               <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 text-slate-300">
                 <ul className="list-disc list-inside text-sm space-y-2">
                   <li>The 7-day countdown begins at the moment the bonus is credited to your account</li>
@@ -227,7 +303,7 @@ export default function BonusTermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4">7. Modifications and Discontinuation</h2>
+              <h2 className="text-xl font-bold text-white mb-4">8. Modifications and Discontinuation</h2>
               <div className="text-slate-300 text-sm space-y-2">
                 <p>
                   Shark Trades reserves the right to modify, suspend, or discontinue these promotional
@@ -241,7 +317,7 @@ export default function BonusTermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4">8. Acceptance</h2>
+              <h2 className="text-xl font-bold text-white mb-4">9. Acceptance</h2>
               <div className="bg-slate-700/50 rounded-lg p-4 text-slate-300">
                 <p className="text-sm">
                   By registering an account and participating in any promotional bonus program, you
