@@ -28,6 +28,7 @@ export default function CopyTradingModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [availableBalance, setAvailableBalance] = useState<number | null>(null);
+  const [mainWalletBalance, setMainWalletBalance] = useState<number>(0);
   const [loadingBalance, setLoadingBalance] = useState(true);
 
   useEffect(() => {
@@ -39,13 +40,27 @@ export default function CopyTradingModal({
         if (isMock) {
           // Mock trading always has 10,000 USDT demo balance
           setAvailableBalance(10000);
+          setMainWalletBalance(0);
         } else {
+          // Fetch main wallet balance
+          const { data: mainWallet } = await supabase
+            .from('wallets')
+            .select('balance')
+            .eq('user_id', user.id)
+            .eq('wallet_type', 'main')
+            .eq('currency', 'USDT')
+            .maybeSingle();
+
+          const mainBalance = parseFloat(mainWallet?.balance || '0');
+          setMainWalletBalance(mainBalance);
+
           // Fetch real copy wallet balance
           const { data: walletData, error: walletError } = await supabase
             .from('wallets')
             .select('balance')
             .eq('user_id', user.id)
             .eq('wallet_type', 'copy')
+            .eq('currency', 'USDT')
             .maybeSingle();
 
           if (walletError && walletError.code !== 'PGRST116') {
@@ -164,11 +179,11 @@ export default function CopyTradingModal({
 
         {/* Available Balance Display */}
         <div className="bg-[#0b0e11] border border-[#2b3139] rounded-lg p-3 mb-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Wallet className="w-4 h-4 text-[#848e9c]" />
               <span className="text-[#848e9c] text-sm">
-                {isMock ? 'Demo Balance' : 'Available Balance'}
+                {isMock ? 'Demo Balance' : 'Copy Wallet Balance'}
               </span>
             </div>
             <div className="text-right">
@@ -189,13 +204,70 @@ export default function CopyTradingModal({
               )}
             </div>
           </div>
+          {!isMock && !loadingBalance && mainWalletBalance > 0 && (
+            <div className="flex items-center justify-between pt-2 border-t border-[#2b3139]">
+              <span className="text-[#848e9c] text-xs">Main Wallet</span>
+              <span className="text-[#848e9c] text-xs font-medium">
+                {mainWalletBalance.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                })} USDT
+              </span>
+            </div>
+          )}
         </div>
 
-        {!isMock && availableBalance !== null &&
+        {!isMock && !loadingBalance && availableBalance === 0 && mainWalletBalance > 0 && (
+          <div className="bg-[#fcd535]/10 border border-[#fcd535]/30 rounded-lg p-3 mb-4">
+            <div className="flex items-start gap-2 mb-2">
+              <AlertCircle className="w-4 h-4 text-[#fcd535] flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-[#fcd535] text-sm font-medium">Transfer Funds Required</p>
+                <p className="text-[#fcd535]/80 text-xs mt-1">
+                  You have {mainWalletBalance.toFixed(2)} USDT in your main wallet. Transfer funds to your copy wallet to start copy trading.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                onClose();
+                navigateTo('wallet');
+              }}
+              className="w-full bg-[#fcd535] hover:bg-[#f0b90b] text-black font-medium py-2 rounded text-sm transition-colors"
+            >
+              Go to Wallet Transfer
+            </button>
+          </div>
+        )}
+
+        {!isMock && !loadingBalance && availableBalance === 0 && mainWalletBalance === 0 && (
+          <div className="bg-[#f6465d]/10 border border-[#f6465d]/30 rounded-lg p-3 mb-4">
+            <div className="flex items-start gap-2 mb-2">
+              <AlertCircle className="w-4 h-4 text-[#f6465d] flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-[#f6465d] text-sm font-medium">No Funds Available</p>
+                <p className="text-[#f6465d]/80 text-xs mt-1">
+                  You need to deposit funds to your account before you can start copy trading. Minimum 100 USDT required.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                onClose();
+                navigateTo('deposit');
+              }}
+              className="w-full bg-[#f6465d] hover:bg-[#f6465d]/80 text-white font-medium py-2 rounded text-sm transition-colors"
+            >
+              Deposit Funds
+            </button>
+          </div>
+        )}
+
+        {!isMock && availableBalance !== null && availableBalance > 0 &&
          ((availableBalance * parseInt(allocationPercentage || '0')) / 100) < 100 && (
           <div className="bg-[#f6465d]/10 border border-[#f6465d]/30 rounded-lg p-3 mb-4 flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-[#f6465d] flex-shrink-0 mt-0.5" />
-            <span className="text-[#f6465d] text-sm">Minimum copy amount is 100 USDT. Increase your allocation percentage.</span>
+            <span className="text-[#f6465d] text-sm">Minimum copy amount is 100 USDT. Increase your allocation percentage or transfer more funds.</span>
           </div>
         )}
 

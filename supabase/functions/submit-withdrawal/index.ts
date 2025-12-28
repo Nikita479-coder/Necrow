@@ -65,6 +65,14 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    console.log("Calling create_withdrawal_request with:", {
+      p_user_id: user.id,
+      p_currency: currency.toUpperCase(),
+      p_amount: numericAmount,
+      p_address: trimmedAddress,
+      p_network: network,
+    });
+
     const { data, error } = await supabase.rpc("create_withdrawal_request", {
       p_user_id: user.id,
       p_currency: currency.toUpperCase(),
@@ -73,22 +81,40 @@ Deno.serve(async (req: Request) => {
       p_network: network,
     });
 
+    console.log("RPC Response - data:", data);
+    console.log("RPC Response - error:", error);
+    console.log("RPC Response - data type:", typeof data);
+    console.log("RPC Response - data.success:", data?.success);
+
     if (error) {
       console.error("Withdrawal error:", error);
       return new Response(
         JSON.stringify({ success: false, error: error.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // If data is the result object, return it directly
+    // If data.success is false, return 400 status
+    if (data && typeof data === 'object' && 'success' in data) {
+      const statusCode = data.success ? 200 : 400;
+      console.log("Returning with status:", statusCode, "and data:", data);
+      return new Response(
+        JSON.stringify(data),
+        { status: statusCode, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Fallback - shouldn't reach here
+    console.error("Unexpected data structure:", data);
     return new Response(
-      JSON.stringify(data),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ success: false, error: "Unexpected response format" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("Error:", error);
     return new Response(
-      JSON.stringify({ success: false, error: "Internal server error" }),
+      JSON.stringify({ success: false, error: error.message || "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

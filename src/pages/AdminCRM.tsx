@@ -95,6 +95,7 @@ export default function AdminCRM() {
   });
 
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(100);
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [bulkActionType, setBulkActionType] = useState('');
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
@@ -132,7 +133,11 @@ export default function AdminCRM() {
     } else if (mainTab === 'logs') {
       loadLogs();
     }
-  }, [mainTab, filters, page, logTab, dateFilter]);
+  }, [mainTab, filters, page, pageSize, logTab, dateFilter]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [filters]);
 
   useEffect(() => {
     if (!profile?.is_admin) return;
@@ -203,8 +208,8 @@ export default function AdminCRM() {
 
       const { data } = await supabase.rpc('get_filtered_users', {
         p_filters: filterObj,
-        p_limit: 20,
-        p_offset: page * 20
+        p_limit: pageSize,
+        p_offset: page * pageSize
       });
 
       if (data) {
@@ -634,8 +639,13 @@ export default function AdminCRM() {
 
         {mainTab === 'users' && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white">User Management</h2>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-bold text-white">User Management</h2>
+                <p className="text-gray-400 text-sm mt-1">
+                  Total: <span className="text-[#f0b90b] font-medium">{totalUsers}</span> users registered
+                </p>
+              </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleExport('csv')}
@@ -653,6 +663,31 @@ export default function AdminCRM() {
                 </button>
               </div>
             </div>
+            {totalUsers > pageSize && (
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Users className="w-5 h-5 text-blue-400" />
+                  <div>
+                    <p className="text-blue-400 font-medium">
+                      Showing {Math.min(pageSize, totalUsers)} of {totalUsers} users
+                    </p>
+                    <p className="text-blue-400/70 text-sm">
+                      Use pagination controls below or change page size to view more users
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setPageSize(1000);
+                    setPage(0);
+                  }}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors"
+                >
+                  Show All Users
+                </button>
+              </div>
+            )}
+
             <div className="bg-[#0b0e11] rounded-xl p-4 border border-gray-800">
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 <div className="col-span-2">
@@ -741,145 +776,202 @@ export default function AdminCRM() {
             )}
 
             <div className="bg-[#0b0e11] rounded-xl border border-gray-800 overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-[#1a1d24]">
-                  <tr>
-                    <th className="px-4 py-3 text-left">
-                      <input
-                        type="checkbox"
-                        checked={selectedUsers.size === users.length && users.length > 0}
-                        onChange={handleSelectAll}
-                        className="rounded border-gray-600"
-                      />
-                    </th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">User</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Status</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">VIP</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Balance</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Tags</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Joined</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-800">
-                  {users.map((u) => (
-                    <tr key={u.id} className="hover:bg-[#1a1d24]/50 transition-colors">
-                      <td className="px-4 py-3">
+              <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+                <table className="w-full">
+                  <thead className="bg-[#1a1d24] sticky top-0 z-10">
+                    <tr>
+                      <th className="px-4 py-3 text-left">
                         <input
                           type="checkbox"
-                          checked={selectedUsers.has(u.id)}
-                          onChange={() => handleSelectUser(u.id)}
+                          checked={selectedUsers.size === users.length && users.length > 0}
+                          onChange={handleSelectAll}
                           className="rounded border-gray-600"
                         />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div>
-                          <p className="text-white font-medium">
-                            {u.full_name || 'No name'}
-                          </p>
-                          {u.username && (
-                            <p className="text-gray-400 text-sm">@{u.username}</p>
-                          )}
-                          <p className="text-gray-500 text-sm">{u.email}</p>
-                          <p className="text-gray-600 text-xs font-mono">ID: {u.id.slice(0, 8)}...</p>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-1 rounded-lg text-xs font-medium ${
-                            u.kyc_status === 'verified'
-                              ? 'bg-green-500/10 text-green-400'
-                              : u.kyc_status === 'pending'
-                              ? 'bg-yellow-500/10 text-yellow-400'
-                              : 'bg-gray-500/10 text-gray-400'
-                          }`}>
-                            {u.kyc_status}
-                          </span>
-                          {u.withdrawal_blocked && (
-                            <span className="px-2 py-1 bg-red-500/10 text-red-400 rounded-lg text-xs">
-                              Blocked
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-lg text-xs font-medium ${
-                          u.vip_tier ? 'bg-[#f0b90b]/10 text-[#f0b90b]' : 'text-gray-500'
-                        }`}>
-                          {u.vip_tier || 'Standard'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="text-white font-medium">
-                          ${formatNumber(u.total_balance || 0)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          {u.tags?.slice(0, 2).map((tag) => (
-                            <span key={tag} className="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded-full text-xs">
-                              {tag}
-                            </span>
-                          ))}
-                          {(u.tags?.length || 0) > 2 && (
-                            <span className="text-gray-500 text-xs">+{u.tags!.length - 2}</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-gray-400 text-sm">
-                        {new Date(u.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleViewUser(u.id)}
-                            className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors"
-                            title="View User Details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleLoginAs(u.id, u.username || 'User')}
-                            className="p-2 hover:bg-[#f0b90b]/20 rounded-lg text-gray-400 hover:text-[#f0b90b] transition-colors"
-                            title="Login As User"
-                          >
-                            <LogIn className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">User</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Status</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">VIP</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Balance</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Tags</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Joined</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {users.map((u) => (
+                      <tr key={u.id} className="hover:bg-[#1a1d24]/50 transition-colors">
+                        <td className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedUsers.has(u.id)}
+                            onChange={() => handleSelectUser(u.id)}
+                            className="rounded border-gray-600"
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <div>
+                            <p className="text-white font-medium">
+                              {u.full_name || 'No name'}
+                            </p>
+                            {u.username && (
+                              <p className="text-gray-400 text-sm">@{u.username}</p>
+                            )}
+                            <p className="text-gray-500 text-sm">{u.email}</p>
+                            <p className="text-gray-600 text-xs font-mono">ID: {u.id.slice(0, 8)}...</p>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-1 rounded-lg text-xs font-medium ${
+                              u.kyc_status === 'verified'
+                                ? 'bg-green-500/10 text-green-400'
+                                : u.kyc_status === 'pending'
+                                ? 'bg-yellow-500/10 text-yellow-400'
+                                : 'bg-gray-500/10 text-gray-400'
+                            }`}>
+                              {u.kyc_status}
+                            </span>
+                            {u.withdrawal_blocked && (
+                              <span className="px-2 py-1 bg-red-500/10 text-red-400 rounded-lg text-xs">
+                                Blocked
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-1 rounded-lg text-xs font-medium ${
+                            u.vip_tier ? 'bg-[#f0b90b]/10 text-[#f0b90b]' : 'text-gray-500'
+                          }`}>
+                            {u.vip_tier || 'Standard'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-white font-medium">
+                            ${formatNumber(u.total_balance || 0)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap gap-1">
+                            {u.tags?.slice(0, 2).map((tag) => (
+                              <span key={tag} className="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded-full text-xs">
+                                {tag}
+                              </span>
+                            ))}
+                            {(u.tags?.length || 0) > 2 && (
+                              <span className="text-gray-500 text-xs">+{u.tags!.length - 2}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-gray-400 text-sm">
+                          {new Date(u.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleViewUser(u.id)}
+                              className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors"
+                              title="View User Details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleLoginAs(u.id, u.username || 'User')}
+                              className="p-2 hover:bg-[#f0b90b]/20 rounded-lg text-gray-400 hover:text-[#f0b90b] transition-colors"
+                              title="Login As User"
+                            >
+                              <LogIn className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
 
-              {users.length === 0 && !loading && (
-                <div className="text-center py-12">
-                  <Users className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-                  <p className="text-gray-400">No users found matching your filters</p>
-                </div>
-              )}
+                {users.length === 0 && !loading && (
+                  <div className="text-center py-12">
+                    <Users className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                    <p className="text-gray-400">No users found matching your filters</p>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <p className="text-gray-400 text-sm">
-                Showing {users.length} of {totalUsers} users
-              </p>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setPage(Math.max(0, page - 1))}
-                  disabled={page === 0}
-                  className="px-4 py-2 bg-[#1a1d24] text-gray-400 rounded-lg disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                <span className="px-4 py-2 text-white">Page {page + 1}</span>
-                <button
-                  onClick={() => setPage(page + 1)}
-                  disabled={users.length < 20}
-                  className="px-4 py-2 bg-[#1a1d24] text-gray-400 rounded-lg disabled:opacity-50"
-                >
-                  Next
-                </button>
+            <div className="bg-[#f0b90b]/10 border-2 border-[#f0b90b]/30 rounded-xl p-5 mt-4">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-300 font-medium text-sm">Show:</span>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value);
+                        setPageSize(value);
+                        setPage(0);
+                      }}
+                      className="bg-[#0b0e11] border-2 border-[#f0b90b]/50 rounded-lg px-4 py-2 text-white font-medium text-sm outline-none focus:border-[#f0b90b]"
+                    >
+                      <option value="50">50 users</option>
+                      <option value="100">100 users</option>
+                      <option value="200">200 users</option>
+                      <option value="500">500 users</option>
+                      <option value="1000">All users</option>
+                    </select>
+                  </div>
+                  <div className="h-6 w-px bg-[#f0b90b]/30"></div>
+                  <p className="text-gray-300 text-sm font-medium">
+                    Showing <span className="text-[#f0b90b] font-bold">{page * pageSize + 1}</span> to{' '}
+                    <span className="text-[#f0b90b] font-bold">{Math.min((page + 1) * pageSize, totalUsers)}</span> of{' '}
+                    <span className="text-[#f0b90b] font-bold">{totalUsers}</span> total users
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPage(0)}
+                    disabled={page === 0}
+                    className="px-4 py-2 bg-[#0b0e11] text-white rounded-lg disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#1f2329] transition-colors font-medium border border-[#f0b90b]/30"
+                  >
+                    First
+                  </button>
+                  <button
+                    onClick={() => setPage(Math.max(0, page - 1))}
+                    disabled={page === 0}
+                    className="px-4 py-2 bg-[#0b0e11] text-white rounded-lg disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#1f2329] transition-colors font-medium border border-[#f0b90b]/30"
+                  >
+                    Previous
+                  </button>
+                  <div className="flex items-center gap-2 px-4 py-2 bg-[#0b0e11] border-2 border-[#f0b90b]/50 rounded-lg">
+                    <span className="text-white font-medium text-sm">Page</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max={Math.ceil(totalUsers / pageSize)}
+                      value={page + 1}
+                      onChange={(e) => {
+                        const newPage = parseInt(e.target.value) - 1;
+                        if (newPage >= 0 && newPage < Math.ceil(totalUsers / pageSize)) {
+                          setPage(newPage);
+                        }
+                      }}
+                      className="w-16 bg-[#1a1d24] border border-[#f0b90b]/50 rounded px-2 py-1 text-[#f0b90b] font-bold text-sm text-center outline-none focus:border-[#f0b90b]"
+                    />
+                    <span className="text-white font-medium text-sm">of {Math.ceil(totalUsers / pageSize)}</span>
+                  </div>
+                  <button
+                    onClick={() => setPage(page + 1)}
+                    disabled={users.length < pageSize || (page + 1) * pageSize >= totalUsers}
+                    className="px-4 py-2 bg-[#0b0e11] text-white rounded-lg disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#1f2329] transition-colors font-medium border border-[#f0b90b]/30"
+                  >
+                    Next
+                  </button>
+                  <button
+                    onClick={() => setPage(Math.ceil(totalUsers / pageSize) - 1)}
+                    disabled={(page + 1) * pageSize >= totalUsers}
+                    className="px-4 py-2 bg-[#0b0e11] text-white rounded-lg disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#1f2329] transition-colors font-medium border border-[#f0b90b]/30"
+                  >
+                    Last
+                  </button>
+                </div>
               </div>
             </div>
           </div>
