@@ -16,9 +16,7 @@ function TradingPanel({ pair }: TradingPanelProps) {
   const { isAuthenticated, user } = useAuth();
   const { navigateTo } = useNavigation();
   const { toasts, removeToast, showSuccess, showError } = useToast();
-  const [orderType, setOrderType] = useState<'Limit' | 'Market'>('Market');
   const [side, setSide] = useState<'Buy' | 'Sell'>('Buy');
-  const [price, setPrice] = useState('');
   const [size, setSize] = useState('');
   const [marginMode, setMarginMode] = useState<'Cross' | 'Isolated'>('Cross');
   const [leverage, setLeverage] = useState(20);
@@ -41,12 +39,6 @@ function TradingPanel({ pair }: TradingPanelProps) {
   const priceData = usePrice(symbolWithSlash);
 
   const baseCurrency = pair.replace('USDT', '');
-
-  useEffect(() => {
-    if (priceData) {
-      setPrice(parseFloat(priceData.price).toFixed(2));
-    }
-  }, [priceData]);
 
   useEffect(() => {
     if (user) {
@@ -117,59 +109,44 @@ function TradingPanel({ pair }: TradingPanelProps) {
     }
   };
 
-  const handleOrderTypeChange = (newType: 'Limit' | 'Market') => {
-    if (newType === orderType) return;
-
-    setOrderType(newType);
-    if (newType === 'Limit' && priceData) {
-      setPrice(parseFloat(priceData.price).toFixed(2));
-    } else {
-      setPrice('');
-    }
-    setSize('');
-    setTpslEnabled(false);
-    setTakeProfit('');
-    setStopLoss('');
-    setReduceOnly(false);
-  };
-
   const getSizeInBTC = (): number => {
-    if (!size) return 0;
+    if (!size || !priceData) return 0;
     const sizeValue = parseFloat(size);
     if (sizeUnit === 'BTC') {
       return sizeValue;
     } else {
-      const currentPrice = parseFloat(price) || 0;
+      const currentPrice = parseFloat(priceData.price) || 0;
       return currentPrice > 0 ? sizeValue / currentPrice : 0;
     }
   };
 
   const getSizeInUSDT = (): number => {
-    if (!size) return 0;
+    if (!size || !priceData) return 0;
     const sizeValue = parseFloat(size);
     if (sizeUnit === 'USDT') {
       return sizeValue;
     } else {
-      const currentPrice = parseFloat(price) || 0;
+      const currentPrice = parseFloat(priceData.price) || 0;
       return sizeValue * currentPrice;
     }
   };
 
   const getRequiredMargin = (): number => {
+    if (!priceData) return 0;
     const btcSize = getSizeInBTC();
-    const currentPrice = parseFloat(price) || 0;
+    const currentPrice = parseFloat(priceData.price) || 0;
     const positionValue = btcSize * currentPrice;
     return positionValue / leverage;
   };
 
   const toggleSizeUnit = () => {
-    if (!size || !price) {
+    if (!size || !priceData) {
       setSizeUnit(sizeUnit === 'BTC' ? 'USDT' : 'BTC');
       return;
     }
 
     const sizeValue = parseFloat(size);
-    const currentPrice = parseFloat(price);
+    const currentPrice = parseFloat(priceData.price);
 
     if (sizeUnit === 'BTC') {
       const usdtValue = sizeValue * currentPrice;
@@ -183,9 +160,10 @@ function TradingPanel({ pair }: TradingPanelProps) {
   };
 
   const handlePercentage = (percent: number) => {
+    if (!priceData) return;
     const maxAvailable = availableMargin * leverage;
     const targetValue = maxAvailable * (percent / 100);
-    const currentPrice = parseFloat(price) || 1;
+    const currentPrice = parseFloat(priceData.price) || 1;
 
     if (sizeUnit === 'BTC') {
       const btcSize = targetValue / currentPrice;
@@ -196,10 +174,10 @@ function TradingPanel({ pair }: TradingPanelProps) {
   };
 
   const convertToPrice = (value: string, mode: 'price' | 'pnl' | 'percent', isTP: boolean): number | null => {
-    if (!value || !price) return null;
+    if (!value || !priceData) return null;
 
     const numValue = parseFloat(value);
-    const currentPrice = parseFloat(price);
+    const currentPrice = parseFloat(priceData.price);
     const quantity = parseFloat(size);
 
     if (mode === 'price') {
@@ -220,10 +198,10 @@ function TradingPanel({ pair }: TradingPanelProps) {
   };
 
   const calculateDisplayValues = (value: string, mode: 'price' | 'pnl' | 'percent', isTP: boolean) => {
-    if (!value || !price || !size) return { price: '', pnl: '', percent: '' };
+    if (!value || !priceData || !size) return { price: '', pnl: '', percent: '' };
 
     const numValue = parseFloat(value);
-    const currentPrice = parseFloat(price);
+    const currentPrice = parseFloat(priceData.price);
     const quantity = parseFloat(size);
 
     let targetPrice = 0;
@@ -268,9 +246,7 @@ function TradingPanel({ pair }: TradingPanelProps) {
     setIsPlacingOrder(true);
 
     try {
-      const tradingPair = pair.replace('USDT', '');
       const quantity = getSizeInBTC();
-      const orderPrice = orderType === 'Market' ? null : (price ? parseFloat(price) : null);
       const slPrice = convertToPrice(stopLoss, slMode, false);
       const tpPrice = convertToPrice(takeProfit, tpMode, true);
 
@@ -278,11 +254,11 @@ function TradingPanel({ pair }: TradingPanelProps) {
         p_user_id: user.id,
         p_pair: pair,
         p_side: orderSide,
-        p_order_type: orderType.toLowerCase(),
+        p_order_type: 'market',
         p_quantity: quantity,
         p_leverage: leverage,
         p_margin_mode: marginMode.toLowerCase(),
-        p_price: orderPrice,
+        p_price: null,
         p_stop_loss: slPrice,
         p_take_profit: tpPrice,
         p_reduce_only: reduceOnly
@@ -390,33 +366,14 @@ function TradingPanel({ pair }: TradingPanelProps) {
           </div>
         )}
 
-        <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => handleOrderTypeChange('Market')}
-            className={`flex-1 px-3 py-2 text-xs rounded transition-colors ${
-              orderType === 'Market'
-                ? 'bg-[#f0b90b] text-black font-semibold'
-                : 'text-gray-400 hover:bg-gray-800'
-            }`}
-          >
-            Market
-          </button>
-          <button
-            onClick={() => handleOrderTypeChange('Limit')}
-            className={`flex-1 px-3 py-2 text-xs rounded transition-colors ${
-              orderType === 'Limit'
-                ? 'bg-[#f0b90b] text-black font-semibold'
-                : 'text-gray-400 hover:bg-gray-800'
-            }`}
-          >
-            Limit
-          </button>
-          <button className="px-3 py-2 text-xs text-gray-400 hover:bg-gray-800 rounded transition-colors">
-            Stop Limit
-          </button>
-        </div>
-
         <div className="space-y-3">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs text-gray-500">Order Type</label>
+              <span className="text-xs text-[#f0b90b] font-semibold">Market</span>
+            </div>
+          </div>
+
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="text-xs text-gray-500">Avbl</label>
@@ -427,13 +384,13 @@ function TradingPanel({ pair }: TradingPanelProps) {
           </div>
 
           <div>
-            <label className="text-xs text-gray-500 mb-1 block">Price</label>
+            <label className="text-xs text-gray-500 mb-1 block">Market Price</label>
             <div className="relative">
               <input
                 type="text"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                className="w-full bg-gray-900 border border-gray-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#f0b90b]/50"
+                value={priceData ? parseFloat(priceData.price).toFixed(2) : '---'}
+                readOnly
+                className="w-full bg-gray-900 border border-gray-800 rounded px-3 py-2 text-sm text-gray-400 cursor-not-allowed"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">
                 USDT

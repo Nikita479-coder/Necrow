@@ -20,8 +20,6 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
   const { navigateTo } = useNavigation();
   const { toasts, removeToast, showSuccess, showError } = useToast();
   const [selectedSide, setSelectedSide] = useState<'long' | 'short'>(initialSide || 'long');
-  const [orderType, setOrderType] = useState<'Limit' | 'Market'>('Market');
-  const [price, setPrice] = useState('');
   const [size, setSize] = useState('');
   const [leverage, setLeverage] = useState(20);
   const [showLeverageModal, setShowLeverageModal] = useState(false);
@@ -58,12 +56,6 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
   const baseCurrency = pair.replace('USDT', '');
 
   useEffect(() => {
-    if (priceData && orderType === 'Market') {
-      setPrice(parseFloat(priceData.price).toFixed(2));
-    }
-  }, [priceData, orderType]);
-
-  useEffect(() => {
     setSizeUnit(baseCurrency);
   }, [baseCurrency]);
 
@@ -82,8 +74,8 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
   }, [user, pair]);
 
   useEffect(() => {
-    if (takeProfitPrice && price) {
-      const entryPrice = parseFloat(price) || 0;
+    if (takeProfitPrice && priceData) {
+      const entryPrice = parseFloat(priceData.price) || 0;
       const tp = parseFloat(takeProfitPrice) || 0;
       if (entryPrice && tp && tpInputMode === 'price') {
         const roi = ((tp - entryPrice) / entryPrice) * 100 * leverage;
@@ -105,11 +97,11 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
         }
       }
     }
-  }, [size, leverage]);
+  }, [size, leverage, priceData, takeProfitPrice, tpInputMode, tpROI, tpPnL]);
 
   useEffect(() => {
-    if (stopLossPrice && price) {
-      const entryPrice = parseFloat(price) || 0;
+    if (stopLossPrice && priceData) {
+      const entryPrice = parseFloat(priceData.price) || 0;
       const sl = parseFloat(stopLossPrice) || 0;
       if (entryPrice && sl && slInputMode === 'price') {
         const roi = ((sl - entryPrice) / entryPrice) * 100 * leverage;
@@ -131,7 +123,7 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
         }
       }
     }
-  }, [size, leverage]);
+  }, [size, leverage, priceData, stopLossPrice, slInputMode, slROI, slPnL]);
 
   const fetchFuturesBalance = async () => {
     if (!user) return;
@@ -188,64 +180,44 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
     }
   };
 
-  const handleOrderTypeChange = (newType: 'Limit' | 'Market') => {
-    if (newType === orderType) return;
-
-    setOrderType(newType);
-    if (newType === 'Limit' && priceData) {
-      setPrice(parseFloat(priceData.price).toFixed(2));
-    } else {
-      setPrice('');
-    }
-    setSize('');
-    setBalancePercentage(0);
-    setEnableTPSL(false);
-    setTakeProfitPrice('');
-    setStopLossPrice('');
-    setTpPnL('');
-    setSlPnL('');
-    setTpROI(0);
-    setSlROI(0);
-    setShowConditional(false);
-  };
-
   const getSizeInBaseCurrency = (): number => {
-    if (!size) return 0;
+    if (!size || !priceData) return 0;
     const sizeValue = parseFloat(size);
     if (sizeUnit === baseCurrency) {
       return sizeValue;
     } else {
-      const currentPrice = parseFloat(price) || 0;
+      const currentPrice = parseFloat(priceData.price) || 0;
       return currentPrice > 0 ? sizeValue / currentPrice : 0;
     }
   };
 
   const getSizeInUSDT = (): number => {
-    if (!size) return 0;
+    if (!size || !priceData) return 0;
     const sizeValue = parseFloat(size);
     if (sizeUnit === 'USDT') {
       return sizeValue;
     } else {
-      const currentPrice = parseFloat(price) || 0;
+      const currentPrice = parseFloat(priceData.price) || 0;
       return sizeValue * currentPrice;
     }
   };
 
   const getRequiredMargin = (): number => {
+    if (!priceData) return 0;
     const baseSize = getSizeInBaseCurrency();
-    const currentPrice = parseFloat(price) || 0;
+    const currentPrice = parseFloat(priceData.price) || 0;
     const positionValue = baseSize * currentPrice;
     return positionValue / leverage;
   };
 
   const toggleSizeUnit = () => {
-    if (!size || !price) {
+    if (!size || !priceData) {
       setSizeUnit(sizeUnit === baseCurrency ? 'USDT' : baseCurrency);
       return;
     }
 
     const sizeValue = parseFloat(size);
-    const currentPrice = parseFloat(price);
+    const currentPrice = parseFloat(priceData.price);
 
     if (sizeUnit === baseCurrency) {
       const usdtValue = sizeValue * currentPrice;
@@ -259,10 +231,11 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
   };
 
   const handlePercentage = (percent: number) => {
+    if (!priceData) return;
     setBalancePercentage(percent);
     const maxAvailable = availableMargin * leverage;
     const targetValue = maxAvailable * (percent / 100);
-    const currentPrice = parseFloat(price) || 1;
+    const currentPrice = parseFloat(priceData.price) || 1;
 
     if (sizeUnit === baseCurrency) {
       const baseSize = targetValue / currentPrice;
@@ -273,7 +246,8 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
   };
 
   const calculateOrderDetails = (orderSide: 'long' | 'short') => {
-    const currentPrice = parseFloat(price) || 0;
+    if (!priceData) return null;
+    const currentPrice = parseFloat(priceData.price) || 0;
     const quantity = getSizeInBaseCurrency();
     const orderValue = quantity * currentPrice;
     const orderCost = orderValue / leverage;
@@ -310,11 +284,6 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
       return;
     }
 
-    if (orderType === 'Limit' && (!price || parseFloat(price) <= 0)) {
-      showError('Please enter a valid price');
-      return;
-    }
-
     const requiredMargin = getRequiredMargin();
     if (requiredMargin > availableMargin) {
       showError('Insufficient margin available');
@@ -325,12 +294,14 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
 
     if (!hideConfirmation) {
       const orderDetails = calculateOrderDetails(orderSide);
-      setPendingOrder({
-        side: orderSide === 'long' ? 'Long' : 'Short',
-        ...orderDetails
-      });
-      setShowConfirmation(true);
-      return;
+      if (orderDetails) {
+        setPendingOrder({
+          side: orderSide === 'long' ? 'Long' : 'Short',
+          ...orderDetails
+        });
+        setShowConfirmation(true);
+        return;
+      }
     }
 
     await executeOrder(orderSide);
@@ -342,7 +313,6 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
 
     try {
       const quantity = getSizeInBaseCurrency();
-      const orderPrice = orderType === 'Market' ? null : (price ? parseFloat(price) : null);
 
       const tpValue = enableTPSL && takeProfitPrice ? parseFloat(takeProfitPrice) : null;
       const slValue = enableTPSL && stopLossPrice ? parseFloat(stopLossPrice) : null;
@@ -351,11 +321,11 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
         p_user_id: user!.id,
         p_pair: pair,
         p_side: orderSide,
-        p_order_type: orderType.toLowerCase(),
+        p_order_type: 'market',
         p_quantity: quantity,
         p_leverage: leverage,
         p_margin_mode: 'cross',
-        p_price: orderPrice,
+        p_price: null,
         p_trigger_price: null,
         p_stop_loss: slValue,
         p_take_profit: tpValue,
@@ -364,7 +334,7 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
 
       if (error) throw error;
 
-      showSuccess(`${orderType} ${orderSide === 'long' ? 'Buy' : 'Sell'} order placed successfully!`);
+      showSuccess(`${orderSide === 'long' ? 'Long' : 'Short'} order placed successfully!`);
       setSize('');
       setTakeProfitPrice('');
       setStopLossPrice('');
@@ -456,37 +426,24 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
           </div>
         )}
 
-        <div className="flex items-center gap-4 mb-4 text-xs">
-          <button
-            onClick={() => handleOrderTypeChange('Market')}
-            className={`transition-colors ${orderType === 'Market' ? 'text-[#f0b90b] font-medium' : 'text-gray-500 hover:text-gray-400'}`}
-          >
-            Market
-          </button>
-          <button
-            onClick={() => handleOrderTypeChange('Limit')}
-            className={`transition-colors ${orderType === 'Limit' ? 'text-white font-medium' : 'text-gray-500 hover:text-gray-400'}`}
-          >
-            Limit
-          </button>
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-gray-400 text-xs">Order Type</span>
+          <span className="text-[#f0b90b] text-xs font-medium">Market</span>
         </div>
 
         <div className="space-y-3">
-          {orderType === 'Limit' && (
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-gray-400 text-[10px]">Price</label>
-                <span className="text-gray-500 text-[10px]">USDT</span>
-              </div>
-              <input
-                type="number"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="0.00"
-                className="w-full bg-[#1a1d23] text-white text-sm px-3 py-2.5 rounded-md border-none focus:outline-none focus:ring-1 focus:ring-[#f0b90b]"
-              />
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-gray-400 text-[10px]">Market Price</label>
+              <span className="text-gray-500 text-[10px]">USDT</span>
             </div>
-          )}
+            <input
+              type="text"
+              value={priceData ? parseFloat(priceData.price).toFixed(2) : '---'}
+              readOnly
+              className="w-full bg-[#1a1d23] text-gray-400 text-sm px-3 py-2.5 rounded-md border-none cursor-not-allowed"
+            />
+          </div>
 
           <div>
             <div className="flex items-center justify-between mb-1">

@@ -16,8 +16,6 @@ function HorizontalTradingPanel({ pair }: HorizontalTradingPanelProps) {
   const { isAuthenticated, user } = useAuth();
   const { navigateTo } = useNavigation();
   const { toasts, removeToast, showSuccess, showError } = useToast();
-  const [orderType, setOrderType] = useState<'Limit' | 'Market'>('Market');
-  const [price, setPrice] = useState('');
   const [size, setSize] = useState('');
   const [marginMode, setMarginMode] = useState<'Cross' | 'Isolated'>('Cross');
   const [leverage, setLeverage] = useState(20);
@@ -38,12 +36,6 @@ function HorizontalTradingPanel({ pair }: HorizontalTradingPanelProps) {
   const symbolWithSlash = pair.replace('USDT', '/USDT');
   const priceData = usePrice(symbolWithSlash);
   const baseCurrency = pair.replace('USDT', '');
-
-  useEffect(() => {
-    if (priceData) {
-      setPrice(parseFloat(priceData.price).toFixed(2));
-    }
-  }, [priceData]);
 
   useEffect(() => {
     setSizeUnit(baseCurrency);
@@ -117,58 +109,44 @@ function HorizontalTradingPanel({ pair }: HorizontalTradingPanelProps) {
     }
   };
 
-  const handleOrderTypeChange = (newType: 'Limit' | 'Market') => {
-    if (newType === orderType) return;
-
-    setOrderType(newType);
-    if (newType === 'Limit' && priceData) {
-      setPrice(parseFloat(priceData.price).toFixed(2));
-    } else {
-      setPrice('');
-    }
-    setSize('');
-    setTpslEnabled(false);
-    setTakeProfit('');
-    setStopLoss('');
-  };
-
   const getSizeInBaseCurrency = (): number => {
-    if (!size) return 0;
+    if (!size || !priceData) return 0;
     const sizeValue = parseFloat(size);
     if (sizeUnit === baseCurrency) {
       return sizeValue;
     } else {
-      const currentPrice = parseFloat(price) || 0;
+      const currentPrice = parseFloat(priceData.price) || 0;
       return currentPrice > 0 ? sizeValue / currentPrice : 0;
     }
   };
 
   const getSizeInUSDT = (): number => {
-    if (!size) return 0;
+    if (!size || !priceData) return 0;
     const sizeValue = parseFloat(size);
     if (sizeUnit === 'USDT') {
       return sizeValue;
     } else {
-      const currentPrice = parseFloat(price) || 0;
+      const currentPrice = parseFloat(priceData.price) || 0;
       return sizeValue * currentPrice;
     }
   };
 
   const getRequiredMargin = (): number => {
+    if (!priceData) return 0;
     const baseSize = getSizeInBaseCurrency();
-    const currentPrice = parseFloat(price) || 0;
+    const currentPrice = parseFloat(priceData.price) || 0;
     const positionValue = baseSize * currentPrice;
     return positionValue / leverage;
   };
 
   const toggleSizeUnit = () => {
-    if (!size || !price) {
+    if (!size || !priceData) {
       setSizeUnit(sizeUnit === baseCurrency ? 'USDT' : baseCurrency);
       return;
     }
 
     const sizeValue = parseFloat(size);
-    const currentPrice = parseFloat(price);
+    const currentPrice = parseFloat(priceData.price);
 
     if (sizeUnit === baseCurrency) {
       const usdtValue = sizeValue * currentPrice;
@@ -182,9 +160,10 @@ function HorizontalTradingPanel({ pair }: HorizontalTradingPanelProps) {
   };
 
   const handlePercentage = (percent: number) => {
+    if (!priceData) return;
     const maxAvailable = availableMargin * leverage;
     const targetValue = maxAvailable * (percent / 100);
-    const currentPrice = parseFloat(price) || 1;
+    const currentPrice = parseFloat(priceData.price) || 1;
 
     if (sizeUnit === baseCurrency) {
       const baseSize = targetValue / currentPrice;
@@ -195,10 +174,10 @@ function HorizontalTradingPanel({ pair }: HorizontalTradingPanelProps) {
   };
 
   const convertToPrice = (value: string, mode: 'price' | 'pnl' | 'percent', isTP: boolean): number | null => {
-    if (!value || !price) return null;
+    if (!value || !priceData) return null;
 
     const numValue = parseFloat(value);
-    const currentPrice = parseFloat(price);
+    const currentPrice = parseFloat(priceData.price);
     const quantity = parseFloat(size);
 
     if (mode === 'price') return numValue;
@@ -230,7 +209,6 @@ function HorizontalTradingPanel({ pair }: HorizontalTradingPanelProps) {
 
     try {
       const quantity = getSizeInBaseCurrency();
-      const orderPrice = orderType === 'Market' ? null : (price ? parseFloat(price) : null);
       const slPrice = convertToPrice(stopLoss, slMode, false);
       const tpPrice = convertToPrice(takeProfit, tpMode, true);
 
@@ -238,11 +216,11 @@ function HorizontalTradingPanel({ pair }: HorizontalTradingPanelProps) {
         p_user_id: user.id,
         p_pair: pair,
         p_side: orderSide,
-        p_order_type: orderType.toLowerCase(),
+        p_order_type: 'market',
         p_quantity: quantity,
         p_leverage: leverage,
         p_margin_mode: marginMode.toLowerCase(),
-        p_price: orderPrice,
+        p_price: null,
         p_stop_loss: slPrice,
         p_take_profit: tpPrice,
         p_reduce_only: false
@@ -258,7 +236,7 @@ function HorizontalTradingPanel({ pair }: HorizontalTradingPanelProps) {
         return;
       }
 
-      showSuccess(`${orderType} ${orderSide === 'long' ? 'Buy' : 'Sell'} order placed successfully!`);
+      showSuccess(`${orderSide === 'long' ? 'Long' : 'Short'} order placed successfully!`);
       setSize('');
       setStopLoss('');
       setTakeProfit('');
@@ -321,35 +299,20 @@ function HorizontalTradingPanel({ pair }: HorizontalTradingPanelProps) {
 
         <div className="border-t border-gray-800">
           <div className="px-6 py-4">
-            <div className="flex gap-2 mb-4">
-              <button
-                onClick={() => handleOrderTypeChange('Market')}
-                className={`px-4 py-2 text-sm font-medium rounded transition-colors ${
-                  orderType === 'Market' ? 'bg-[#f0b90b] text-black' : 'bg-[#1e2329] text-gray-400 hover:text-white'
-                }`}
-              >
-                Market
-              </button>
-              <button
-                onClick={() => handleOrderTypeChange('Limit')}
-                className={`px-4 py-2 text-sm font-medium rounded transition-colors ${
-                  orderType === 'Limit' ? 'bg-[#f0b90b] text-black' : 'bg-[#1e2329] text-gray-400 hover:text-white'
-                }`}
-              >
-                Limit
-              </button>
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm text-gray-500">Order Type:</span>
+              <span className="text-sm text-[#f0b90b] font-semibold">Market</span>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-2">Price (USDT)</label>
+                  <label className="block text-xs text-gray-500 mb-2">Market Price (USDT)</label>
                   <input
                     type="text"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    disabled={orderType === 'Market'}
-                    className="w-full bg-[#1e2329] border border-gray-700 rounded px-3 py-2.5 text-white focus:outline-none focus:border-[#f0b90b] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    value={priceData ? parseFloat(priceData.price).toFixed(2) : '---'}
+                    readOnly
+                    className="w-full bg-[#1e2329] border border-gray-700 rounded px-3 py-2.5 text-gray-400 cursor-not-allowed"
                     placeholder="0.00"
                   />
                 </div>
