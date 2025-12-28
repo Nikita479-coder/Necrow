@@ -561,6 +561,15 @@ export default function AdminDashboard() {
                   Withdrawals
                 </button>
               )}
+
+              {(isSuperAdmin || hasPermission('view_wallets')) && (
+                <button
+                  onClick={() => navigateTo('admindeposits')}
+                  className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 px-6 py-3 rounded-lg font-bold transition-all border border-emerald-500/30"
+                >
+                  Deposits
+                </button>
+              )}
             </div>
           </div>
         </div>

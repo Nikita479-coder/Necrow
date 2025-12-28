@@ -234,8 +234,32 @@ function KYC() {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
 
+        // Retrieve stored session data from localStorage
+        const storedSessionData = localStorage.getItem('otto_session_data');
+        let sessionId = '';
+        let token = '';
+
+        if (storedSessionData) {
+          try {
+            const parsed = JSON.parse(storedSessionData);
+            sessionId = parsed.sessionId || '';
+            token = parsed.token || '';
+            // Clean up localStorage after retrieving
+            localStorage.removeItem('otto_session_data');
+          } catch (e) {
+            console.error('Error parsing stored session data:', e);
+          }
+        }
+
+        // Build query params - prefer token if available, otherwise use sessionId
+        const queryParams = token
+          ? `token=${token}`
+          : sessionId
+            ? `sessionId=${sessionId}`
+            : '';
+
         const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-otto-status?sessionId=${ottoSessionData?.sessionId || ''}`,
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-otto-status?${queryParams}`,
           {
             headers: {
               'Authorization': `Bearer ${session.access_token}`,
@@ -259,13 +283,21 @@ function KYC() {
           } else if (data.session.status === 'FAILED' || data.session.status === 'EXPIRED') {
             setFaceVerificationStatus('failed');
             showError('Verification session failed or expired. Please try again.');
+          } else {
+            // Session is still in progress
+            setFaceVerificationStatus('checking');
+            showError('Verification is still processing. Please wait a moment and refresh the page.');
           }
+        } else {
+          setFaceVerificationStatus('failed');
+          showError('Failed to check verification status. Please try again.');
         }
 
         window.history.replaceState({}, document.title, '/kyc');
       } catch (error) {
         console.error('Error checking Otto status:', error);
         setFaceVerificationStatus('idle');
+        showError('An error occurred while checking verification status.');
       }
     }
   };
@@ -305,6 +337,13 @@ function KYC() {
 
       const data = await response.json();
       setOttoSessionData(data);
+
+      // Store session data in localStorage before redirect
+      localStorage.setItem('otto_session_data', JSON.stringify({
+        sessionId: data.sessionId,
+        token: data.token,
+      }));
+
       setFaceVerificationStatus('redirecting');
 
       showSuccess('Redirecting to verification...');
@@ -1437,11 +1476,31 @@ function KYC() {
                                 )}
                               </div>
                             ) : faceVerificationStatus === 'failed' ? (
-                              <div className="space-y-3">
+                              <div className="space-y-4">
                                 <div className="flex items-center gap-2 text-red-400">
                                   <AlertCircle className="w-5 h-5" />
                                   <span className="font-semibold">Verification failed - Please try again</span>
                                 </div>
+
+                                <div className="bg-yellow-900/20 border border-yellow-800/30 rounded-lg p-4 space-y-3">
+                                  <p className="text-yellow-400 font-medium text-sm">Tips for successful verification:</p>
+                                  <ul className="text-gray-300 text-sm space-y-2 list-disc list-inside">
+                                    <li>Ensure you are in a <span className="font-semibold text-yellow-400">well-lit area</span> with good lighting on your face</li>
+                                    <li>Avoid backlighting or shadows on your face</li>
+                                    <li>Look directly at the camera and follow the on-screen instructions</li>
+                                    <li>Remove glasses, hats, or masks that may obscure your face</li>
+                                    <li>Ensure your entire face is visible within the frame</li>
+                                  </ul>
+                                </div>
+
+                                {verificationResult && (
+                                  <div className="text-sm text-gray-400 space-y-1 bg-gray-900/30 p-3 rounded-lg">
+                                    <p className="text-gray-500 mb-1">Verification scores:</p>
+                                    <div>Liveness: {(verificationResult.livenessScore * 100).toFixed(1)}% {verificationResult.livenessFine ? '✓' : '✗'}</div>
+                                    <div>Deepfake: {(verificationResult.deepfakeScore * 100).toFixed(1)}% {verificationResult.deepfakeFine ? '✓' : '✗'}</div>
+                                  </div>
+                                )}
+
                                 <button
                                   onClick={startFaceVerification}
                                   disabled={faceVerificationStatus === 'loading' || faceVerificationStatus === 'redirecting'}

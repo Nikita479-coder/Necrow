@@ -35,25 +35,22 @@ Deno.serve(async (req: Request) => {
     const sessionId = url.searchParams.get('sessionId');
     const token = url.searchParams.get('token');
 
-    if (!sessionId && !token) {
-      return new Response(
-        JSON.stringify({ error: 'Missing sessionId or token parameter' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     let query = supabase
       .from('otto_verification_sessions')
       .select('*')
       .eq('user_id', user.id);
 
+    // If sessionId or token provided, use those; otherwise get the latest session
     if (sessionId) {
       query = query.eq('session_id', sessionId);
     } else if (token) {
       query = query.eq('token', token);
+    } else {
+      // No specific session requested, get the most recent one
+      query = query.order('created_at', { ascending: false }).limit(1);
     }
 
-    const { data: session, error: sessionError } = await query.single();
+    const { data: session, error: sessionError } = await query.maybeSingle();
 
     if (sessionError || !session) {
       return new Response(

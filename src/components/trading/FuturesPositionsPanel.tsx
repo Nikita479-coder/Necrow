@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
-import { X, Edit2 } from 'lucide-react';
+import { X, Edit2, FileText } from 'lucide-react';
 import { usePrices } from '../../hooks/usePrices';
 import { useToast } from '../../hooks/useToast';
 import { ToastContainer } from '../Toast';
 import TPSLModal from './TPSLModal';
+import PositionDetailsModal from './PositionDetailsModal';
 import { tpslMonitorService, TPSLCloseEvent } from '../../services/tpslMonitorService';
 
 interface Position {
@@ -62,6 +63,7 @@ function FuturesPositionsPanel() {
   const [loading, setLoading] = useState(true);
   const [closingPosition, setClosingPosition] = useState<string | null>(null);
   const [tpslModal, setTpslModal] = useState<{ position: Position; mode: 'TP' | 'SL' } | null>(null);
+  const [detailsModal, setDetailsModal] = useState<Position | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -445,6 +447,13 @@ function FuturesPositionsPanel() {
                   <td className="px-4 py-3 text-center">
                     <div className="flex items-center justify-center gap-2">
                       <button
+                        onClick={() => setDetailsModal(position)}
+                        className="p-2 bg-gray-700/50 hover:bg-gray-700 text-gray-300 rounded transition-colors"
+                        title="View Details"
+                      >
+                        <FileText className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => handleClosePosition(position.position_id)}
                         disabled={closingPosition === position.position_id}
                         className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 disabled:bg-gray-700 disabled:cursor-not-allowed text-red-500 disabled:text-gray-500 rounded text-xs font-medium transition-colors"
@@ -566,6 +575,7 @@ function FuturesPositionsPanel() {
               <th className="text-right px-4 py-2 font-medium">Size</th>
               <th className="text-center px-4 py-2 font-medium">Leverage</th>
               <th className="text-right px-4 py-2 font-medium">Realized PnL</th>
+              <th className="text-center px-4 py-2 font-medium">Details</th>
             </tr>
           </thead>
           <tbody>
@@ -599,6 +609,15 @@ function FuturesPositionsPanel() {
                   <td className={`px-4 py-3 text-right font-semibold ${pnlColor}`}>
                     {parseFloat(position.realized_pnl || 0) >= 0 ? '+' : ''}
                     ${parseFloat(position.realized_pnl || 0).toFixed(2)}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button
+                      onClick={() => setDetailsModal(position)}
+                      className="p-2 bg-gray-700/50 hover:bg-gray-700 text-gray-300 rounded transition-colors"
+                      title="View Details"
+                    >
+                      <FileText className="w-4 h-4" />
+                    </button>
                   </td>
                 </tr>
               );
@@ -681,6 +700,13 @@ function FuturesPositionsPanel() {
             fetchPositions();
             showSuccess(`${tpslModal.mode === 'TP' ? 'Take Profit' : 'Stop Loss'} updated successfully`);
           }}
+        />
+      )}
+
+      {detailsModal && (
+        <PositionDetailsModal
+          position={detailsModal}
+          onClose={() => setDetailsModal(null)}
         />
       )}
     </>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Shield, Ban, CheckCircle, XCircle, DollarSign, AlertTriangle } from 'lucide-react';
+import { Shield, Ban, CheckCircle, XCircle, DollarSign, AlertTriangle, Award } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../hooks/useToast';
 import { loggingService } from '../../services/loggingService';
@@ -245,6 +245,17 @@ export default function AdminUserActions({ userId, userData, onRefresh }: Props)
             >
               <XCircle className="w-5 h-5" />
               <span>Reject</span>
+            </button>
+          </div>
+          <div className="mt-4 pt-4 border-t border-gray-700">
+            <p className="text-sm text-gray-500 mb-3">Full Verification (requires face verification)</p>
+            <button
+              onClick={() => updateKYCStatus('verified', 3)}
+              disabled={loading}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-[#f0b90b]/10 hover:bg-[#f0b90b]/20 text-[#f0b90b] rounded-lg border border-[#f0b90b]/30 transition-colors disabled:opacity-50 font-semibold"
+            >
+              <Award className="w-5 h-5" />
+              <span>Verify Level 3 (Full Verification)</span>
             </button>
           </div>
         </div>
