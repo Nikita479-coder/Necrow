@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Upload, AlertCircle } from 'lucide-react';
+import { X, Upload, AlertCircle, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 
@@ -14,6 +14,11 @@ interface NewTicketModalProps {
   onSuccess: () => void;
 }
 
+interface AttachmentFile {
+  file: File;
+  preview: string;
+}
+
 export default function NewTicketModal({ onClose, onSuccess }: NewTicketModalProps) {
   const { user } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -21,6 +26,7 @@ export default function NewTicketModal({ onClose, onSuccess }: NewTicketModalPro
   const [categoryId, setCategoryId] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [message, setMessage] = useState('');
+  const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -46,6 +52,53 @@ export default function NewTicketModal({ onClose, onSuccess }: NewTicketModalPro
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newAttachments: AttachmentFile[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.type.startsWith('image/')) {
+        newAttachments.push({
+          file,
+          preview: URL.createObjectURL(file),
+        });
+      }
+    }
+    setAttachments([...attachments, ...newAttachments]);
+  };
+
+  const removeAttachment = (index: number) => {
+    URL.revokeObjectURL(attachments[index].preview);
+    setAttachments(attachments.filter((_, i) => i !== index));
+  };
+
+  const uploadAttachment = async (ticketId: string, messageId: string, file: File) => {
+    return new Promise<void>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const base64 = (reader.result as string).split(',')[1];
+          const { error } = await supabase.rpc('insert_support_attachment', {
+            p_ticket_id: ticketId,
+            p_message_id: messageId,
+            p_file_name: file.name,
+            p_file_size: file.size,
+            p_mime_type: file.type,
+            p_file_data_base64: base64,
+          });
+          if (error) throw error;
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -68,17 +121,24 @@ export default function NewTicketModal({ onClose, onSuccess }: NewTicketModalPro
 
       if (ticketError) throw ticketError;
 
-      const { error: messageError } = await supabase
+      const { data: messageData, error: messageError } = await supabase
         .from('support_messages')
         .insert({
           ticket_id: ticket.id,
           sender_id: user.id,
           sender_type: 'user',
           message,
-        });
+        })
+        .select()
+        .single();
 
       if (messageError) throw messageError;
 
+      for (const attachment of attachments) {
+        await uploadAttachment(ticket.id, messageData.id, attachment.file);
+      }
+
+      attachments.forEach(att => URL.revokeObjectURL(att.preview));
       onSuccess();
     } catch (error: any) {
       console.error('Error creating ticket:', error);
@@ -175,6 +235,50 @@ export default function NewTicketModal({ onClose, onSuccess }: NewTicketModalPro
               className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 resize-none"
               required
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Attachments (Images)
+            </label>
+            <div className="space-y-3">
+              <label className="flex items-center justify-center px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                <Upload className="w-5 h-5 text-gray-400 mr-2" />
+                <span className="text-gray-400">Upload Images</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleFileChange}
+                  className="hidden"
+                  disabled={loading}
+                />
+              </label>
+
+              {attachments.length > 0 && (
+                <div className="grid grid-cols-2 gap-3">
+                  {attachments.map((att, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={att.preview}
+                        alt={`Attachment ${index + 1}`}
+                        className="w-full h-32 object-cover rounded-lg border border-gray-700"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(index)}
+                        className="absolute top-2 right-2 p-1.5 bg-red-600 hover:bg-red-700 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-4 h-4 text-white" />
+                      </button>
+                      <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/70 rounded text-xs text-white">
+                        {(att.file.size / 1024).toFixed(1)} KB
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-4">

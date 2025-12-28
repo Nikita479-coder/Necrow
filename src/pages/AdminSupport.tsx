@@ -55,53 +55,39 @@ export default function AdminSupport() {
 
   const loadTickets = async () => {
     try {
-      let query = supabase
-        .from('support_tickets')
-        .select(`
-          *,
-          category:support_categories(name, color_code)
-        `)
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.rpc('admin_get_support_tickets_with_users');
 
-      if (filter === 'open') {
-        query = query.in('status', ['open', 'in_progress', 'waiting_admin']);
-      } else if (filter === 'pending') {
-        query = query.eq('status', 'waiting_admin');
+      if (error) {
+        console.error('RPC Error:', error);
+        throw error;
       }
 
-      const { data, error } = await query;
+      console.log('Tickets data:', data);
 
-      if (error) throw error;
+      let filteredData = data || [];
 
-      const ticketsWithUsers = await Promise.all(
-        (data || []).map(async (ticket) => {
-          const { data: userData } = await supabase.auth.admin.getUserById(ticket.user_id);
+      if (filter === 'open') {
+        filteredData = filteredData.filter((t: any) =>
+          ['open', 'in_progress', 'waiting_admin'].includes(t.status)
+        );
+      } else if (filter === 'pending') {
+        filteredData = filteredData.filter((t: any) => t.status === 'waiting_admin');
+      }
 
-          const { data: profileData } = await supabase
-            .from('user_profiles')
-            .select('username')
-            .eq('id', ticket.user_id)
-            .single();
+      const ticketsWithProfiles = filteredData.map((ticket: any) => ({
+        ...ticket,
+        category: ticket.category_name ? {
+          name: ticket.category_name,
+          color_code: ticket.category_color_code
+        } : null,
+        user_profile: {
+          username: ticket.user_username || 'Unknown',
+          email: ticket.user_email || 'Unknown',
+        },
+      }));
 
-          const { count } = await supabase
-            .from('support_messages')
-            .select('*', { count: 'exact', head: true })
-            .eq('ticket_id', ticket.id)
-            .eq('sender_type', 'user')
-            .is('read_at', null);
-
-          return {
-            ...ticket,
-            user_profile: {
-              username: profileData?.username || 'Unknown',
-              email: userData?.user?.email || 'Unknown',
-            },
-            unread_count: count || 0,
-          };
-        })
-      );
-
-      setTickets(ticketsWithUsers);
+      console.log('Processed tickets:', ticketsWithProfiles);
+      setTickets(ticketsWithProfiles);
     } catch (error) {
       console.error('Error loading tickets:', error);
     } finally {
@@ -284,7 +270,8 @@ export default function AdminSupport() {
 
   const filteredTickets = tickets.filter(t =>
     t.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.user_profile?.username.toLowerCase().includes(searchQuery.toLowerCase())
+    t.user_profile?.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.user_profile?.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (!profile?.is_admin) {
@@ -369,6 +356,7 @@ export default function AdminSupport() {
                     <div className="flex-1">
                       <h3 className="text-white font-medium text-sm mb-1">{ticket.subject}</h3>
                       <p className="text-xs text-gray-400">{ticket.user_profile?.username}</p>
+                      <p className="text-xs text-gray-500">{ticket.user_profile?.email}</p>
                     </div>
                     {ticket.unread_count && ticket.unread_count > 0 && (
                       <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-500/20 text-blue-400">

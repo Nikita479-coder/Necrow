@@ -2,14 +2,15 @@ import { useState, useEffect } from 'react';
 import {
   Activity, DollarSign, Shield, AlertCircle, FileText, RefreshCw, Search, Filter,
   Users, TrendingUp, Download, Tag, BarChart3, UserCheck, UserX, Clock,
-  ChevronDown, Check, X, Eye, Mail, Ban, Unlock, Bell, LogIn, Copy, ExternalLink
+  ChevronDown, Check, X, Eye, Mail, Ban, Unlock, Bell, LogIn, Copy, ExternalLink, Image
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import PopupBannerManager from '../components/admin/PopupBannerManager';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '../App';
 
-type MainTab = 'analytics' | 'users' | 'segments' | 'logs';
+type MainTab = 'analytics' | 'users' | 'segments' | 'logs' | 'popups';
 type LogType = 'admin' | 'financial' | 'kyc' | 'security' | 'system';
 
 interface DashboardStats {
@@ -480,6 +481,7 @@ export default function AdminCRM() {
             { id: 'analytics', label: 'Analytics', icon: BarChart3 },
             { id: 'users', label: 'User Management', icon: Users },
             { id: 'segments', label: 'Segments & Tags', icon: Tag },
+            { id: 'popups', label: 'Popup Banners', icon: Image },
             { id: 'logs', label: 'Activity Logs', icon: Activity },
           ].map((tab) => (
             <button
@@ -929,6 +931,10 @@ export default function AdminCRM() {
               </div>
             </div>
           </div>
+        )}
+
+        {mainTab === 'popups' && (
+          <PopupBannerManager />
         )}
 
         {mainTab === 'logs' && (

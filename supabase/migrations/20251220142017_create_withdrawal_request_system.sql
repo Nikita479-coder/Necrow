@@ -53,6 +53,7 @@ DECLARE
   v_transaction_id uuid;
   v_locked_bonus numeric := 0;
   v_available_balance numeric := 0;
+  v_locked_withdrawal numeric := 0;
 BEGIN
   -- Check if user is the caller
   IF p_user_id != auth.uid() THEN
@@ -64,7 +65,7 @@ BEGIN
 
   -- Check if withdrawals are allowed
   v_withdrawal_check := check_withdrawal_allowed(p_user_id);
-  
+
   IF NOT (v_withdrawal_check->>'allowed')::boolean THEN
     RETURN jsonb_build_object(
       'success', false,
@@ -83,8 +84,8 @@ BEGIN
   -- Get wallet balance for the currency
   SELECT COALESCE(balance, 0) INTO v_wallet_balance
   FROM wallets
-  WHERE user_id = p_user_id 
-    AND currency = p_currency 
+  WHERE user_id = p_user_id
+    AND currency = p_currency
     AND wallet_type = 'main';
 
   -- Get locked bonus if USDT
@@ -92,8 +93,13 @@ BEGIN
     SELECT COALESCE(SUM(remaining_amount), 0) INTO v_locked_bonus
     FROM locked_trading_bonuses
     WHERE user_id = p_user_id AND status = 'active';
-    
-    v_available_balance := v_wallet_balance - v_locked_bonus;
+
+    -- Get locked withdrawal balance
+    SELECT COALESCE(locked_balance, 0) INTO v_locked_withdrawal
+    FROM locked_withdrawal_balances
+    WHERE user_id = p_user_id;
+
+    v_available_balance := v_wallet_balance - v_locked_bonus - v_locked_withdrawal;
   ELSE
     v_available_balance := v_wallet_balance;
   END IF;
@@ -135,8 +141,8 @@ BEGIN
   UPDATE wallets
   SET balance = balance - p_amount,
       updated_at = now()
-  WHERE user_id = p_user_id 
-    AND currency = p_currency 
+  WHERE user_id = p_user_id
+    AND currency = p_currency
     AND wallet_type = 'main';
 
   -- Create transaction record

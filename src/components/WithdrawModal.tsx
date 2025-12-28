@@ -81,36 +81,56 @@ export default function WithdrawModal({ isOpen, onClose, crypto }: WithdrawModal
   };
 
   const handleWithdraw = async () => {
+    console.log('=== WITHDRAWAL STARTED ===');
+    console.log('User:', user?.id);
+    console.log('Crypto data:', crypto);
+    console.log('Amount:', amount);
+    console.log('Address:', address);
+    console.log('Network:', selectedNetwork);
+
     if (!user) {
+      console.error('No user found');
       showToast('Please sign in to withdraw', 'error');
       return;
     }
 
     if (!address || address.trim().length < 10) {
+      console.error('Invalid address:', address);
       showToast('Please enter a valid wallet address', 'error');
       return;
     }
 
     const withdrawAmount = parseFloat(amount);
     if (isNaN(withdrawAmount) || withdrawAmount <= 0) {
+      console.error('Invalid amount:', amount);
       showToast('Please enter a valid amount', 'error');
       return;
     }
 
     const minWithdraw = parseFloat(crypto.minWithdraw);
     if (withdrawAmount < minWithdraw) {
+      console.error('Below minimum:', withdrawAmount, '<', minWithdraw);
       showToast(`Minimum withdrawal is ${minWithdraw} ${crypto.symbol}`, 'error');
       return;
     }
 
     const availableBalance = parseFloat(crypto.balance);
     if (withdrawAmount > availableBalance) {
+      console.error('Insufficient balance:', withdrawAmount, '>', availableBalance);
       showToast(`Insufficient balance. Available: ${availableBalance.toFixed(6)} ${crypto.symbol}`, 'error');
       return;
     }
 
     setIsWithdrawing(true);
     try {
+      console.log('=== CALLING EDGE FUNCTION ===');
+      console.log('Payload:', {
+        currency: crypto.symbol,
+        amount: withdrawAmount,
+        address: address.trim(),
+        network: selectedNetwork
+      });
+
       const { data, error } = await supabase.functions.invoke('submit-withdrawal', {
         body: {
           currency: crypto.symbol,
@@ -120,18 +140,30 @@ export default function WithdrawModal({ isOpen, onClose, crypto }: WithdrawModal
         }
       });
 
-      if (error) throw error;
+      console.log('=== EDGE FUNCTION RESPONSE ===');
+      console.log('Data:', data);
+      console.log('Error:', error);
 
-      if (data.success) {
+      if (error) {
+        console.error('=== EDGE FUNCTION ERROR ===', error);
+        showToast(error.message || 'Failed to submit withdrawal', 'error');
+        setIsWithdrawing(false);
+        return;
+      }
+
+      if (data?.success) {
+        console.log('=== SUCCESS ===');
         showToast(`Withdrawal request submitted for ${withdrawAmount} ${crypto.symbol}`, 'success');
         onClose();
       } else {
-        showToast(data.error || 'Withdrawal failed', 'error');
+        console.error('=== FAILURE ===', data);
+        showToast(data?.error || 'Withdrawal failed. Please try again.', 'error');
       }
     } catch (error: any) {
-      console.error('Withdrawal error:', error);
+      console.error('=== CAUGHT ERROR ===', error);
       showToast(error.message || 'Failed to submit withdrawal request', 'error');
     } finally {
+      console.log('=== CLEANUP ===');
       setIsWithdrawing(false);
     }
   };

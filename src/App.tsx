@@ -1,5 +1,6 @@
 import { useState, createContext, useContext, useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
+import PopupBanner from './components/PopupBanner';
 import HomePage from './pages/HomePage';
 import Markets from './pages/Markets';
 import FuturesTrading from './pages/FuturesTrading';
@@ -207,6 +208,7 @@ function App() {
   return (
     <AuthProvider>
       <NavigationContext.Provider value={{ currentPage, navigateTo, navigationState }}>
+        <PopupBanner />
         {renderPage()}
       </NavigationContext.Provider>
     </AuthProvider>
