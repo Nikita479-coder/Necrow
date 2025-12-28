@@ -1094,9 +1094,15 @@ function Wallet() {
                           </div>
                         </div>
                         <div className="mt-3 p-2 bg-[#f0b90b]/5 rounded-lg border border-[#f0b90b]/10">
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-gray-400 mb-2">
                             This bonus can be used for futures trading. Profits are withdrawable, but the bonus balance cannot be withdrawn.
                           </p>
+                          <button
+                            onClick={() => navigateTo('bonusterms')}
+                            className="text-xs text-[#f0b90b] hover:text-[#d9a506] underline transition-colors"
+                          >
+                            View unlock requirements & terms
+                          </button>
                         </div>
                       </div>
                     ))}

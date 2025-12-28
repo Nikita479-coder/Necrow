@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
-import { Shield, CheckCircle2, Upload, User, MapPin, CreditCard, FileText, Camera, AlertCircle, Building2, Video } from 'lucide-react';
+import { Shield, CheckCircle2, Upload, User, MapPin, CreditCard, FileText, Camera, AlertCircle, Building2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
@@ -39,9 +39,6 @@ function KYC() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [existingKYC, setExistingKYC] = useState<any>(null);
-  const [faceVerificationStatus, setFaceVerificationStatus] = useState<'idle' | 'loading' | 'redirecting' | 'checking' | 'success' | 'failed'>('idle');
-  const [ottoSessionData, setOttoSessionData] = useState<any>(null);
-  const [verificationResult, setVerificationResult] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -74,7 +71,6 @@ function KYC() {
     if (user) {
       loadKYCData();
       loadUploadedDocuments();
-      checkForReturnFromOtto();
     }
   }, [user]);
 
@@ -223,138 +219,43 @@ function KYC() {
     reader.readAsDataURL(file);
   };
 
-  const checkForReturnFromOtto = async () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const sessionComplete = urlParams.get('session');
-
-    if (sessionComplete === 'complete' && user) {
-      setFaceVerificationStatus('checking');
-
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-
-        // Retrieve stored session data from localStorage
-        const storedSessionData = localStorage.getItem('otto_session_data');
-        let sessionId = '';
-        let token = '';
-
-        if (storedSessionData) {
-          try {
-            const parsed = JSON.parse(storedSessionData);
-            sessionId = parsed.sessionId || '';
-            token = parsed.token || '';
-            // Clean up localStorage after retrieving
-            localStorage.removeItem('otto_session_data');
-          } catch (e) {
-            console.error('Error parsing stored session data:', e);
-          }
-        }
-
-        // Build query params - prefer token if available, otherwise use sessionId
-        const queryParams = token
-          ? `token=${token}`
-          : sessionId
-            ? `sessionId=${sessionId}`
-            : '';
-
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-otto-status?${queryParams}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          setVerificationResult(data.result);
-
-          if (data.session.status === 'DONE' && data.result?.verificationPassed) {
-            setFaceVerificationStatus('success');
-            showSuccess('Face verification completed successfully!');
-            await loadUploadedDocuments();
-            await loadKYCData();
-          } else if (data.session.status === 'DONE' && !data.result?.verificationPassed) {
-            setFaceVerificationStatus('failed');
-            showError('Face verification failed. Please ensure good lighting and try again.');
-          } else if (data.session.status === 'FAILED' || data.session.status === 'EXPIRED') {
-            setFaceVerificationStatus('failed');
-            showError('Verification session failed or expired. Please try again.');
-          } else {
-            // Session is still in progress
-            setFaceVerificationStatus('checking');
-            showError('Verification is still processing. Please wait a moment and refresh the page.');
-          }
-        } else {
-          setFaceVerificationStatus('failed');
-          showError('Failed to check verification status. Please try again.');
-        }
-
-        window.history.replaceState({}, document.title, '/kyc');
-      } catch (error) {
-        console.error('Error checking Otto status:', error);
-        setFaceVerificationStatus('idle');
-        showError('An error occurred while checking verification status.');
-      }
-    }
-  };
-
-  const startFaceVerification = async () => {
+  const submitSelfieVerification = async () => {
     if (!user) return;
+    if (!uploadedDocuments.selfie && !uploadedFiles.selfie) {
+      showError('Please upload a selfie photo');
+      return;
+    }
 
-    setFaceVerificationStatus('loading');
-
+    setSubmitting(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        showError('Please sign in to continue');
-        return;
-      }
+      const { error: kycError } = await supabase
+        .from('kyc_verifications')
+        .update({
+          kyc_level: 3,
+          kyc_status: 'verified',
+        })
+        .eq('user_id', user.id);
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-otto-session`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            metadata: {
-              kyc_level: existingKYC?.kyc_level || 0,
-            },
-          }),
-        }
-      );
+      if (kycError) throw kycError;
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create verification session');
-      }
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .update({
+          kyc_status: 'verified',
+          kyc_level: 3
+        })
+        .eq('id', user.id);
 
-      const data = await response.json();
-      setOttoSessionData(data);
+      if (profileError) throw profileError;
 
-      // Store session data in localStorage before redirect
-      localStorage.setItem('otto_session_data', JSON.stringify({
-        sessionId: data.sessionId,
-        token: data.token,
-      }));
-
-      setFaceVerificationStatus('redirecting');
-
-      showSuccess('Redirecting to verification...');
-
-      setTimeout(() => {
-        window.location.href = data.url;
-      }, 1000);
-    } catch (error: any) {
-      console.error('Error starting face verification:', error);
-      showError(error.message || 'Failed to start face verification. Please try again.');
-      setFaceVerificationStatus('idle');
+      await refreshProfile();
+      showSuccess('Selfie verification completed! You now have Advanced level access.');
+      await loadKYCData();
+    } catch (error) {
+      console.error('Error submitting selfie:', error);
+      showError('Failed to submit selfie. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -1427,8 +1328,27 @@ function KYC() {
 
                   {currentStep === 4 && (
                     <div className="space-y-4">
-                      <h2 className="text-2xl font-bold text-white mb-4">Face Verification - Advanced Level</h2>
-                      <p className="text-gray-400 mb-6">Complete our secure face verification process for Advanced verification</p>
+                      <h2 className="text-2xl font-bold text-white mb-4">Selfie Verification - Advanced Level</h2>
+                      <p className="text-gray-400 mb-6">Upload a clear selfie photo to complete your identity verification</p>
+
+                      {existingKYC && existingKYC.kyc_status === 'verified' && existingKYC.kyc_level >= 3 && (
+                        <div className="bg-gradient-to-r from-emerald-900/30 to-emerald-800/20 border border-emerald-600/40 rounded-xl p-5 mb-4">
+                          <div className="flex items-start gap-4">
+                            <div className="bg-emerald-500/20 p-2.5 rounded-lg">
+                              <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-white font-bold text-base mb-1.5">Face Verification Complete!</p>
+                              <p className="text-gray-300 text-sm mb-2">
+                                Your selfie has been verified successfully. You now have Advanced level access with full platform features.
+                              </p>
+                              <p className="text-gray-400 text-xs">
+                                All verification requirements have been met.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {existingKYC && existingKYC.kyc_status === 'pending' && existingKYC.kyc_level >= 3 && (
                         <div className="bg-gradient-to-r from-yellow-900/30 to-yellow-800/20 border border-yellow-600/40 rounded-xl p-5 mb-4">
@@ -1437,9 +1357,9 @@ function KYC() {
                               <AlertCircle className="w-6 h-6 text-yellow-400" />
                             </div>
                             <div className="flex-1">
-                              <p className="text-white font-bold text-base mb-1.5">Face Verification Under Review</p>
+                              <p className="text-white font-bold text-base mb-1.5">Selfie Verification Under Review</p>
                               <p className="text-gray-300 text-sm mb-2">
-                                Your face verification has been submitted and is being reviewed by our verification team.
+                                Your selfie has been submitted and is being reviewed by our verification team.
                               </p>
                               <p className="text-gray-400 text-xs">
                                 Verification typically takes 24-48 hours. You'll be notified once complete.
@@ -1449,117 +1369,111 @@ function KYC() {
                         </div>
                       )}
 
-                      <div className="bg-gradient-to-r from-[#f0b90b]/10 to-[#f8d12f]/10 border border-[#f0b90b]/30 rounded-xl p-6">
-                        <div className="flex items-start gap-4">
-                          <Video className="w-8 h-8 text-[#f0b90b] flex-shrink-0 mt-1" />
-                          <div className="flex-1">
-                            <h3 className="text-lg font-bold text-white mb-2">Live Face Verification</h3>
-                            <p className="text-gray-300 text-sm mb-4">
-                              Complete secure face verification with professional liveness detection and deepfake prevention. You'll be redirected to complete the verification securely.
-                            </p>
-                            {existingKYC && existingKYC.kyc_status === 'pending' && existingKYC.kyc_level >= 3 ? (
-                              <div className="flex items-center gap-2 text-yellow-400">
-                                <AlertCircle className="w-5 h-5" />
-                                <span className="font-semibold">Submitted - Pending Review</span>
-                              </div>
-                            ) : faceVerificationStatus === 'success' || (verificationResult && verificationResult.verificationPassed) ? (
-                              <div className="space-y-3">
-                                <div className="flex items-center gap-2 text-emerald-400">
-                                  <CheckCircle2 className="w-5 h-5" />
-                                  <span className="font-semibold">Face verification completed</span>
-                                </div>
-                                {verificationResult && (
-                                  <div className="text-sm text-gray-400 space-y-1">
-                                    <div>Liveness Score: {(verificationResult.livenessScore * 100).toFixed(1)}%</div>
-                                    <div>Deepfake Score: {(verificationResult.deepfakeScore * 100).toFixed(1)}%</div>
-                                  </div>
-                                )}
-                              </div>
-                            ) : faceVerificationStatus === 'failed' ? (
-                              <div className="space-y-4">
-                                <div className="flex items-center gap-2 text-red-400">
-                                  <AlertCircle className="w-5 h-5" />
-                                  <span className="font-semibold">Verification failed - Please try again</span>
-                                </div>
-
-                                <div className="bg-yellow-900/20 border border-yellow-800/30 rounded-lg p-4 space-y-3">
-                                  <p className="text-yellow-400 font-medium text-sm">Tips for successful verification:</p>
-                                  <ul className="text-gray-300 text-sm space-y-2 list-disc list-inside">
-                                    <li>Ensure you are in a <span className="font-semibold text-yellow-400">well-lit area</span> with good lighting on your face</li>
-                                    <li>Avoid backlighting or shadows on your face</li>
-                                    <li>Look directly at the camera and follow the on-screen instructions</li>
-                                    <li>Remove glasses, hats, or masks that may obscure your face</li>
-                                    <li>Ensure your entire face is visible within the frame</li>
-                                  </ul>
-                                </div>
-
-                                {verificationResult && (
-                                  <div className="text-sm text-gray-400 space-y-1 bg-gray-900/30 p-3 rounded-lg">
-                                    <p className="text-gray-500 mb-1">Verification scores:</p>
-                                    <div>Liveness: {(verificationResult.livenessScore * 100).toFixed(1)}% {verificationResult.livenessFine ? '✓' : '✗'}</div>
-                                    <div>Deepfake: {(verificationResult.deepfakeScore * 100).toFixed(1)}% {verificationResult.deepfakeFine ? '✓' : '✗'}</div>
-                                  </div>
-                                )}
-
-                                <button
-                                  onClick={startFaceVerification}
-                                  disabled={faceVerificationStatus === 'loading' || faceVerificationStatus === 'redirecting'}
-                                  className="px-6 py-3 bg-[#f0b90b] hover:bg-[#f8d12f] text-black font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  Retry Face Verification
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={startFaceVerification}
-                                disabled={faceVerificationStatus === 'loading' || faceVerificationStatus === 'redirecting' || faceVerificationStatus === 'checking'}
-                                className="px-6 py-3 bg-[#f0b90b] hover:bg-[#f8d12f] text-black font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {faceVerificationStatus === 'loading' && 'Creating session...'}
-                                {faceVerificationStatus === 'redirecting' && 'Redirecting...'}
-                                {faceVerificationStatus === 'checking' && 'Checking status...'}
-                                {faceVerificationStatus === 'idle' && 'Start Face Verification'}
-                              </button>
-                            )}
-                          </div>
+                      {(existingKYC && existingKYC.kyc_level >= 3 && (existingKYC.kyc_status === 'verified' || existingKYC.kyc_status === 'pending')) && (
+                        <div className="flex gap-4 mt-8">
+                          <button
+                            onClick={() => setCurrentStep(3)}
+                            className="px-8 py-3 bg-[#0b0e11] border border-gray-700 hover:border-gray-600 text-white font-semibold rounded-xl transition-all"
+                          >
+                            Back to ID Verification
+                          </button>
                         </div>
-                      </div>
+                      )}
 
-                      <div className="bg-blue-900/20 border border-blue-800/30 rounded-xl p-4">
-                        <div className="flex items-start gap-3">
-                          <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-                          <div className="text-sm text-gray-300">
-                            <p className="font-semibold text-white mb-1">Verification Requirements:</p>
-                            <ul className="space-y-1 list-disc list-inside">
-                              <li>You'll be redirected to a secure verification portal</li>
-                              <li>Allow camera access when prompted</li>
-                              <li>Ensure good lighting and face visibility</li>
-                              <li>Follow the on-screen instructions carefully</li>
-                              <li>The process takes approximately 2-3 minutes</li>
-                            </ul>
+                      {!(existingKYC && existingKYC.kyc_level >= 3 && (existingKYC.kyc_status === 'verified' || existingKYC.kyc_status === 'pending')) && (
+                        <>
+                          <div className="bg-gradient-to-r from-[#f0b90b]/10 to-[#f8d12f]/10 border border-[#f0b90b]/30 rounded-xl p-6">
+                            <div className="flex items-start gap-4">
+                              <Camera className="w-8 h-8 text-[#f0b90b] flex-shrink-0 mt-1" />
+                              <div className="flex-1">
+                                <h3 className="text-lg font-bold text-white mb-2">Upload Selfie Photo</h3>
+                                <p className="text-gray-300 text-sm mb-4">
+                                  Take a clear selfie photo holding your ID document next to your face. Make sure both your face and ID are clearly visible.
+                                </p>
+
+                                <ul className="space-y-2 mb-6 text-sm text-gray-400">
+                                  <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-[#f0b90b]" />
+                                    Hold your ID document next to your face
+                                  </li>
+                                  <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-[#f0b90b]" />
+                                    Ensure good lighting and clear visibility
+                                  </li>
+                                  <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-[#f0b90b]" />
+                                    Face and ID must be in the same photo
+                                  </li>
+                                  <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-[#f0b90b]" />
+                                    File must be JPG, PNG or PDF (max 10MB)
+                                  </li>
+                                </ul>
+
+                                <div className="space-y-4">
+                                  <div className="border-2 border-dashed border-gray-700 rounded-xl p-8 hover:border-[#f0b90b] transition-colors bg-[#0b0e11]">
+                                    <input
+                                      type="file"
+                                      id="selfie-upload"
+                                      accept="image/*"
+                                      onChange={(e) => handleFileUpload('selfie', e)}
+                                      className="hidden"
+                                    />
+                                    <label htmlFor="selfie-upload" className="cursor-pointer flex flex-col items-center">
+                                      <Upload className="w-12 h-12 text-gray-400 mb-3" />
+                                      <span className="text-white font-semibold mb-1">
+                                        {uploadedFiles.selfie || uploadedDocuments.selfie ? 'Change Selfie' : 'Upload Selfie'}
+                                      </span>
+                                      <span className="text-gray-400 text-sm">Click to select file</span>
+                                      {(uploadedFiles.selfie || uploadedDocuments.selfie) && (
+                                        <div className="mt-3 flex items-center gap-2 text-emerald-400">
+                                          <CheckCircle2 className="w-5 h-5" />
+                                          <span className="text-sm font-semibold">
+                                            {uploadedFiles.selfie ? uploadedFiles.selfie.name : 'Selfie uploaded'}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </label>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
 
-                      <div className="flex gap-4 mt-8">
-                        <button
-                          onClick={() => setCurrentStep(3)}
-                          disabled={submitting || (existingKYC?.kyc_status === 'pending' && existingKYC?.kyc_level >= 3)}
-                          className="px-8 py-3 bg-[#0b0e11] border border-gray-700 hover:border-gray-600 text-white font-semibold rounded-xl transition-all disabled:opacity-50"
-                        >
-                          Back
-                        </button>
-                        <button
-                          onClick={submitFinalVerification}
-                          disabled={submitting || (existingKYC?.kyc_status === 'pending' && existingKYC?.kyc_level >= 3)}
-                          className="flex-1 px-8 py-3 bg-[#f0b90b] hover:bg-[#f8d12f] text-black font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {existingKYC?.kyc_status === 'pending' && existingKYC?.kyc_level >= 3
-                            ? 'Submitted - Awaiting Review'
-                            : submitting ? 'Submitting...' : 'Complete & Get Advanced Verification'
-                          }
-                        </button>
-                      </div>
+                          <div className="bg-blue-900/20 border border-blue-800/30 rounded-xl p-4">
+                            <div className="flex items-start gap-3">
+                              <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                              <div className="text-sm text-gray-300">
+                                <p className="font-semibold text-white mb-1">Selfie Requirements:</p>
+                                <ul className="space-y-1 list-disc list-inside">
+                                  <li>Hold your ID document next to your face</li>
+                                  <li>Ensure both face and ID are clearly visible</li>
+                                  <li>Use good lighting without glare or shadows</li>
+                                  <li>Face the camera directly</li>
+                                  <li>Remove sunglasses or anything covering your face</li>
+                                </ul>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-4 mt-8">
+                            <button
+                              onClick={() => setCurrentStep(3)}
+                              disabled={submitting}
+                              className="px-8 py-3 bg-[#0b0e11] border border-gray-700 hover:border-gray-600 text-white font-semibold rounded-xl transition-all disabled:opacity-50"
+                            >
+                              Back
+                            </button>
+                            <button
+                              onClick={submitSelfieVerification}
+                              disabled={submitting || (!uploadedFiles.selfie && !uploadedDocuments.selfie)}
+                              className="flex-1 px-8 py-3 bg-[#f0b90b] hover:bg-[#f8d12f] text-black font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {submitting ? 'Submitting...' : 'Submit for Verification'}
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
                 </>
