@@ -206,7 +206,7 @@ export default function NotificationsPanel({ isOpen, onClose }: NotificationsPan
                         {notification.title}
                       </h4>
                     </div>
-                    <p className="text-gray-400 text-xs mt-1 line-clamp-2">
+                    <p className="text-gray-400 text-xs mt-1 whitespace-pre-wrap">
                       {notification.message}
                     </p>
                     <div className="flex items-center justify-between mt-2">
