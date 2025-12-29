@@ -401,6 +401,22 @@ function ActiveCopyTrading() {
         withdrawAmount = currentBalance - platformFee;
       }
 
+      // Use the transfer_between_wallets function to properly handle both wallets
+      const { data: transferData, error: transferError } = await supabase.rpc(
+        'transfer_between_wallets',
+        {
+          user_id_param: user.id,
+          currency_param: 'USDT',
+          amount_param: withdrawAmount,
+          from_wallet_type_param: 'copy',
+          to_wallet_type_param: 'main'
+        }
+      );
+
+      if (transferError) throw transferError;
+      if (!transferData?.success) throw new Error(transferData?.error || 'Transfer failed');
+
+      // Update copy relationship status
       const { error: copyError } = await supabase
         .from('copy_relationships')
         .update({
@@ -410,40 +426,6 @@ function ActiveCopyTrading() {
         .eq('id', selectedCopy.id);
 
       if (copyError) throw copyError;
-
-      const { data: walletData, error: walletError } = await supabase
-        .from('wallets')
-        .select('balance')
-        .eq('user_id', user.id)
-        .eq('currency', 'USDT')
-        .eq('wallet_type', 'main')
-        .maybeSingle();
-
-      if (walletError) throw walletError;
-
-      const newBalance = (parseFloat(walletData?.balance || '0') + withdrawAmount).toString();
-
-      const { error: updateError } = await supabase
-        .from('wallets')
-        .update({ balance: newBalance })
-        .eq('user_id', user.id)
-        .eq('currency', 'USDT')
-        .eq('wallet_type', 'main');
-
-      if (updateError) throw updateError;
-
-      const { error: txError } = await supabase
-        .from('transactions')
-        .insert({
-          user_id: user.id,
-          type: 'copy_withdrawal',
-          currency: 'USDT',
-          amount: withdrawAmount.toString(),
-          status: 'completed',
-          description: `Withdrawn from copying ${selectedCopy.trader.name}. Initial: ${initialBalance} USDT, Final: ${currentBalance.toFixed(2)} USDT, Profit: ${profit.toFixed(2)} USDT, Platform Fee (20%): ${platformFee.toFixed(2)} USDT, Net Received: ${withdrawAmount.toFixed(2)} USDT`
-        });
-
-      if (txError) console.error('Transaction log error:', txError);
 
       showSuccess(`Successfully withdrawn ${withdrawAmount.toFixed(2)} USDT to your wallet${platformFee > 0 ? `. Platform fee: ${platformFee.toFixed(2)} USDT (20% of profits)` : ''}`);
       setShowWithdrawModal(false);
