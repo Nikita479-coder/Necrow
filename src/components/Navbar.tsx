@@ -195,7 +195,11 @@ export default function Navbar() {
                 )}
               </button>
               {showNotifications && (
-                <NotificationsPanel isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
+                <NotificationsPanel
+                  isOpen={showNotifications}
+                  onClose={() => setShowNotifications(false)}
+                  onNavigate={navigateTo}
+                />
               )}
             </div>
 
