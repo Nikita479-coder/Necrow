@@ -250,6 +250,8 @@ function TradingPanel({ pair }: TradingPanelProps) {
       const slPrice = convertToPrice(stopLoss, slMode, false);
       const tpPrice = convertToPrice(takeProfit, tpMode, true);
 
+      const currentMarketPrice = priceData ? parseFloat(priceData.price) : null;
+
       const { data, error } = await supabase.rpc('place_futures_order', {
         p_user_id: user.id,
         p_pair: pair,
@@ -261,7 +263,8 @@ function TradingPanel({ pair }: TradingPanelProps) {
         p_price: null,
         p_stop_loss: slPrice,
         p_take_profit: tpPrice,
-        p_reduce_only: reduceOnly
+        p_reduce_only: reduceOnly,
+        p_market_price: currentMarketPrice
       });
 
       if (error) {
