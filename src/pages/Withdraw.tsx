@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Navbar from '../components/Navbar';
 import { ArrowRight, AlertTriangle, Shield, Clock, CheckCircle2, Search, Info, Send, Users, Zap } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -86,6 +86,18 @@ function Withdraw() {
       loadWalletBalances();
     }
   }, [user]);
+
+  const isExternalFormValid = useMemo(() => {
+    const addressValid = address.trim().length >= 10;
+    const amountValid = parseFloat(amount) > 0;
+    return addressValid && amountValid;
+  }, [address, amount]);
+
+  const isInternalFormValid = useMemo(() => {
+    const recipientValid = !!selectedRecipient;
+    const amountValid = parseFloat(transferAmount) > 0;
+    return recipientValid && amountValid;
+  }, [selectedRecipient, transferAmount]);
 
   const loadWalletBalances = async () => {
     if (!user) return;
@@ -594,7 +606,7 @@ function Withdraw() {
 
                 <button
                   onClick={handleWithdraw}
-                  disabled={!address || !amount || parseFloat(amount) <= 0 || isWithdrawing}
+                  disabled={!isExternalFormValid || isWithdrawing}
                   className="w-full bg-gradient-to-r from-[#f0b90b] to-[#f8d12f] hover:from-[#f8d12f] hover:to-[#f0b90b] disabled:from-gray-700 disabled:to-gray-700 disabled:cursor-not-allowed text-black disabled:text-gray-500 font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#f0b90b]/20 disabled:shadow-none"
                 >
                   {isWithdrawing ? (
@@ -901,7 +913,7 @@ function Withdraw() {
 
                   <button
                     onClick={handleTransferToUser}
-                    disabled={!selectedRecipient || !transferAmount || parseFloat(transferAmount) <= 0 || isTransferring}
+                    disabled={!isInternalFormValid || isTransferring}
                     className="w-full bg-gradient-to-r from-[#0ecb81] to-[#0ecb81]/80 hover:from-[#0ecb81]/90 hover:to-[#0ecb81]/70 disabled:from-gray-700 disabled:to-gray-700 disabled:cursor-not-allowed text-black disabled:text-gray-500 font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#0ecb81]/20 disabled:shadow-none"
                   >
                     {isTransferring ? (
