@@ -192,15 +192,10 @@ export default function TicketDetailModal({ ticketId, onClose, onUpdate }: Ticke
   const markMessagesAsRead = async () => {
     if (!user) return;
 
-    const unreadMessages = messages
-      .filter(m => m.sender_type === 'admin' && !m.read_at)
-      .map(m => m.id);
+    const hasUnread = messages.some(m => m.sender_type === 'admin' && !m.read_at);
 
-    if (unreadMessages.length > 0) {
-      await supabase
-        .from('support_messages')
-        .update({ read_at: new Date().toISOString() })
-        .in('id', unreadMessages);
+    if (hasUnread) {
+      await supabase.rpc('mark_admin_messages_read', { p_ticket_id: ticketId });
     }
   };
 
