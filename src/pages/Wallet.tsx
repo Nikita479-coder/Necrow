@@ -1081,9 +1081,11 @@ function Wallet() {
                             </div>
                           </div>
                           <div>
-                            <div className="text-xs text-gray-400 mb-1">Profits</div>
-                            <div className="text-sm sm:text-lg font-bold text-emerald-400">
-                              +${bonus.realized_profits.toFixed(2)}
+                            <div className="text-xs text-gray-400 mb-1">Net P&L</div>
+                            <div className={`text-sm sm:text-lg font-bold ${
+                              (bonus.current_amount - bonus.original_amount) >= 0 ? 'text-emerald-400' : 'text-red-400'
+                            }`}>
+                              {(bonus.current_amount - bonus.original_amount) >= 0 ? '+' : ''}${(bonus.current_amount - bonus.original_amount).toFixed(2)}
                             </div>
                           </div>
                           <div>

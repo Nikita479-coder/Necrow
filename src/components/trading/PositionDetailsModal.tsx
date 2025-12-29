@@ -64,7 +64,7 @@ function PositionDetailsModal({ position, onClose }: PositionDetailsModalProps) 
   const isProfitable = pnl >= 0;
 
   const totalOpeningFee = feeDetails
-    .filter(f => f.fee_type === 'futures_open')
+    .filter(f => f.fee_type === 'futures_open' || f.fee_type === 'taker')
     .reduce((sum, f) => sum + parseFloat(f.fee_amount.toString()), 0);
 
   const totalClosingFee = feeDetails
@@ -72,18 +72,18 @@ function PositionDetailsModal({ position, onClose }: PositionDetailsModalProps) 
     .reduce((sum, f) => sum + parseFloat(f.fee_amount.toString()), 0);
 
   const totalFundingFees = feeDetails
-    .filter(f => f.fee_type === 'funding_payment')
+    .filter(f => f.fee_type === 'funding_payment' || f.fee_type === 'overnight_fee')
     .reduce((sum, f) => sum + parseFloat(f.fee_amount.toString()), 0);
 
   const totalFeesUSDT = totalOpeningFee + totalClosingFee + Math.abs(totalFundingFees);
 
-  const marginInBase = position.margin_allocated / position.entry_price;
-  const openingFeeInBase = (totalOpeningFee / position.margin_allocated) * marginInBase;
-  const closingFeeInBase = (totalClosingFee / position.margin_allocated) * marginInBase;
-  const fundingFeesInBase = (Math.abs(totalFundingFees) / position.margin_allocated) * marginInBase;
-  const totalFeesInBase = (totalFeesUSDT / position.margin_allocated) * marginInBase;
+  const conversionPrice = exitPrice || position.mark_price || position.entry_price;
+  const openingFeeInBase = totalOpeningFee / position.entry_price;
+  const closingFeeInBase = totalClosingFee / conversionPrice;
+  const fundingFeesInBase = Math.abs(totalFundingFees) / conversionPrice;
+  const totalFeesInBase = totalFeesUSDT / conversionPrice;
 
-  const pnlInBase = (Math.abs(pnl) / (exitPrice || position.mark_price));
+  const pnlInBase = Math.abs(pnl) / conversionPrice;
 
   const downloadImage = async () => {
     const slide = document.getElementById('share-slide');

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageSquare, Clock, CheckCircle, User, Search, Filter, Wifi, WifiOff } from 'lucide-react';
+import { MessageSquare, Clock, CheckCircle, User, Search, Filter, Wifi, WifiOff, Eye, EyeOff } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -18,6 +18,7 @@ interface Ticket {
   category: { name: string; color_code: string } | null;
   user_profile: { username: string; email: string } | null;
   unread_count?: number;
+  admin_unread_by_user?: number;
 }
 
 interface Message {
@@ -26,6 +27,7 @@ interface Message {
   sender_type: 'user' | 'admin';
   message: string;
   created_at: string;
+  read_at: string | null;
   sender_profile?: { username: string };
   pending?: boolean;
   failed?: boolean;
@@ -100,6 +102,7 @@ export default function AdminSupport() {
           username: ticket.user_username || 'Unknown',
           email: ticket.user_email || 'Unknown',
         },
+        admin_unread_by_user: ticket.admin_unread_by_user || 0,
       }));
 
       setTickets(ticketsWithProfiles);
@@ -114,37 +117,22 @@ export default function AdminSupport() {
     if (!selectedTicket) return;
 
     try {
-      const { data, error } = await supabase
-        .from('support_messages')
-        .select('*')
-        .eq('ticket_id', selectedTicket)
-        .order('created_at', { ascending: true });
+      const { data, error } = await supabase.rpc('admin_get_ticket_messages', {
+        p_ticket_id: selectedTicket
+      });
 
       if (error) throw error;
 
-      const messagesWithProfiles = await Promise.all(
-        (data || []).map(async (msg) => {
-          if (msg.sender_type === 'user') {
-            const { data: profileData } = await supabase
-              .from('user_profiles')
-              .select('username')
-              .eq('id', msg.sender_id)
-              .single();
-
-            return { ...msg, sender_profile: { username: profileData?.username || 'User' } };
-          }
-          return { ...msg, sender_profile: { username: 'Support' } };
-        })
-      );
+      const messagesWithProfiles = (data || []).map((msg: any) => ({
+        ...msg,
+        sender_profile: { username: msg.sender_username || (msg.sender_type === 'admin' ? 'Support' : 'User') }
+      }));
 
       setMessages(messagesWithProfiles);
 
-      await supabase
-        .from('support_messages')
-        .update({ read_at: new Date().toISOString() })
-        .eq('ticket_id', selectedTicket)
-        .eq('sender_type', 'user')
-        .is('read_at', null);
+      await supabase.rpc('mark_user_messages_read', { p_ticket_id: selectedTicket });
+
+      loadTickets();
     } catch (error) {
       console.error('Error loading messages:', error);
     }
@@ -571,11 +559,18 @@ export default function AdminSupport() {
                       <p className="text-xs text-gray-400">{ticket.user_profile?.username}</p>
                       <p className="text-xs text-gray-500">{ticket.user_profile?.email}</p>
                     </div>
-                    {ticket.unread_count && ticket.unread_count > 0 && (
-                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-500/20 text-blue-400 animate-pulse">
-                        {ticket.unread_count}
-                      </span>
-                    )}
+                    <div className="flex flex-col items-end gap-1">
+                      {ticket.unread_count && ticket.unread_count > 0 && (
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-500/20 text-blue-400 animate-pulse">
+                          {ticket.unread_count} new
+                        </span>
+                      )}
+                      {ticket.admin_unread_by_user && ticket.admin_unread_by_user > 0 && (
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-orange-500/20 text-orange-400">
+                          {ticket.admin_unread_by_user} unseen
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(ticket.status)}`}>
@@ -667,7 +662,7 @@ export default function AdminSupport() {
                             </button>
                           )}
                         </div>
-                        <div className={`text-xs text-gray-500 mt-1 flex items-center gap-1 ${msg.sender_type === 'admin' ? 'justify-end' : ''}`}>
+                        <div className={`text-xs text-gray-500 mt-1 flex items-center gap-1.5 ${msg.sender_type === 'admin' ? 'justify-end' : ''}`}>
                           {msg.pending ? (
                             <span>Sending...</span>
                           ) : msg.failed ? (
@@ -675,7 +670,19 @@ export default function AdminSupport() {
                           ) : (
                             <>
                               {new Date(msg.created_at).toLocaleString()}
-                              {msg.sender_type === 'admin' && <CheckCircle className="w-3 h-3 text-green-500" />}
+                              {msg.sender_type === 'admin' && (
+                                msg.read_at ? (
+                                  <span className="flex items-center gap-1 text-green-500" title={`Seen at ${new Date(msg.read_at).toLocaleString()}`}>
+                                    <Eye className="w-3 h-3" />
+                                    <span className="text-[10px]">Seen</span>
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center gap-1 text-orange-400" title="Not seen by user">
+                                    <EyeOff className="w-3 h-3" />
+                                    <span className="text-[10px]">Not seen</span>
+                                  </span>
+                                )
+                              )}
                             </>
                           )}
                         </div>

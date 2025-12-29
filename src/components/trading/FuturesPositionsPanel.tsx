@@ -24,6 +24,7 @@ interface Position {
   take_profit: number | null;
   margin_allocated: number;
   overnight_fees_accrued: number;
+  cumulative_fees: number;
   margin_from_locked_bonus: number;
 }
 
@@ -150,7 +151,7 @@ function FuturesPositionsPanel() {
     try {
       const { data, error } = await supabase
         .from('futures_positions')
-        .select('position_id, user_id, pair, side, entry_price, mark_price, quantity, leverage, margin_mode, unrealized_pnl, liquidation_price, stop_loss, take_profit, margin_allocated, overnight_fees_accrued, opened_at, status, margin_from_locked_bonus')
+        .select('position_id, user_id, pair, side, entry_price, mark_price, quantity, leverage, margin_mode, unrealized_pnl, liquidation_price, stop_loss, take_profit, margin_allocated, overnight_fees_accrued, cumulative_fees, opened_at, status, margin_from_locked_bonus')
         .eq('user_id', user.id)
         .eq('status', 'open')
         .order('opened_at', { ascending: false });
@@ -294,14 +295,17 @@ function FuturesPositionsPanel() {
     return priceData ? parseFloat(priceData.price) : 0;
   };
 
-  const calculateRealTimePnL = (position: Position, currentPrice: number): number => {
-    if (currentPrice === 0) return position.unrealized_pnl;
+  const calculateRealTimePnL = (position: Position, currentPrice: number, includeFees: boolean = true): number => {
+    const totalFees = position.cumulative_fees || position.overnight_fees_accrued || 0;
+
+    if (currentPrice === 0) return position.unrealized_pnl - (includeFees ? totalFees : 0);
 
     const priceDiff = position.side === 'long'
       ? currentPrice - position.entry_price
       : position.entry_price - currentPrice;
 
-    return priceDiff * position.quantity;
+    const pricePnL = priceDiff * position.quantity;
+    return includeFees ? pricePnL - totalFees : pricePnL;
   };
 
   const getLiquidationDistance = (side: string, markPrice: number, liqPrice: number): number => {
@@ -344,9 +348,9 @@ function FuturesPositionsPanel() {
               <th className="text-right px-4 py-2 font-medium">Mark</th>
               <th className="text-right px-4 py-2 font-medium">Liq. Price</th>
               <th className="text-right px-4 py-2 font-medium">Margin</th>
-              <th className="text-right px-4 py-2 font-medium">PnL (USDT)</th>
+              <th className="text-right px-4 py-2 font-medium">Net PnL</th>
               <th className="text-right px-4 py-2 font-medium">ROE</th>
-              <th className="text-right px-4 py-2 font-medium">Fees</th>
+              <th className="text-right px-4 py-2 font-medium">Fees Paid</th>
               <th className="text-center px-4 py-2 font-medium">TP/SL</th>
               <th className="text-center px-4 py-2 font-medium">Actions</th>
             </tr>
@@ -417,7 +421,7 @@ function FuturesPositionsPanel() {
                     {roe.toFixed(2)}%
                   </td>
                   <td className="px-4 py-3 text-right text-orange-400">
-                    -${(position.overnight_fees_accrued || 0).toFixed(2)}
+                    -${(position.cumulative_fees || position.overnight_fees_accrued || 0).toFixed(2)}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex flex-col gap-1">
