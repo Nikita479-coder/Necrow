@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, AlertCircle, Wallet } from 'lucide-react';
+import { X, AlertCircle, Wallet, ArrowDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '../App';
@@ -30,6 +30,11 @@ export default function CopyTradingModal({
   const [availableBalance, setAvailableBalance] = useState<number | null>(null);
   const [mainWalletBalance, setMainWalletBalance] = useState<number>(0);
   const [loadingBalance, setLoadingBalance] = useState(true);
+  const [transferAmount, setTransferAmount] = useState('');
+  const [transferring, setTransferring] = useState(false);
+  const [transferError, setTransferError] = useState('');
+  const [totalCopyBalance, setTotalCopyBalance] = useState(0);
+  const [allocatedBalance, setAllocatedBalance] = useState(0);
 
   useEffect(() => {
     const fetchBalance = async () => {
@@ -70,6 +75,7 @@ export default function CopyTradingModal({
           }
 
           const totalBalance = parseFloat(walletData?.balance || '0');
+          setTotalCopyBalance(totalBalance);
 
           // Fetch all active copy relationships to calculate allocated amounts
           const { data: activeRelationships, error: relError } = await supabase
@@ -82,6 +88,7 @@ export default function CopyTradingModal({
           if (relError) {
             console.error('Error fetching active relationships:', relError);
             setAvailableBalance(totalBalance);
+            setAllocatedBalance(0);
             return;
           }
 
@@ -90,6 +97,8 @@ export default function CopyTradingModal({
             (sum, rel) => sum + parseFloat(rel.initial_balance || '0'),
             0
           ) || 0;
+
+          setAllocatedBalance(totalAllocated);
 
           // Available balance = total balance - already allocated amounts
           const available = Math.max(0, totalBalance - totalAllocated);
@@ -105,6 +114,91 @@ export default function CopyTradingModal({
 
     fetchBalance();
   }, [user, isOpen, isMock]);
+
+  const handleQuickTransfer = async () => {
+    if (!user) return;
+
+    const amount = parseFloat(transferAmount);
+    if (isNaN(amount) || amount <= 0) {
+      setTransferError('Please enter a valid amount');
+      return;
+    }
+
+    if (amount > mainWalletBalance) {
+      setTransferError('Insufficient balance in main wallet');
+      return;
+    }
+
+    setTransferring(true);
+    setTransferError('');
+
+    try {
+      const { data, error: rpcError } = await supabase.rpc('transfer_between_wallets', {
+        user_id_param: user.id,
+        currency_param: 'USDT',
+        amount_param: amount,
+        from_wallet_type_param: 'main',
+        to_wallet_type_param: 'copy'
+      });
+
+      if (rpcError) throw rpcError;
+
+      if (data && !data.success) {
+        setTransferError(data.error || 'Transfer failed');
+        return;
+      }
+
+      // Refresh balances
+      setTransferAmount('');
+      const fetchBalance = async () => {
+        const { data: mainWallet } = await supabase
+          .from('wallets')
+          .select('balance')
+          .eq('user_id', user.id)
+          .eq('wallet_type', 'main')
+          .eq('currency', 'USDT')
+          .maybeSingle();
+
+        const mainBalance = parseFloat(mainWallet?.balance || '0');
+        setMainWalletBalance(mainBalance);
+
+        const { data: walletData } = await supabase
+          .from('wallets')
+          .select('balance')
+          .eq('user_id', user.id)
+          .eq('wallet_type', 'copy')
+          .eq('currency', 'USDT')
+          .maybeSingle();
+
+        const totalBalance = parseFloat(walletData?.balance || '0');
+        setTotalCopyBalance(totalBalance);
+
+        const { data: activeRelationships } = await supabase
+          .from('copy_relationships')
+          .select('initial_balance')
+          .eq('follower_id', user.id)
+          .eq('is_active', true)
+          .eq('is_mock', false);
+
+        const totalAllocated = activeRelationships?.reduce(
+          (sum, rel) => sum + parseFloat(rel.initial_balance || '0'),
+          0
+        ) || 0;
+
+        setAllocatedBalance(totalAllocated);
+
+        const available = Math.max(0, totalBalance - totalAllocated);
+        setAvailableBalance(available);
+      };
+
+      await fetchBalance();
+    } catch (err: any) {
+      console.error('Transfer error:', err);
+      setTransferError(err.message || 'Failed to transfer funds');
+    } finally {
+      setTransferring(false);
+    }
+  };
 
   const handleStartCopy = async () => {
     if (!user) return;
@@ -183,7 +277,7 @@ export default function CopyTradingModal({
             <div className="flex items-center gap-2">
               <Wallet className="w-4 h-4 text-[#848e9c]" />
               <span className="text-[#848e9c] text-sm">
-                {isMock ? 'Demo Balance' : 'Copy Wallet Balance'}
+                {isMock ? 'Demo Balance' : 'Available for New Traders'}
               </span>
             </div>
             <div className="text-right">
@@ -204,39 +298,111 @@ export default function CopyTradingModal({
               )}
             </div>
           </div>
-          {!isMock && !loadingBalance && mainWalletBalance > 0 && (
-            <div className="flex items-center justify-between pt-2 border-t border-[#2b3139]">
-              <span className="text-[#848e9c] text-xs">Main Wallet</span>
-              <span className="text-[#848e9c] text-xs font-medium">
-                {mainWalletBalance.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2
-                })} USDT
-              </span>
-            </div>
+          {!isMock && !loadingBalance && (
+            <>
+              {totalCopyBalance > 0 && (
+                <div className="flex items-center justify-between pt-2 border-t border-[#2b3139]">
+                  <span className="text-[#848e9c] text-xs">Total Copy Wallet</span>
+                  <span className="text-[#848e9c] text-xs font-medium">
+                    {totalCopyBalance.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2
+                    })} USDT
+                  </span>
+                </div>
+              )}
+              {allocatedBalance > 0 && (
+                <div className="flex items-center justify-between pt-2 border-t border-[#2b3139]">
+                  <span className="text-[#848e9c] text-xs">Already Allocated</span>
+                  <span className="text-[#f6465d] text-xs font-medium">
+                    -{allocatedBalance.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2
+                    })} USDT
+                  </span>
+                </div>
+              )}
+              {mainWalletBalance > 0 && (
+                <div className="flex items-center justify-between pt-2 border-t border-[#2b3139]">
+                  <span className="text-[#848e9c] text-xs">Main Wallet</span>
+                  <span className="text-[#0ecb81] text-xs font-medium">
+                    {mainWalletBalance.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2
+                    })} USDT
+                  </span>
+                </div>
+              )}
+            </>
           )}
         </div>
 
-        {!isMock && !loadingBalance && availableBalance === 0 && mainWalletBalance > 0 && (
-          <div className="bg-[#fcd535]/10 border border-[#fcd535]/30 rounded-lg p-3 mb-4">
-            <div className="flex items-start gap-2 mb-2">
+        {!isMock && !loadingBalance && availableBalance === 0 && (totalCopyBalance > 0 || mainWalletBalance > 0) && (
+          <div className="bg-[#fcd535]/10 border border-[#fcd535]/30 rounded-lg p-4 mb-4">
+            <div className="flex items-start gap-2 mb-3">
               <AlertCircle className="w-4 h-4 text-[#fcd535] flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="text-[#fcd535] text-sm font-medium">Transfer Funds Required</p>
+                <p className="text-[#fcd535] text-sm font-medium">
+                  {totalCopyBalance > 0 ? 'All Funds Already Allocated' : 'Transfer Funds Required'}
+                </p>
                 <p className="text-[#fcd535]/80 text-xs mt-1">
-                  You have {mainWalletBalance.toFixed(2)} USDT in your main wallet. Transfer funds to your copy wallet to start copy trading.
+                  {totalCopyBalance > 0
+                    ? 'Your copy wallet funds are allocated to other traders. Transfer more from your main wallet to copy additional traders.'
+                    : 'Transfer funds from your main wallet to start copy trading'
+                  }
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => {
-                onClose();
-                navigateTo('wallet');
-              }}
-              className="w-full bg-[#fcd535] hover:bg-[#f0b90b] text-black font-medium py-2 rounded text-sm transition-colors"
-            >
-              Go to Wallet Transfer
-            </button>
+
+            <div className="space-y-3">
+              <div className="bg-[#0b0e11] rounded-lg p-3 space-y-2">
+                <div className="flex items-center justify-center gap-2 text-sm">
+                  <div className="text-center">
+                    <div className="text-[#848e9c] text-xs">Main Wallet</div>
+                    <div className="text-white font-medium">{mainWalletBalance.toFixed(2)} USDT</div>
+                  </div>
+                  <ArrowDown className="w-4 h-4 text-[#fcd535]" />
+                  <div className="text-center">
+                    <div className="text-[#848e9c] text-xs">Copy Wallet</div>
+                    <div className="text-white font-medium">{totalCopyBalance.toFixed(2)} USDT</div>
+                    {allocatedBalance > 0 && (
+                      <div className="text-[#f6465d] text-[10px]">
+                        ({allocatedBalance.toFixed(2)} allocated)
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={transferAmount}
+                    onChange={(e) => setTransferAmount(e.target.value)}
+                    placeholder="Enter amount to transfer"
+                    className="w-full bg-[#0b0e11] border border-[#2b3139] rounded-lg px-4 py-2.5 text-white text-sm outline-none focus:border-[#fcd535] transition-colors"
+                  />
+                  <button
+                    onClick={() => setTransferAmount(mainWalletBalance.toString())}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#2b3139] hover:bg-[#3b4149] text-[#fcd535] text-xs font-medium px-3 py-1 rounded transition-colors"
+                  >
+                    MAX
+                  </button>
+                </div>
+                {transferError && (
+                  <p className="text-[#f6465d] text-xs mt-1">{transferError}</p>
+                )}
+              </div>
+
+              <button
+                onClick={handleQuickTransfer}
+                disabled={transferring || !transferAmount || parseFloat(transferAmount) <= 0}
+                className="w-full bg-[#fcd535] hover:bg-[#f0b90b] text-black font-medium py-2.5 rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {transferring ? 'Transferring...' : 'Transfer to Copy Wallet'}
+              </button>
+            </div>
           </div>
         )}
 
