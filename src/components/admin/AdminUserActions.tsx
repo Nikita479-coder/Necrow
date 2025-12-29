@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Shield, Ban, CheckCircle, XCircle, DollarSign, AlertTriangle, Award } from 'lucide-react';
+import { Shield, Ban, CheckCircle, XCircle, DollarSign, AlertTriangle, Award, RefreshCw } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../hooks/useToast';
 import { loggingService } from '../../services/loggingService';
@@ -17,6 +17,7 @@ interface Props {
 export default function AdminUserActions({ userId, userData, onRefresh }: Props) {
   const [loading, setLoading] = useState(false);
   const [showBalanceModal, setShowBalanceModal] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const { showToast } = useToast();
 
   const updateKYCStatus = async (status: string, level?: number) => {
@@ -207,6 +208,158 @@ export default function AdminUserActions({ userId, userData, onRefresh }: Props)
     }
   };
 
+  const resetUserAccount = async () => {
+    setLoading(true);
+    setShowResetConfirm(false);
+
+    try {
+      showToast('Resetting account...', 'info');
+
+      await supabase.from('futures_positions').delete().eq('user_id', userId);
+      await supabase.from('trades').delete().eq('user_id', userId);
+      await supabase.from('trader_trades').delete().eq('trader_id', userId);
+      await supabase.from('copy_trade_allocations').delete().eq('follower_id', userId);
+      await supabase.from('pending_copy_trades').delete().eq('follower_id', userId);
+      await supabase.from('staking_positions').delete().eq('user_id', userId);
+      await supabase.from('swap_orders').delete().eq('user_id', userId);
+      await supabase.from('copy_relationships')
+        .update({ active: false, sync_status: 'stopped', updated_at: new Date().toISOString() })
+        .eq('follower_id', userId);
+      await supabase.from('transactions').delete().eq('user_id', userId);
+      await supabase.from('referral_commissions').delete().eq('referrer_id', userId);
+      await supabase.from('affiliate_commissions').delete().eq('affiliate_id', userId);
+      await supabase.from('locked_bonuses').delete().eq('user_id', userId);
+      await supabase.from('locked_withdrawal_balances').delete().eq('user_id', userId);
+      await supabase.from('user_rewards').delete().eq('user_id', userId);
+      await supabase.from('notifications').delete().eq('user_id', userId);
+      await supabase.from('user_fee_rebates').delete().eq('user_id', userId);
+      await supabase.from('shark_card_applications').delete().eq('user_id', userId);
+      await supabase.from('card_transactions').delete().eq('user_id', userId);
+
+      await supabase.from('wallets')
+        .update({
+          balance: 0,
+          available_balance: 0,
+          total_deposited: 0,
+          total_withdrawn: 0,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId);
+
+      await supabase.from('futures_margin_wallets')
+        .update({
+          balance: 0,
+          available_balance: 0,
+          used_margin: 0,
+          locked_bonus_balance: 0,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId);
+
+      const { count: referralCount } = await supabase
+        .from('user_profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('referred_by', userId);
+
+      await supabase.from('referral_stats')
+        .update({
+          total_commission: 0,
+          total_volume_30d: 0,
+          total_volume_all_time: 0,
+          vip_level: 1,
+          total_referrals: referralCount || 0,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId);
+
+      const bonusAmount = 20;
+      let bonusTypeId;
+      const { data: bonusType } = await supabase
+        .from('bonus_types')
+        .select('id')
+        .eq('name', 'Account Reset Bonus')
+        .maybeSingle();
+
+      if (bonusType) {
+        bonusTypeId = bonusType.id;
+      } else {
+        const { data: newBonusType } = await supabase
+          .from('bonus_types')
+          .insert({
+            name: 'Account Reset Bonus',
+            description: 'Bonus awarded after account reset',
+            amount: bonusAmount,
+            bonus_percentage: 0,
+            is_active: true,
+          })
+          .select()
+          .single();
+        bonusTypeId = newBonusType?.id;
+      }
+
+      const { data: mainWallet } = await supabase
+        .from('wallets')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('wallet_type', 'main')
+        .single();
+
+      if (mainWallet && bonusTypeId) {
+        await supabase.from('locked_bonuses').insert({
+          user_id: userId,
+          bonus_type_id: bonusTypeId,
+          amount: bonusAmount,
+          locked_amount: bonusAmount,
+          status: 'active',
+        });
+
+        await supabase.from('wallets')
+          .update({
+            balance: bonusAmount,
+            available_balance: bonusAmount,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', mainWallet.id);
+
+        await supabase.from('transactions').insert({
+          user_id: userId,
+          wallet_id: mainWallet.id,
+          transaction_type: 'bonus',
+          amount: bonusAmount,
+          status: 'completed',
+          details: { description: 'Account Reset Bonus', bonus_amount: bonusAmount },
+        });
+
+        await supabase.from('notifications').insert({
+          user_id: userId,
+          title: 'Account Reset Complete',
+          message: `Your account has been reset and you have received a $${bonusAmount} bonus.`,
+          notification_type: 'bonus',
+          read: false,
+        });
+      }
+
+      await loggingService.logAdminActivity({
+        action_type: 'reset_account',
+        action_description: `Reset account for ${userData?.profile?.full_name || userData?.authUser?.email}`,
+        target_user_id: userId,
+        metadata: {
+          kept_kyc: true,
+          bonus_amount: bonusAmount,
+          reset_at: new Date().toISOString()
+        }
+      });
+
+      showToast('Account reset successfully with $20 bonus', 'success');
+      onRefresh();
+    } catch (error) {
+      console.error('Reset account error:', error);
+      showToast('Failed to reset account', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -280,7 +433,7 @@ export default function AdminUserActions({ userId, userData, onRefresh }: Props)
         <h2 className="text-xl font-bold text-white mb-4">Account Management</h2>
         <div className="bg-[#0b0e11] rounded-xl p-6 border border-gray-800">
           <p className="text-gray-400 mb-4">Manage user's account status</p>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <button
               onClick={() => toggleAccountStatus(true)}
               disabled={loading}
@@ -297,6 +450,19 @@ export default function AdminUserActions({ userId, userData, onRefresh }: Props)
               <CheckCircle className="w-5 h-5" />
               <span>Activate Account</span>
             </button>
+            <button
+              onClick={() => setShowResetConfirm(true)}
+              disabled={loading}
+              className="flex items-center gap-2 px-6 py-3 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded-lg border border-orange-500/30 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className="w-5 h-5" />
+              <span>Reset Account</span>
+            </button>
+          </div>
+          <div className="mt-4 pt-4 border-t border-gray-700">
+            <p className="text-sm text-gray-500">
+              Reset Account: Removes all trades, transactions, and balances. KYC status is preserved. User receives a fresh $20 bonus.
+            </p>
           </div>
         </div>
       </div>
@@ -326,6 +492,51 @@ export default function AdminUserActions({ userId, userData, onRefresh }: Props)
         userName={userData?.full_name || userData?.email || 'User'}
         onSuccess={onRefresh}
       />
+
+      {showResetConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1a1d24] rounded-xl border border-gray-800 max-w-md w-full p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-12 h-12 bg-orange-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-6 h-6 text-orange-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white mb-2">Reset User Account?</h3>
+                <p className="text-gray-400 text-sm">
+                  This action will permanently delete:
+                </p>
+                <ul className="mt-2 text-sm text-gray-400 space-y-1 list-disc list-inside">
+                  <li>All trading positions and history</li>
+                  <li>All transactions and wallet balances</li>
+                  <li>Copy trading relationships</li>
+                  <li>Staking positions</li>
+                  <li>Referral commissions earned</li>
+                  <li>All bonuses and rewards</li>
+                </ul>
+                <p className="mt-3 text-sm text-yellow-400 font-medium">
+                  The user will receive a fresh $20 bonus and their KYC status will be preserved.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowResetConfirm(false)}
+                disabled={loading}
+                className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={resetUserAccount}
+                disabled={loading}
+                className="flex-1 px-4 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors disabled:opacity-50 font-medium"
+              >
+                {loading ? 'Resetting...' : 'Reset Account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

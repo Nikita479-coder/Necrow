@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
-import { X, Edit2, FileText } from 'lucide-react';
+import { X, Edit2, FileText, Gift } from 'lucide-react';
 import { usePrices } from '../../hooks/usePrices';
 import { useToast } from '../../hooks/useToast';
 import { ToastContainer } from '../Toast';
@@ -24,6 +24,7 @@ interface Position {
   take_profit: number | null;
   margin_allocated: number;
   overnight_fees_accrued: number;
+  margin_from_locked_bonus: number;
 }
 
 interface Order {
@@ -48,6 +49,10 @@ interface PositionHistory {
   leverage: number;
   realized_pnl: number;
   closed_at: string;
+  margin_allocated: number;
+  margin_from_locked_bonus: number;
+  opened_at: string;
+  cumulative_fees: number;
 }
 
 type TabType = 'positions' | 'orders' | 'history';
@@ -145,7 +150,7 @@ function FuturesPositionsPanel() {
     try {
       const { data, error } = await supabase
         .from('futures_positions')
-        .select('position_id, user_id, pair, side, entry_price, mark_price, quantity, leverage, margin_mode, unrealized_pnl, liquidation_price, stop_loss, take_profit, margin_allocated, overnight_fees_accrued, opened_at, status')
+        .select('position_id, user_id, pair, side, entry_price, mark_price, quantity, leverage, margin_mode, unrealized_pnl, liquidation_price, stop_loss, take_profit, margin_allocated, overnight_fees_accrued, opened_at, status, margin_from_locked_bonus')
         .eq('user_id', user.id)
         .eq('status', 'open')
         .order('opened_at', { ascending: false });
@@ -186,7 +191,7 @@ function FuturesPositionsPanel() {
     try {
       const { data, error } = await supabase
         .from('futures_positions')
-        .select('*')
+        .select('position_id, pair, side, entry_price, mark_price, quantity, leverage, realized_pnl, closed_at, margin_allocated, margin_from_locked_bonus, opened_at, cumulative_fees')
         .eq('user_id', user.id)
         .eq('status', 'closed')
         .order('closed_at', { ascending: false })
@@ -347,10 +352,20 @@ function FuturesPositionsPanel() {
               const liqDistance = getLiquidationDistance(position.side, currentMarkPrice, position.liquidation_price ?? 0);
               const pnlColor = realTimePnL >= 0 ? 'text-green-500' : 'text-red-500';
               const sideColor = position.side === 'long' ? 'text-green-500' : 'text-red-500';
+              const usedBonusMargin = (position.margin_from_locked_bonus || 0) > 0;
 
               return (
                 <tr key={position.position_id} className="border-b border-gray-800 hover:bg-gray-900/30">
-                  <td className="px-4 py-3 text-white font-medium">{position.pair}</td>
+                  <td className="px-4 py-3 text-white font-medium">
+                    <div className="flex items-center gap-2">
+                      {position.pair}
+                      {usedBonusMargin && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/10 text-amber-500 rounded text-[10px] font-medium" title={`Bonus margin: $${position.margin_from_locked_bonus.toFixed(2)}`}>
+                          <Gift className="w-3 h-3" />
+                        </span>
+                      )}
+                    </div>
+                  </td>
                   <td className={`px-4 py-3 font-semibold ${sideColor}`}>
                     {position.side.toUpperCase()}
                   </td>
@@ -378,6 +393,12 @@ function FuturesPositionsPanel() {
                   <td className="px-4 py-3 text-right text-gray-300">
                     <div className="text-xs text-gray-500">{position.margin_mode}</div>
                     <div>${position.margin_allocated.toFixed(2)}</div>
+                    {usedBonusMargin && (
+                      <div className="text-amber-500 text-xs flex items-center justify-end gap-1">
+                        <Gift className="w-3 h-3" />
+                        ${position.margin_from_locked_bonus.toFixed(2)}
+                      </div>
+                    )}
                   </td>
                   <td className={`px-4 py-3 text-right font-semibold ${pnlColor}`}>
                     {realTimePnL >= 0 ? '+' : ''}
@@ -574,6 +595,8 @@ function FuturesPositionsPanel() {
               <th className="text-right px-4 py-2 font-medium">Close</th>
               <th className="text-right px-4 py-2 font-medium">Size</th>
               <th className="text-center px-4 py-2 font-medium">Leverage</th>
+              <th className="text-right px-4 py-2 font-medium">Margin</th>
+              <th className="text-right px-4 py-2 font-medium">Fees</th>
               <th className="text-right px-4 py-2 font-medium">Realized PnL</th>
               <th className="text-center px-4 py-2 font-medium">Details</th>
             </tr>
@@ -582,13 +605,27 @@ function FuturesPositionsPanel() {
             {history.map((position) => {
               const pnlColor = parseFloat(position.realized_pnl || 0) >= 0 ? 'text-green-500' : 'text-red-500';
               const sideColor = position.side === 'long' ? 'text-green-500' : 'text-red-500';
+              const usedBonusMargin = parseFloat(position.margin_from_locked_bonus || 0) > 0;
+              const bonusMarginPercent = position.margin_allocated > 0
+                ? (parseFloat(position.margin_from_locked_bonus || 0) / parseFloat(position.margin_allocated || 1)) * 100
+                : 0;
 
               return (
                 <tr key={position.position_id} className="border-b border-gray-800 hover:bg-gray-900/30">
                   <td className="px-4 py-3 text-gray-400 text-xs">
-                    {new Date(position.closed_at).toLocaleString()}
+                    <div>{new Date(position.closed_at).toLocaleDateString()}</div>
+                    <div className="text-gray-500">{new Date(position.closed_at).toLocaleTimeString()}</div>
                   </td>
-                  <td className="px-4 py-3 text-white font-medium">{position.pair}</td>
+                  <td className="px-4 py-3 text-white font-medium">
+                    <div className="flex items-center gap-2">
+                      {position.pair}
+                      {usedBonusMargin && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/10 text-amber-500 rounded text-[10px] font-medium" title="Bonus margin used">
+                          <Gift className="w-3 h-3" />
+                        </span>
+                      )}
+                    </div>
+                  </td>
                   <td className={`px-4 py-3 font-semibold ${sideColor}`}>
                     {position.side.toUpperCase()}
                   </td>
@@ -605,6 +642,19 @@ function FuturesPositionsPanel() {
                     <span className="px-2 py-1 bg-[#f0b90b]/10 text-[#f0b90b] rounded text-xs font-semibold">
                       {position.leverage}x
                     </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="text-gray-300">${parseFloat(position.margin_allocated || 0).toFixed(2)}</div>
+                    {usedBonusMargin && (
+                      <div className="text-amber-500 text-xs flex items-center justify-end gap-1">
+                        <Gift className="w-3 h-3" />
+                        <span>${parseFloat(position.margin_from_locked_bonus || 0).toFixed(2)}</span>
+                        <span className="text-gray-500">({bonusMarginPercent.toFixed(0)}%)</span>
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-right text-orange-400">
+                    -${parseFloat(position.cumulative_fees || 0).toFixed(2)}
                   </td>
                   <td className={`px-4 py-3 text-right font-semibold ${pnlColor}`}>
                     {parseFloat(position.realized_pnl || 0) >= 0 ? '+' : ''}

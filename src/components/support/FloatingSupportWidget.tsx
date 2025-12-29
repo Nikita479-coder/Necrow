@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { useNotificationSound } from '../../hooks/useNotificationSound';
 
 export default function FloatingSupportWidget() {
   const { user, isAuthenticated } = useAuth();
@@ -11,13 +12,24 @@ export default function FloatingSupportWidget() {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
+  const subscriptionRef = useRef<any>(null);
+  const { playSound } = useNotificationSound({ enabled: true, volume: 0.5 });
+  const prevUnreadCountRef = useRef(0);
 
   useEffect(() => {
     if (user) {
       loadUnreadCount();
-      subscribeToTickets();
+      const cleanup = subscribeToTickets();
+      return cleanup;
     }
   }, [user]);
+
+  useEffect(() => {
+    if (unreadCount > prevUnreadCountRef.current && prevUnreadCountRef.current !== 0) {
+      playSound();
+    }
+    prevUnreadCountRef.current = unreadCount;
+  }, [unreadCount, playSound]);
 
   const loadUnreadCount = async () => {
     if (!user) return;
@@ -50,25 +62,48 @@ export default function FloatingSupportWidget() {
   };
 
   const subscribeToTickets = () => {
-    if (!user) return;
+    if (!user) return () => {};
 
-    const subscription = supabase
-      .channel('widget_tickets')
+    if (subscriptionRef.current) {
+      subscriptionRef.current.unsubscribe();
+    }
+
+    const channel = supabase
+      .channel('widget_tickets_realtime')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
+          schema: 'public',
+          table: 'support_messages',
+        },
+        (payload) => {
+          const newMsg = payload.new as any;
+          if (newMsg.sender_type === 'admin') {
+            loadUnreadCount();
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
           schema: 'public',
           table: 'support_messages',
         },
         () => {
           loadUnreadCount();
         }
-      )
-      .subscribe();
+      );
+
+    channel.subscribe();
+    subscriptionRef.current = channel;
 
     return () => {
-      subscription.unsubscribe();
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
     };
   };
 
@@ -137,7 +172,7 @@ export default function FloatingSupportWidget() {
           <>
             <MessageCircle className="w-6 h-6 text-white" />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center animate-pulse">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}

@@ -330,6 +330,11 @@ function KYC() {
 
       if (kycError) throw kycError;
 
+      await supabase
+        .from('user_profiles')
+        .update({ country: formData.country.toUpperCase() })
+        .eq('id', user.id);
+
       showSuccess('Address information saved!');
       await loadKYCData();
       setCurrentStep(3);

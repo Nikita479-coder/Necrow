@@ -153,6 +153,23 @@ export default function AdminUserDetail() {
         authUser = null;
       }
 
+      let referrerInfo = null;
+      if (profile?.referred_by) {
+        const { data: referrerProfile } = await supabase
+          .from('user_profiles')
+          .select('id, full_name, username, referral_code')
+          .eq('id', profile.referred_by)
+          .single();
+
+        if (referrerProfile) {
+          const { data: referrerAuth } = await supabase.auth.admin.getUserById(profile.referred_by);
+          referrerInfo = {
+            ...referrerProfile,
+            email: referrerAuth?.user?.email
+          };
+        }
+      }
+
       const { data: wallets } = await supabase
         .from('wallets')
         .select('*')
@@ -179,6 +196,7 @@ export default function AdminUserDetail() {
       setUserData({
         profile,
         authUser,
+        referrerInfo,
         wallets: wallets || [],
         futuresWallet,
         openPositions: positions || [],

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import SharkCardApplicationModal from '../components/SharkCardApplicationModal';
 import CryptoIcon from '../components/CryptoIcon';
-import { Shield, ChevronDown, ArrowRight, Gift, Check, ChevronLeft, ChevronRight, Zap, Lock, Globe, Users, TrendingUp, LineChart, Clock, Headphones, Loader2, Newspaper, ExternalLink } from 'lucide-react';
+import { Shield, ChevronDown, ArrowRight, Gift, Check, ChevronLeft, ChevronRight, Zap, Lock, Globe, Users, TrendingUp, LineChart, Clock, Headphones, Loader2, Newspaper, ExternalLink, Smartphone, Bell } from 'lucide-react';
 import { usePrices } from '../hooks/usePrices';
 import { useNavigation } from '../App';
 import { useAuth } from '../context/AuthContext';
@@ -63,7 +63,7 @@ function HomePage() {
       subtitle: 'Get 50 USDT',
       description: 'Allocate 200 USDT to your Copy Trading wallet and receive an instant 50 USDT bonus! Start copying professional traders today.',
       cta: 'Start Copy Trading',
-      ctaAction: () => navigateTo('copy-trading'),
+      ctaAction: () => navigateTo('copytrading'),
       visual: 'copytrading',
       reward: '50 USDT',
       status: 'available',
@@ -169,7 +169,7 @@ function HomePage() {
     },
     {
       question: 'Is my money safe on Shark Trades?',
-      answer: 'Security is our top priority. We employ industry-leading measures including: Cold storage for 95% of user funds, Multi-signature authorization for withdrawals, 2FA authentication, Advanced encryption protocols, Regular security audits by third parties, and the SAFU (Secure Asset Fund for Users) which holds $1B in reserves to protect users in extreme circumstances.'
+      answer: 'Security is our top priority. We employ industry-leading measures including: Cold storage for 95% of user funds, Multi-signature authorization for withdrawals, 2FA authentication, Advanced encryption protocols, and regular security audits by third parties to ensure your assets are protected at all times.'
     },
     {
       question: 'What are the trading fees on Shark Trades?',
@@ -777,58 +777,75 @@ function HomePage() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-[#f0b90b]/10 to-transparent border border-[#f0b90b]/30 rounded-2xl p-4 sm:p-6 lg:p-8 mb-8 sm:mb-12">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2">
-                FUNDS ARE <span className="text-[#f0b90b]">SAFU</span>
-              </h2>
-              <p className="text-gray-300 text-sm sm:text-base lg:text-lg max-w-3xl mx-auto px-2">
-                The Security of User Assets Fund (SAFU) was established in 2018 to protect your funds in rare emergencies. Your security is our priority.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              <div className="bg-[#181a20] rounded-xl p-4 sm:p-6 border border-gray-800">
-                <div className="text-gray-400 text-xs sm:text-sm mb-2">As of September 2025, the SAFU fund wallet comprises a reserve of</div>
-                <div className="text-2xl sm:text-3xl font-bold text-[#f0b90b] mb-3">1,000,000,000 USDC</div>
-                <div className="text-xs text-gray-500 font-mono break-all">
-                  SAFU Wallet: 0x420ef1f25563593aF5FE3f9b9d3bC56a8bd8c104
-                </div>
+          <div className="bg-gradient-to-br from-[#0088cc]/10 to-transparent border border-[#0088cc]/30 rounded-2xl p-4 sm:p-6 lg:p-8 mb-8 sm:mb-12">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-8">
+              <div className="text-center md:text-left flex-1">
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2">
+                  Join Our Growing <span className="text-[#0088cc]">Community</span>
+                </h2>
+                <p className="text-gray-300 text-sm sm:text-base lg:text-lg max-w-2xl">
+                  Stay updated with the latest signals, market insights, and connect with fellow traders in our official Telegram community.
+                </p>
               </div>
-
-              <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                <div className="bg-[#181a20] rounded-xl p-4 sm:p-6 border border-gray-800">
-                  <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">7,488,223</div>
-                  <div className="text-gray-400 text-xs sm:text-sm">Users Helped</div>
-                </div>
-                <div className="bg-[#181a20] rounded-xl p-4 sm:p-6 border border-gray-800">
-                  <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-emerald-400 mb-2">$229M</div>
-                  <div className="text-gray-400 text-xs sm:text-sm">Funds Recovered</div>
-                </div>
-              </div>
+              <a
+                href="https://t.me/officialsharkexchange"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 bg-[#0088cc] hover:bg-[#0077b5] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg transition-all hover:scale-105 shadow-lg shadow-[#0088cc]/20"
+              >
+                <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                </svg>
+                Join Telegram
+              </a>
             </div>
           </div>
 
-          <div className="bg-[#181a20] rounded-2xl p-8 border border-gray-800 mb-12">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-              <div className="flex-1">
-                <h2 className="text-3xl font-bold text-white mb-3">Trade on the go. Anywhere, anytime.</h2>
-                <p className="text-gray-400 mb-6">Scan to Download App</p>
-                <div className="flex gap-4">
-                  <div className="w-32 h-32 bg-white rounded-lg p-2">
-                    <div className="w-full h-full bg-gray-900 rounded"></div>
+          <div className="bg-gradient-to-br from-[#181a20] to-[#1a1d24] rounded-2xl p-6 sm:p-8 border border-gray-800 mb-12 overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#f0b90b]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
+              <div className="flex-1 text-center md:text-left">
+                <div className="inline-flex items-center gap-2 bg-[#f0b90b]/10 text-[#f0b90b] px-4 py-1.5 rounded-full text-sm font-medium mb-4">
+                  <Smartphone className="w-4 h-4" />
+                  Coming Soon
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">Trade on the go. Anywhere, anytime.</h2>
+                <p className="text-gray-400 mb-6 max-w-md">Our mobile app is under development. Get notified when it launches and be among the first to experience seamless trading on your fingertips.</p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
+                  <div className="flex items-center gap-2 bg-[#181a20] border border-gray-700 rounded-xl px-4 py-3">
+                    <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                    </svg>
+                    <div className="text-left">
+                      <div className="text-[10px] text-gray-500 leading-tight">Coming to</div>
+                      <div className="text-white text-sm font-semibold leading-tight">App Store</div>
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-2 text-sm text-gray-400">
-                    <div>iOS and Android</div>
-                    <div>MacOS</div>
-                    <div>Windows</div>
-                    <div>Linux</div>
-                    <button className="text-[#f0b90b] hover:underline text-left">More Download Options</button>
+                  <div className="flex items-center gap-2 bg-[#181a20] border border-gray-700 rounded-xl px-4 py-3">
+                    <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 0 1-.61-.92V2.734a1 1 0 0 1 .609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.198l2.807 1.626a1 1 0 0 1 0 1.73l-2.808 1.626L15.206 12l2.492-2.491zM5.864 2.658L16.8 8.99l-2.302 2.302-8.634-8.634z"/>
+                    </svg>
+                    <div className="text-left">
+                      <div className="text-[10px] text-gray-500 leading-tight">Coming to</div>
+                      <div className="text-white text-sm font-semibold leading-tight">Google Play</div>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="flex-1">
-                <img src="https://images.pexels.com/photos/3184325/pexels-photo-3184325.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Mobile Trading" className="rounded-lg w-full max-w-md mx-auto" />
+              <div className="flex-1 flex justify-center">
+                <div className="relative">
+                  <div className="w-48 h-96 bg-gradient-to-b from-[#2a2d35] to-[#181a20] rounded-[2.5rem] border-4 border-gray-700 shadow-2xl flex items-center justify-center">
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 w-20 h-6 bg-black rounded-full"></div>
+                    <div className="text-center p-6">
+                      <div className="w-16 h-16 bg-gradient-to-br from-[#f0b90b] to-[#f5d55a] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                        <TrendingUp className="w-8 h-8 text-black" />
+                      </div>
+                      <div className="text-white font-bold text-lg mb-1">Shark Trades</div>
+                      <div className="text-gray-500 text-xs">Mobile App</div>
+                    </div>
+                  </div>
+                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-32 h-4 bg-black/30 rounded-full blur-md"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -852,7 +869,7 @@ function HomePage() {
                   </div>
                   <div>
                     <h4 className="text-white font-semibold mb-1">Bank-Grade Security</h4>
-                    <p className="text-gray-400 text-sm">95% cold storage, multi-sig wallets, and $1B SAFU fund protect your assets around the clock.</p>
+                    <p className="text-gray-400 text-sm">95% cold storage, multi-sig wallets, and 2FA authentication protect your assets around the clock.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -876,41 +893,83 @@ function HomePage() {
               </div>
             </div>
 
-            {!user && (
-              <div className="bg-gradient-to-br from-[#181a20] to-[#1a1d24] rounded-2xl p-6 sm:p-8 border border-gray-800">
-                <h3 className="text-xl sm:text-2xl font-bold text-white mb-6">Getting Started is Easy</h3>
-                <div className="space-y-6">
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 bg-[#f0b90b] rounded-full flex items-center justify-center flex-shrink-0 text-black font-bold">1</div>
-                    <div>
-                      <h4 className="text-white font-semibold mb-1">Create Your Account</h4>
-                      <p className="text-gray-400 text-sm">Sign up in under 2 minutes with just your email. Get 20 USDT bonus upon KYC verification.</p>
-                    </div>
+            <div className="bg-gradient-to-br from-[#181a20] to-[#1a1d24] rounded-2xl p-6 sm:p-8 border border-gray-800 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#0088cc]/10 rounded-full blur-2xl"></div>
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-[#0088cc] to-[#00a2e8] rounded-xl flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+                    </svg>
                   </div>
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 bg-[#f0b90b] rounded-full flex items-center justify-center flex-shrink-0 text-black font-bold">2</div>
-                    <div>
-                      <h4 className="text-white font-semibold mb-1">Fund Your Wallet</h4>
-                      <p className="text-gray-400 text-sm">Deposit crypto from external wallets or use our supported payment methods to add funds.</p>
-                    </div>
+                  <div>
+                    <h3 className="text-xl sm:text-2xl font-bold text-white">Copy Trading Alerts</h3>
+                    <p className="text-[#0088cc] text-sm font-medium">Powered by Telegram</p>
                   </div>
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 bg-[#f0b90b] rounded-full flex items-center justify-center flex-shrink-0 text-black font-bold">3</div>
-                    <div>
-                      <h4 className="text-white font-semibold mb-1">Start Trading</h4>
-                      <p className="text-gray-400 text-sm">Trade 350+ cryptocurrencies with competitive fees, advanced charts, and professional tools.</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => navigateTo('signup')}
-                    className="w-full mt-4 py-3 bg-[#f0b90b] hover:bg-[#d9a506] text-black font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
-                  >
-                    Create Free Account
-                    <ArrowRight className="w-5 h-5" />
-                  </button>
                 </div>
+
+                <p className="text-gray-400 text-sm mb-6">Never miss a trading opportunity. Get instant notifications when expert traders open new positions.</p>
+
+                <div className="space-y-4 mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Bell className="w-4 h-4 text-emerald-400" />
+                    </div>
+                    <div>
+                      <p className="text-white text-sm font-medium">Real-Time Trade Alerts</p>
+                      <p className="text-gray-500 text-xs">Instant notifications when trades are opened</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Users className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="text-white text-sm font-medium">Follow Top Traders</p>
+                      <p className="text-gray-500 text-xs">Copy strategies from verified experts</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-amber-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-4 h-4 text-amber-400" />
+                    </div>
+                    <div>
+                      <p className="text-white text-sm font-medium">5-Minute Decision Window</p>
+                      <p className="text-gray-500 text-xs">Accept or decline trades on your terms</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-[#0d0e12] rounded-xl p-4 border border-gray-800">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-[#0088cc] to-[#00a2e8] rounded-full flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-white text-sm font-semibold">Shark Trades Bot</span>
+                        <span className="text-gray-500 text-xs">just now</span>
+                      </div>
+                      <div className="bg-[#1a1d24] rounded-lg p-3 text-xs">
+                        <p className="text-emerald-400 font-medium mb-1">New Trade Opened!</p>
+                        <p className="text-gray-400">CryptoWhale opened a <span className="text-emerald-400">LONG</span> position on <span className="text-white">BTC/USDT</span></p>
+                        <p className="text-gray-500 mt-1">Entry: $94,250 | Leverage: 10x</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => navigateTo('copytrading')}
+                  className="w-full mt-4 py-3 bg-gradient-to-r from-[#0088cc] to-[#00a2e8] hover:from-[#0077b3] hover:to-[#0091d1] text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
+                >
+                  Explore Copy Trading
+                  <ArrowRight className="w-5 h-5" />
+                </button>
               </div>
-            )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">

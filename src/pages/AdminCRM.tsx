@@ -3,7 +3,7 @@ import {
   Activity, DollarSign, Shield, AlertCircle, FileText, RefreshCw, Search, Filter,
   Users, TrendingUp, Download, Tag, BarChart3, UserCheck, UserX, Clock,
   ChevronDown, Check, X, Eye, Mail, Ban, Unlock, Bell, LogIn, Copy, ExternalLink, Image,
-  UserPlus
+  UserPlus, Phone
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import PopupBannerManager from '../components/admin/PopupBannerManager';
@@ -11,7 +11,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '../App';
 
-type MainTab = 'analytics' | 'users' | 'segments' | 'referrers' | 'logs' | 'popups';
+type MainTab = 'analytics' | 'users' | 'segments' | 'referrers' | 'logs' | 'popups' | 'phones';
 type LogType = 'admin' | 'financial' | 'kyc' | 'security' | 'system';
 
 interface DashboardStats {
@@ -87,6 +87,16 @@ interface ReferrerStats {
   total_volume_all_time: string;
 }
 
+interface UserPhone {
+  id: string;
+  full_name: string;
+  phone: string;
+  email: string;
+  country: string | null;
+  kyc_status: string;
+  created_at: string;
+}
+
 export default function AdminCRM() {
   const { user, profile } = useAuth();
   const { navigateTo } = useNavigation();
@@ -102,6 +112,8 @@ export default function AdminCRM() {
   const [segments, setSegments] = useState<UserSegment[]>([]);
   const [savedFilters, setSavedFilters] = useState<SavedFilter[]>([]);
   const [referrers, setReferrers] = useState<ReferrerStats[]>([]);
+  const [phoneNumbers, setPhoneNumbers] = useState<UserPhone[]>([]);
+  const [phoneSearch, setPhoneSearch] = useState('');
 
   const [filters, setFilters] = useState({
     search: '',
@@ -154,8 +166,10 @@ export default function AdminCRM() {
       loadLogs();
     } else if (mainTab === 'referrers') {
       loadReferrers();
+    } else if (mainTab === 'phones') {
+      loadPhoneNumbers();
     }
-  }, [mainTab, filters, page, pageSize, logTab, dateFilter]);
+  }, [mainTab, filters, page, pageSize, logTab, dateFilter, phoneSearch]);
 
   useEffect(() => {
     setPage(0);
@@ -384,6 +398,48 @@ export default function AdminCRM() {
     }
   };
 
+  const loadPhoneNumbers = async () => {
+    setLoading(true);
+    try {
+      let query = supabase
+        .from('user_profiles')
+        .select('id, full_name, phone, country, kyc_status, created_at')
+        .not('phone', 'is', null)
+        .neq('phone', '');
+
+      if (phoneSearch) {
+        query = query.or(`full_name.ilike.%${phoneSearch}%,phone.ilike.%${phoneSearch}%,country.ilike.%${phoneSearch}%`);
+      }
+
+      const { data: profilesData } = await query.order('created_at', { ascending: false });
+
+      if (profilesData) {
+        const userIds = profilesData.map(p => p.id);
+        const { data: authData } = await supabase.auth.admin.listUsers();
+
+        const emailMap = new Map(
+          authData?.users.map(u => [u.id, u.email || '']) || []
+        );
+
+        const phoneData: UserPhone[] = profilesData.map(profile => ({
+          id: profile.id,
+          full_name: profile.full_name || 'No name',
+          phone: profile.phone,
+          email: emailMap.get(profile.id) || '',
+          country: profile.country,
+          kyc_status: profile.kyc_status,
+          created_at: profile.created_at,
+        }));
+
+        setPhoneNumbers(phoneData);
+      }
+    } catch (error) {
+      console.error('Error loading phone numbers:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getDateThreshold = () => {
     const now = new Date();
     switch (dateFilter) {
@@ -437,7 +493,10 @@ export default function AdminCRM() {
   };
 
   const handleExport = (format: 'csv' | 'json') => {
-    const dataToExport = mainTab === 'users' ? users : mainTab === 'referrers' ? referrers : logs;
+    const dataToExport = mainTab === 'users' ? users
+      : mainTab === 'referrers' ? referrers
+      : mainTab === 'phones' ? phoneNumbers
+      : logs;
 
     if (format === 'csv') {
       const headers = Object.keys(dataToExport[0] || {}).join(',');
@@ -593,6 +652,7 @@ export default function AdminCRM() {
             { id: 'analytics', label: 'Analytics', icon: BarChart3 },
             { id: 'users', label: 'User Management', icon: Users },
             { id: 'referrers', label: 'Referrers', icon: UserPlus },
+            { id: 'phones', label: 'Phone Numbers', icon: Phone },
             { id: 'segments', label: 'Segments & Tags', icon: Tag },
             { id: 'popups', label: 'Popup Banners', icon: Image },
             { id: 'logs', label: 'Activity Logs', icon: Activity },
@@ -1307,6 +1367,123 @@ export default function AdminCRM() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {mainTab === 'phones' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-bold text-white">User Phone Numbers</h2>
+                <p className="text-gray-400 text-sm mt-1">
+                  Total: <span className="text-[#f0b90b] font-medium">{phoneNumbers.length}</span> users with phone numbers
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleExport('csv')}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg border border-green-500/30 transition-colors text-sm"
+                >
+                  <Download className="w-4 h-4" />
+                  Export CSV
+                </button>
+                <button
+                  onClick={() => handleExport('json')}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg border border-blue-500/30 transition-colors text-sm"
+                >
+                  <Download className="w-4 h-4" />
+                  Export JSON
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-[#0b0e11] rounded-xl p-4 border border-gray-800">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <input
+                  type="text"
+                  placeholder="Search by name, phone number, or country..."
+                  value={phoneSearch}
+                  onChange={(e) => setPhoneSearch(e.target.value)}
+                  className="w-full bg-[#1a1d24] border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-white text-sm outline-none focus:border-[#f0b90b]"
+                />
+              </div>
+            </div>
+
+            <div className="bg-[#0b0e11] rounded-xl border border-gray-800 overflow-hidden">
+              <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+                <table className="w-full">
+                  <thead className="bg-[#1a1d24] sticky top-0 z-10">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Full Name</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Phone Number</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Email</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Country</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">KYC Status</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Registered</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {phoneNumbers.map((phone) => (
+                      <tr key={phone.id} className="hover:bg-[#1a1d24]/50 transition-colors">
+                        <td className="px-4 py-3">
+                          <span className="text-white font-medium">{phone.full_name}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[#f0b90b] font-mono">{phone.phone}</span>
+                            <button
+                              onClick={() => copyToClipboard(phone.phone)}
+                              className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-white"
+                              title="Copy phone number"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-gray-400 text-sm">{phone.email}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-gray-300">{phone.country || 'N/A'}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-1 rounded-lg text-xs font-medium ${
+                            phone.kyc_status === 'verified'
+                              ? 'bg-green-500/10 text-green-400'
+                              : phone.kyc_status === 'pending'
+                              ? 'bg-yellow-500/10 text-yellow-400'
+                              : 'bg-gray-500/10 text-gray-400'
+                          }`}>
+                            {phone.kyc_status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-400 text-sm">
+                          {new Date(phone.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => handleViewUser(phone.id)}
+                            className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors"
+                            title="View User Details"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {phoneNumbers.length === 0 && !loading && (
+                  <div className="text-center py-12">
+                    <Phone className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                    <p className="text-gray-400">No phone numbers found</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 

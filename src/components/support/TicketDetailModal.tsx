@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Send, User, Shield, Upload, Image as ImageIcon, Download } from 'lucide-react';
+import { X, Send, User, Shield, Upload, Image as ImageIcon, Download, Clock, CheckCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { useNotificationSound } from '../../hooks/useNotificationSound';
 
 interface Message {
   id: string;
@@ -10,6 +11,8 @@ interface Message {
   message: string;
   created_at: string;
   read_at: string | null;
+  pending?: boolean;
+  failed?: boolean;
 }
 
 interface Attachment {
@@ -52,12 +55,18 @@ export default function TicketDetailModal({ ticketId, onClose, onUpdate }: Ticke
   const [sending, setSending] = useState(false);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const subscriptionRef = useRef<any>(null);
+  const { playSound } = useNotificationSound({ enabled: true, volume: 0.5 });
 
   useEffect(() => {
     loadTicket();
     loadMessages();
     loadAttachments();
-    subscribeToMessages();
+    const cleanup = subscribeToMessages();
+
+    return () => {
+      cleanup?.();
+    };
   }, [ticketId]);
 
   useEffect(() => {
@@ -123,8 +132,12 @@ export default function TicketDetailModal({ ticketId, onClose, onUpdate }: Ticke
   };
 
   const subscribeToMessages = () => {
-    const subscription = supabase
-      .channel(`ticket_${ticketId}`)
+    if (subscriptionRef.current) {
+      subscriptionRef.current.unsubscribe();
+    }
+
+    const channel = supabase
+      .channel(`user_ticket_messages_${ticketId}`)
       .on(
         'postgres_changes',
         {
@@ -134,13 +147,45 @@ export default function TicketDetailModal({ ticketId, onClose, onUpdate }: Ticke
           filter: `ticket_id=eq.${ticketId}`,
         },
         (payload) => {
-          setMessages((prev) => [...prev, payload.new as Message]);
+          const newMsg = payload.new as Message;
+
+          setMessages((prev) => {
+            const exists = prev.some(m => m.id === newMsg.id);
+            const isPendingMatch = prev.some(m =>
+              m.pending &&
+              m.message === newMsg.message &&
+              m.sender_id === newMsg.sender_id
+            );
+
+            if (exists) return prev;
+
+            if (isPendingMatch) {
+              return prev.map(m =>
+                m.pending && m.message === newMsg.message && m.sender_id === newMsg.sender_id
+                  ? { ...newMsg, pending: false }
+                  : m
+              );
+            }
+
+            if (newMsg.sender_type === 'admin') {
+              playSound();
+            }
+
+            return [...prev, newMsg];
+          });
+
+          loadAttachments();
         }
-      )
-      .subscribe();
+      );
+
+    channel.subscribe();
+    subscriptionRef.current = channel;
 
     return () => {
-      subscription.unsubscribe();
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
     };
   };
 
@@ -266,7 +311,25 @@ export default function TicketDetailModal({ ticketId, onClose, onUpdate }: Ticke
     e.preventDefault();
     if (!user || (!newMessage.trim() && newAttachments.length === 0)) return;
 
+    const messageText = newMessage.trim() || '(Attachment)';
+    const tempId = `temp_${Date.now()}`;
+    const pendingAttachments = [...newAttachments];
+
+    const optimisticMessage: Message = {
+      id: tempId,
+      sender_id: user.id,
+      sender_type: 'user',
+      message: messageText,
+      created_at: new Date().toISOString(),
+      read_at: null,
+      pending: true,
+    };
+
+    setMessages((prev) => [...prev, optimisticMessage]);
+    setNewMessage('');
+    setNewAttachments([]);
     setSending(true);
+
     try {
       const { data: messageData, error } = await supabase
         .from('support_messages')
@@ -274,14 +337,22 @@ export default function TicketDetailModal({ ticketId, onClose, onUpdate }: Ticke
           ticket_id: ticketId,
           sender_id: user.id,
           sender_type: 'user',
-          message: newMessage.trim() || '(Attachment)',
+          message: messageText,
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      for (const attachment of newAttachments) {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === tempId
+            ? { ...m, id: messageData.id, pending: false }
+            : m
+        )
+      );
+
+      for (const attachment of pendingAttachments) {
         await uploadAttachment(messageData.id, attachment.file);
       }
 
@@ -293,15 +364,74 @@ export default function TicketDetailModal({ ticketId, onClose, onUpdate }: Ticke
         })
         .eq('id', ticketId);
 
-      newAttachments.forEach(att => URL.revokeObjectURL(att.preview));
-      setNewMessage('');
-      setNewAttachments([]);
+      pendingAttachments.forEach(att => URL.revokeObjectURL(att.preview));
       loadAttachments();
       onUpdate();
     } catch (error) {
       console.error('Error sending message:', error);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === tempId
+            ? { ...m, pending: false, failed: true }
+            : m
+        )
+      );
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleRetryMessage = async (failedMessage: Message) => {
+    if (!user) return;
+
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === failedMessage.id
+          ? { ...m, pending: true, failed: false }
+          : m
+      )
+    );
+
+    try {
+      const { data: messageData, error } = await supabase
+        .from('support_messages')
+        .insert({
+          ticket_id: ticketId,
+          sender_id: user.id,
+          sender_type: 'user',
+          message: failedMessage.message,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === failedMessage.id
+            ? { ...m, id: messageData.id, pending: false, failed: false }
+            : m
+        )
+      );
+
+      await supabase
+        .from('support_tickets')
+        .update({
+          status: 'waiting_admin',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', ticketId);
+
+      onUpdate();
+    } catch (error) {
+      console.error('Error retrying message:', error);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === failedMessage.id
+            ? { ...m, pending: false, failed: true }
+            : m
+        )
+      );
     }
   };
 
@@ -314,7 +444,7 @@ export default function TicketDetailModal({ ticketId, onClose, onUpdate }: Ticke
       case 'waiting_user':
         return 'bg-orange-500/10 text-orange-500';
       case 'waiting_admin':
-        return 'bg-purple-500/10 text-purple-500';
+        return 'bg-cyan-500/10 text-cyan-500';
       case 'resolved':
         return 'bg-green-500/10 text-green-500';
       case 'closed':
@@ -374,7 +504,9 @@ export default function TicketDetailModal({ ticketId, onClose, onUpdate }: Ticke
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className={`flex gap-3 ${msg.sender_type === 'user' ? 'flex-row-reverse' : ''}`}
+              className={`flex gap-3 ${msg.sender_type === 'user' ? 'flex-row-reverse' : ''} ${
+                msg.pending ? 'opacity-70' : ''
+              }`}
             >
               <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                 msg.sender_type === 'user' ? 'bg-blue-600' : 'bg-gray-700'
@@ -388,10 +520,28 @@ export default function TicketDetailModal({ ticketId, onClose, onUpdate }: Ticke
               <div className={`flex-1 max-w-[70%] ${msg.sender_type === 'user' ? 'items-end' : ''}`}>
                 <div className={`rounded-lg p-4 ${
                   msg.sender_type === 'user'
-                    ? 'bg-blue-600 text-white'
+                    ? msg.failed
+                      ? 'bg-red-600/50 text-white'
+                      : 'bg-blue-600 text-white'
                     : 'bg-gray-800 text-gray-100'
                 }`}>
                   <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+
+                  {msg.pending && (
+                    <div className="flex items-center gap-1 mt-2 text-xs opacity-70">
+                      <Clock className="w-3 h-3" />
+                      Sending...
+                    </div>
+                  )}
+
+                  {msg.failed && (
+                    <button
+                      onClick={() => handleRetryMessage(msg)}
+                      className="flex items-center gap-1 mt-2 text-xs text-white/80 hover:text-white underline"
+                    >
+                      Failed to send - Click to retry
+                    </button>
+                  )}
 
                   {attachments[msg.id] && attachments[msg.id].length > 0 && (
                     <div className="mt-3 space-y-2">
@@ -419,8 +569,17 @@ export default function TicketDetailModal({ ticketId, onClose, onUpdate }: Ticke
                     </div>
                   )}
                 </div>
-                <div className={`text-xs text-gray-500 mt-1 ${msg.sender_type === 'user' ? 'text-right' : ''}`}>
-                  {new Date(msg.created_at).toLocaleTimeString()}
+                <div className={`text-xs text-gray-500 mt-1 flex items-center gap-1 ${msg.sender_type === 'user' ? 'justify-end' : ''}`}>
+                  {msg.pending ? (
+                    <span>Sending...</span>
+                  ) : msg.failed ? (
+                    <span className="text-red-400">Failed</span>
+                  ) : (
+                    <>
+                      {new Date(msg.created_at).toLocaleTimeString()}
+                      {msg.sender_type === 'user' && <CheckCircle className="w-3 h-3 text-green-500" />}
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -471,6 +630,12 @@ export default function TicketDetailModal({ ticketId, onClose, onUpdate }: Ticke
                   placeholder="Type your message..."
                   className="flex-1 px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
                   disabled={sending}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage(e);
+                    }
+                  }}
                 />
                 <button
                   type="submit"

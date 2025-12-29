@@ -87,6 +87,31 @@ function CopyTrading() {
   const [submittingResponse, setSubmittingResponse] = useState(false);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('30');
   const [sortStat, setSortStat] = useState<SortStat>('pnl');
+  const [pendingTradeIdFromUrl, setPendingTradeIdFromUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tradeId = urlParams.get('trade');
+    if (tradeId) {
+      setPendingTradeIdFromUrl(tradeId);
+      setActiveTab('pending');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (pendingTradeIdFromUrl && pendingTrades.length > 0) {
+      const targetTrade = pendingTrades.find(t => t.id === pendingTradeIdFromUrl);
+      if (targetTrade) {
+        setSelectedTrade(targetTrade);
+        setResponseMode('accept');
+        setShowResponseModal(true);
+        setPendingTradeIdFromUrl(null);
+        const url = new URL(window.location.href);
+        url.searchParams.delete('trade');
+        window.history.replaceState({}, '', url.toString());
+      }
+    }
+  }, [pendingTradeIdFromUrl, pendingTrades]);
 
   useEffect(() => {
     loadTraders();
