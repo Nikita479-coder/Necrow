@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Plus, Clock, CheckCircle, XCircle, AlertCircle, Search } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { useNotificationSound } from '../../hooks/useNotificationSound';
 import NewTicketModal from './NewTicketModal';
 import TicketDetailModal from './TicketDetailModal';
 
@@ -25,11 +26,14 @@ export default function UserSupportTickets() {
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'open' | 'resolved'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const subscriptionRef = useRef<any>(null);
+  const { playSound } = useNotificationSound({ enabled: true, volume: 0.5 });
 
   useEffect(() => {
     if (user) {
       loadTickets();
-      subscribeToTickets();
+      const cleanup = subscribeToTickets();
+      return cleanup;
     }
   }, [user]);
 
@@ -74,10 +78,14 @@ export default function UserSupportTickets() {
   };
 
   const subscribeToTickets = () => {
-    if (!user) return;
+    if (!user) return () => {};
 
-    const subscription = supabase
-      .channel('user_tickets')
+    if (subscriptionRef.current) {
+      subscriptionRef.current.unsubscribe();
+    }
+
+    const channel = supabase
+      .channel('user_tickets_realtime')
       .on(
         'postgres_changes',
         {
@@ -90,10 +98,33 @@ export default function UserSupportTickets() {
           loadTickets();
         }
       )
-      .subscribe();
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'support_messages',
+        },
+        async (payload) => {
+          const newMsg = payload.new as any;
+          if (newMsg.sender_type === 'admin') {
+            const ticketBelongsToUser = tickets.some(t => t.id === newMsg.ticket_id);
+            if (ticketBelongsToUser || !tickets.length) {
+              playSound();
+              loadTickets();
+            }
+          }
+        }
+      );
+
+    channel.subscribe();
+    subscriptionRef.current = channel;
 
     return () => {
-      subscription.unsubscribe();
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
     };
   };
 
@@ -138,7 +169,7 @@ export default function UserSupportTickets() {
       case 'waiting_user':
         return 'bg-orange-500/10 text-orange-500';
       case 'waiting_admin':
-        return 'bg-purple-500/10 text-purple-500';
+        return 'bg-cyan-500/10 text-cyan-500';
       case 'resolved':
         return 'bg-green-500/10 text-green-500';
       case 'closed':
@@ -260,7 +291,7 @@ export default function UserSupportTickets() {
                       {ticket.status.replace('_', ' ')}
                     </span>
                     {ticket.unread_count && ticket.unread_count > 0 && (
-                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-500/20 text-blue-400">
+                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-500/20 text-blue-400 animate-pulse">
                         {ticket.unread_count} new
                       </span>
                     )}

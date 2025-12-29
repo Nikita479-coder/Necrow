@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Edit2, Save, X, DollarSign } from 'lucide-react';
+import { TrendingUp, TrendingDown, Edit2, Save, X, DollarSign, Gift } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 
@@ -32,7 +32,7 @@ export default function AdminUserTrading({ userId, userData }: Props) {
   const loadTradingData = async () => {
     setLoading(true);
     try {
-      const [positionsRes, ordersRes, tradesRes] = await Promise.all([
+      const [positionsRes, ordersRes, closedPositionsRes] = await Promise.all([
         supabase
           .from('futures_positions')
           .select('*')
@@ -47,16 +47,17 @@ export default function AdminUserTrading({ userId, userData }: Props) {
           .order('created_at', { ascending: false })
           .limit(20),
         supabase
-          .from('trades')
-          .select('*')
+          .from('futures_positions')
+          .select('position_id, pair, side, entry_price, mark_price, quantity, leverage, realized_pnl, closed_at, margin_allocated, margin_from_locked_bonus, cumulative_fees, opened_at')
           .eq('user_id', userId)
-          .order('executed_at', { ascending: false })
+          .eq('status', 'closed')
+          .order('closed_at', { ascending: false })
           .limit(50)
       ]);
 
       setPositions(positionsRes.data || []);
       setOrders(ordersRes.data || []);
-      setTrades(tradesRes.data || []);
+      setTrades(closedPositionsRes.data || []);
     } catch (error) {
       console.error('Error loading trading data:', error);
     } finally {
@@ -149,7 +150,14 @@ export default function AdminUserTrading({ userId, userData }: Props) {
                         {position.side === 'long' ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                       </div>
                       <div>
-                        <h3 className="text-white font-bold">{position.pair}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-white font-bold">{position.pair}</h3>
+                          {parseFloat(position.margin_from_locked_bonus || 0) > 0 && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/10 text-amber-500 rounded text-[10px] font-medium" title="Bonus margin used">
+                              <Gift className="w-3 h-3" />
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm text-gray-400">{position.leverage}x {position.margin_mode}</p>
                       </div>
                     </div>
@@ -248,6 +256,12 @@ export default function AdminUserTrading({ userId, userData }: Props) {
                     <div>
                       <p className="text-xs text-gray-400">Margin</p>
                       <p className="text-white font-medium">${parseFloat(position.margin_allocated).toFixed(2)}</p>
+                      {parseFloat(position.margin_from_locked_bonus || 0) > 0 && (
+                        <div className="text-amber-500 text-xs flex items-center gap-1 mt-0.5">
+                          <Gift className="w-3 h-3" />
+                          ${parseFloat(position.margin_from_locked_bonus).toFixed(2)} bonus
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-4 pt-2">
@@ -319,44 +333,89 @@ export default function AdminUserTrading({ userId, userData }: Props) {
 
       <div>
         <h2 className="text-xl font-bold text-white mb-4">Recent Trades (Last 50)</h2>
-        <div className="bg-[#0b0e11] rounded-xl border border-gray-800 overflow-x-auto">
-          <table className="w-full">
-            <thead className="border-b border-gray-800">
-              <tr>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Time</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Pair</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Side</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">Price</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">Quantity</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">Fee</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">P&L</th>
-              </tr>
-            </thead>
-            <tbody>
-              {trades.map((trade) => (
-                <tr key={trade.id} className="border-b border-gray-800/50 hover:bg-[#1a1d24]/30">
-                  <td className="py-3 px-4 text-sm text-gray-400">
-                    {new Date(trade.executed_at).toLocaleString()}
-                  </td>
-                  <td className="py-3 px-4 text-white font-medium">{trade.pair}</td>
-                  <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded text-xs font-bold ${
-                      trade.side === 'buy' || trade.side === 'long' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                    }`}>
-                      {trade.side.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-right text-white">${parseFloat(trade.price).toFixed(2)}</td>
-                  <td className="py-3 px-4 text-right text-white">{parseFloat(trade.quantity).toFixed(4)}</td>
-                  <td className="py-3 px-4 text-right text-gray-400">${parseFloat(trade.fee).toFixed(2)}</td>
-                  <td className={`py-3 px-4 text-right font-medium ${trade.pnl && parseFloat(trade.pnl) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {trade.pnl ? `$${parseFloat(trade.pnl).toFixed(2)}` : '-'}
-                  </td>
+        {trades.length === 0 ? (
+          <div className="bg-[#0b0e11] rounded-xl p-8 border border-gray-800 text-center">
+            <p className="text-gray-400">No closed positions</p>
+          </div>
+        ) : (
+          <div className="bg-[#0b0e11] rounded-xl border border-gray-800 overflow-x-auto">
+            <table className="w-full">
+              <thead className="border-b border-gray-800">
+                <tr>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Closed</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Pair</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Side</th>
+                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">Entry</th>
+                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">Exit</th>
+                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">Size</th>
+                  <th className="text-center py-3 px-4 text-sm font-medium text-gray-400">Leverage</th>
+                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">Margin</th>
+                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">Fees</th>
+                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">P&L</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {trades.map((trade) => {
+                  const usedBonusMargin = parseFloat(trade.margin_from_locked_bonus || 0) > 0;
+                  const pnl = parseFloat(trade.realized_pnl || 0);
+                  const bonusMarginPercent = trade.margin_allocated > 0
+                    ? (parseFloat(trade.margin_from_locked_bonus || 0) / parseFloat(trade.margin_allocated || 1)) * 100
+                    : 0;
+
+                  return (
+                    <tr key={trade.position_id} className="border-b border-gray-800/50 hover:bg-[#1a1d24]/30">
+                      <td className="py-3 px-4 text-sm text-gray-400">
+                        <div>{new Date(trade.closed_at).toLocaleDateString()}</div>
+                        <div className="text-gray-500 text-xs">{new Date(trade.closed_at).toLocaleTimeString()}</div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-white font-medium">{trade.pair}</span>
+                          {usedBonusMargin && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/10 text-amber-500 rounded text-[10px] font-medium" title="Bonus margin used">
+                              <Gift className="w-3 h-3" />
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-1 rounded text-xs font-bold ${
+                          trade.side === 'long' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                        }`}>
+                          {trade.side.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-right text-white">${parseFloat(trade.entry_price).toFixed(2)}</td>
+                      <td className="py-3 px-4 text-right text-white">${parseFloat(trade.mark_price || trade.entry_price).toFixed(2)}</td>
+                      <td className="py-3 px-4 text-right text-white">{parseFloat(trade.quantity).toFixed(4)}</td>
+                      <td className="py-3 px-4 text-center">
+                        <span className="px-2 py-1 bg-[#f0b90b]/10 text-[#f0b90b] rounded text-xs font-semibold">
+                          {trade.leverage}x
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="text-white">${parseFloat(trade.margin_allocated || 0).toFixed(2)}</div>
+                        {usedBonusMargin && (
+                          <div className="text-amber-500 text-xs flex items-center justify-end gap-1">
+                            <Gift className="w-3 h-3" />
+                            ${parseFloat(trade.margin_from_locked_bonus || 0).toFixed(2)}
+                            <span className="text-gray-500">({bonusMarginPercent.toFixed(0)}%)</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-right text-orange-400">
+                        -${parseFloat(trade.cumulative_fees || 0).toFixed(2)}
+                      </td>
+                      <td className={`py-3 px-4 text-right font-medium ${pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -198,6 +198,18 @@ export default function AdminUserOverview({ userId, userData, onRefresh }: Props
               <p className="text-white font-mono">{userData?.profile?.referral_code || 'N/A'}</p>
             </div>
             <div>
+              <p className="text-sm text-gray-400 mb-1">Referred By</p>
+              {userData?.referrerInfo ? (
+                <div>
+                  <p className="text-white">{userData.referrerInfo.full_name || userData.referrerInfo.username || 'Unknown'}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{userData.referrerInfo.email}</p>
+                  <p className="text-xs text-gray-500 font-mono">{userData.referrerInfo.referral_code}</p>
+                </div>
+              ) : (
+                <p className="text-white">No referrer</p>
+              )}
+            </div>
+            <div>
               <p className="text-sm text-gray-400 mb-1">Account Created</p>
               <p className="text-white">{formatDate(userData?.profile?.created_at)}</p>
             </div>
