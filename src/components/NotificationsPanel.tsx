@@ -1,4 +1,4 @@
-import { X, Bell } from 'lucide-react';
+import { X, Bell, ChevronRight } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -11,18 +11,84 @@ interface Notification {
   data: any;
   read: boolean;
   created_at: string;
+  redirect_url: string | null;
 }
 
 interface NotificationsPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  onNavigate?: (path: string) => void;
 }
 
-export default function NotificationsPanel({ isOpen, onClose }: NotificationsPanelProps) {
+export default function NotificationsPanel({ isOpen, onClose, onNavigate }: NotificationsPanelProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const handleNotificationClick = (notification: Notification) => {
+    if (notification.redirect_url) {
+      onClose();
+      if (onNavigate) {
+        onNavigate(notification.redirect_url);
+      } else {
+        window.location.hash = notification.redirect_url;
+      }
+    }
+  };
+
+  const getDefaultRedirectUrl = (type: string): string | null => {
+    switch (type) {
+      case 'referral_payout':
+      case 'referral_commission':
+        return 'referral';
+      case 'affiliate_payout':
+      case 'affiliate_commission':
+        return 'affiliate';
+      case 'trade_executed':
+      case 'position_closed':
+      case 'position_tp_hit':
+      case 'position_sl_hit':
+      case 'tp_triggered':
+      case 'sl_triggered':
+      case 'liquidation':
+        return 'futures';
+      case 'copy_trade':
+      case 'pending_copy_trade':
+      case 'copy_trade_closed':
+        return 'copytrading';
+      case 'kyc_update':
+      case 'kyc_approved':
+      case 'kyc_rejected':
+        return 'kyc';
+      case 'shark_card_application':
+      case 'shark_card_approved':
+      case 'shark_card_declined':
+      case 'shark_card_issued':
+        return 'wallet';
+      case 'deposit_completed':
+      case 'deposit_pending':
+        return 'deposit';
+      case 'withdrawal_approved':
+      case 'withdrawal_rejected':
+      case 'withdrawal_pending':
+      case 'withdrawal_completed':
+        return 'withdraw';
+      case 'vip_upgrade':
+      case 'vip_downgrade':
+        return 'vip';
+      case 'bonus':
+      case 'reward':
+        return 'rewardshub';
+      case 'staking_complete':
+      case 'staking_reward':
+        return 'earn';
+      case 'account_update':
+        return 'profile';
+      default:
+        return null;
+    }
+  };
 
   useEffect(() => {
     if (isOpen && user) {
@@ -190,44 +256,57 @@ export default function NotificationsPanel({ isOpen, onClose }: NotificationsPan
           </div>
         ) : (
           <div className="divide-y divide-gray-800/50">
-            {notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className="p-3 transition-all hover:bg-white/5"
-              >
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl flex-shrink-0">
-                    {getNotificationIcon(notification.type)}
-                  </span>
+            {notifications.map((notification) => {
+              const redirectUrl = notification.redirect_url || getDefaultRedirectUrl(notification.type);
+              const isClickable = !!redirectUrl;
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <h4 className="text-white text-sm font-semibold truncate">
-                        {notification.title}
-                      </h4>
-                    </div>
-                    <p className="text-gray-400 text-xs mt-1 whitespace-pre-wrap">
-                      {notification.message}
-                    </p>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-gray-500 text-xs">
-                        {formatTime(notification.created_at)}
-                      </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteNotification(notification.id);
-                        }}
-                        className="text-gray-500 hover:text-red-400 p-1 transition-colors"
-                        title="Delete"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
+              return (
+                <div
+                  key={notification.id}
+                  onClick={() => {
+                    if (isClickable) {
+                      handleNotificationClick({ ...notification, redirect_url: redirectUrl });
+                    }
+                  }}
+                  className={`p-3 transition-all hover:bg-white/5 ${isClickable ? 'cursor-pointer' : ''}`}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl flex-shrink-0">
+                      {getNotificationIcon(notification.type)}
+                    </span>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className="text-white text-sm font-semibold">
+                          {notification.title}
+                        </h4>
+                        {isClickable && (
+                          <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-gray-400 text-xs mt-1 whitespace-pre-wrap">
+                        {notification.message}
+                      </p>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-gray-500 text-xs">
+                          {formatTime(notification.created_at)}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteNotification(notification.id);
+                          }}
+                          className="text-gray-500 hover:text-red-400 p-1 transition-colors"
+                          title="Delete"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
