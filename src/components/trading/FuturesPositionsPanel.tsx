@@ -209,10 +209,18 @@ function FuturesPositionsPanel() {
     try {
       const position = positions.find(p => p.position_id === positionId);
 
+      let currentMarketPrice = null;
+      if (position) {
+        const priceData = prices.get(position.pair);
+        if (priceData) {
+          currentMarketPrice = priceData.price;
+        }
+      }
+
       const { data, error } = await supabase.rpc('close_position', {
         p_position_id: positionId,
         p_close_quantity: null,
-        p_close_price: null
+        p_close_price: currentMarketPrice
       });
 
       if (error) {

@@ -318,6 +318,8 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
       const tpValue = enableTPSL && takeProfitPrice ? parseFloat(takeProfitPrice) : null;
       const slValue = enableTPSL && stopLossPrice ? parseFloat(stopLossPrice) : null;
 
+      const currentMarketPrice = priceData ? parseFloat(priceData.price) : null;
+
       const { data, error } = await supabase.rpc('place_futures_order', {
         p_user_id: user!.id,
         p_pair: pair,
@@ -327,10 +329,10 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
         p_leverage: leverage,
         p_margin_mode: 'cross',
         p_price: null,
-        p_trigger_price: null,
         p_stop_loss: slValue,
         p_take_profit: tpValue,
-        p_reduce_only: false
+        p_reduce_only: false,
+        p_market_price: currentMarketPrice
       });
 
       if (error) throw error;
