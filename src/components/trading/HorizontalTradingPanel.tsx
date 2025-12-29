@@ -32,6 +32,7 @@ function HorizontalTradingPanel({ pair }: HorizontalTradingPanelProps) {
   const [usedMargin, setUsedMargin] = useState(0);
   const [sizeUnit, setSizeUnit] = useState<string>('BTC');
   const [maxLeverage, setMaxLeverage] = useState(125);
+  const [orderType] = useState<'Market' | 'Limit'>('Market');
 
   const symbolWithSlash = pair.replace('USDT', '/USDT');
   const priceData = usePrice(symbolWithSlash);

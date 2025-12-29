@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Search, TrendingUp, DollarSign, AlertTriangle, Activity, Shield, Filter, X, ArrowUpDown, LogIn, Copy, ExternalLink, AlertCircle, Check, Bot } from 'lucide-react';
+import { Users, Search, TrendingUp, DollarSign, AlertTriangle, Activity, Shield, Filter, X, ArrowUpDown, LogIn, Copy, ExternalLink, AlertCircle, Check, Bot, UserPlus, Eye, Image } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '../App';
@@ -77,7 +77,7 @@ export default function AdminDashboard() {
     if (hasAccess) {
       loadData();
     }
-  }, [hasAccess]);
+  }, [hasAccess, profile, staffInfo]);
 
   useEffect(() => {
     if (!hasAccess) return;
@@ -453,6 +453,12 @@ export default function AdminDashboard() {
     navigator.clipboard.writeText(text);
   };
 
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(2) + 'K';
+    return num.toFixed(2);
+  };
+
   if (!hasAccess) {
     return null;
   }
@@ -583,6 +589,26 @@ export default function AdminDashboard() {
                   className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 px-6 py-3 rounded-lg font-bold transition-all border border-emerald-500/30"
                 >
                   Deposits
+                </button>
+              )}
+
+              {isSuperAdmin && (
+                <button
+                  onClick={() => navigateTo('adminreferrals')}
+                  className="bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 px-6 py-3 rounded-lg font-bold transition-all border border-pink-500/30 flex items-center gap-2"
+                >
+                  <UserPlus className="w-5 h-5" />
+                  Referral Tracking
+                </button>
+              )}
+
+              {isSuperAdmin && (
+                <button
+                  onClick={() => navigateTo('adminpopups')}
+                  className="bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 px-6 py-3 rounded-lg font-bold transition-all border border-sky-500/30 flex items-center gap-2"
+                >
+                  <Image className="w-5 h-5" />
+                  Popup Banners
                 </button>
               )}
             </div>
@@ -1025,6 +1051,7 @@ export default function AdminDashboard() {
             )}
           </div>
         )}
+
       </div>
 
       {loginAsModal.show && (

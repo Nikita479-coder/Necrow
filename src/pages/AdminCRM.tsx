@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import {
   Activity, DollarSign, Shield, AlertCircle, FileText, RefreshCw, Search, Filter,
   Users, TrendingUp, Download, Tag, BarChart3, UserCheck, UserX, Clock,
-  ChevronDown, Check, X, Eye, Mail, Ban, Unlock, Bell, LogIn, Copy, ExternalLink, Image
+  ChevronDown, Check, X, Eye, Mail, Ban, Unlock, Bell, LogIn, Copy, ExternalLink, Image,
+  UserPlus
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import PopupBannerManager from '../components/admin/PopupBannerManager';
@@ -10,7 +11,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '../App';
 
-type MainTab = 'analytics' | 'users' | 'segments' | 'logs' | 'popups';
+type MainTab = 'analytics' | 'users' | 'segments' | 'referrers' | 'logs' | 'popups';
 type LogType = 'admin' | 'financial' | 'kyc' | 'security' | 'system';
 
 interface DashboardStats {
@@ -68,6 +69,24 @@ interface SavedFilter {
   is_shared: boolean;
 }
 
+interface ReferrerStats {
+  id: string;
+  full_name: string;
+  email: string;
+  referral_code: string;
+  total_referrals: number;
+  tier_2_referrals: number;
+  tier_3_referrals: number;
+  tier_4_referrals: number;
+  tier_5_referrals: number;
+  total_earnings: string;
+  lifetime_earnings: string;
+  this_month_earnings: string;
+  cpa_earnings: string;
+  total_volume_30d: string;
+  total_volume_all_time: string;
+}
+
 export default function AdminCRM() {
   const { user, profile } = useAuth();
   const { navigateTo } = useNavigation();
@@ -82,6 +101,7 @@ export default function AdminCRM() {
   const [tags, setTags] = useState<UserTag[]>([]);
   const [segments, setSegments] = useState<UserSegment[]>([]);
   const [savedFilters, setSavedFilters] = useState<SavedFilter[]>([]);
+  const [referrers, setReferrers] = useState<ReferrerStats[]>([]);
 
   const [filters, setFilters] = useState({
     search: '',
@@ -132,6 +152,8 @@ export default function AdminCRM() {
       loadFilteredUsers();
     } else if (mainTab === 'logs') {
       loadLogs();
+    } else if (mainTab === 'referrers') {
+      loadReferrers();
     }
   }, [mainTab, filters, page, pageSize, logTab, dateFilter]);
 
@@ -277,6 +299,91 @@ export default function AdminCRM() {
     }
   };
 
+  const loadReferrers = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.rpc('execute_sql', {
+        query: `
+          SELECT
+            up.id,
+            up.full_name,
+            au.email,
+            up.referral_code,
+            rs.total_referrals,
+            rs.tier_2_referrals,
+            rs.tier_3_referrals,
+            rs.tier_4_referrals,
+            rs.tier_5_referrals,
+            rs.total_earnings,
+            rs.lifetime_earnings,
+            rs.this_month_earnings,
+            rs.cpa_earnings,
+            rs.total_volume_30d,
+            rs.total_volume_all_time
+          FROM user_profiles up
+          INNER JOIN referral_stats rs ON up.id = rs.user_id
+          LEFT JOIN auth.users au ON up.id = au.id
+          WHERE rs.total_referrals > 0
+          ORDER BY rs.total_referrals DESC
+        `
+      });
+
+      if (error) throw error;
+      setReferrers(data || []);
+    } catch (error) {
+      console.error('Error loading referrers:', error);
+      try {
+        const { data } = await supabase
+          .from('user_profiles')
+          .select(`
+            id,
+            full_name,
+            referral_code,
+            referral_stats!inner(
+              total_referrals,
+              tier_2_referrals,
+              tier_3_referrals,
+              tier_4_referrals,
+              tier_5_referrals,
+              total_earnings,
+              lifetime_earnings,
+              this_month_earnings,
+              cpa_earnings,
+              total_volume_30d,
+              total_volume_all_time
+            )
+          `)
+          .gt('referral_stats.total_referrals', 0)
+          .order('referral_stats.total_referrals', { ascending: false });
+
+        if (data) {
+          const mappedData = data.map((item: any) => ({
+            id: item.id,
+            full_name: item.full_name,
+            email: '',
+            referral_code: item.referral_code,
+            total_referrals: item.referral_stats.total_referrals,
+            tier_2_referrals: item.referral_stats.tier_2_referrals,
+            tier_3_referrals: item.referral_stats.tier_3_referrals,
+            tier_4_referrals: item.referral_stats.tier_4_referrals,
+            tier_5_referrals: item.referral_stats.tier_5_referrals,
+            total_earnings: item.referral_stats.total_earnings,
+            lifetime_earnings: item.referral_stats.lifetime_earnings,
+            this_month_earnings: item.referral_stats.this_month_earnings,
+            cpa_earnings: item.referral_stats.cpa_earnings,
+            total_volume_30d: item.referral_stats.total_volume_30d,
+            total_volume_all_time: item.referral_stats.total_volume_all_time,
+          }));
+          setReferrers(mappedData);
+        }
+      } catch (fallbackError) {
+        console.error('Fallback query also failed:', fallbackError);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getDateThreshold = () => {
     const now = new Date();
     switch (dateFilter) {
@@ -330,7 +437,7 @@ export default function AdminCRM() {
   };
 
   const handleExport = (format: 'csv' | 'json') => {
-    const dataToExport = mainTab === 'users' ? users : logs;
+    const dataToExport = mainTab === 'users' ? users : mainTab === 'referrers' ? referrers : logs;
 
     if (format === 'csv') {
       const headers = Object.keys(dataToExport[0] || {}).join(',');
@@ -485,6 +592,7 @@ export default function AdminCRM() {
           {[
             { id: 'analytics', label: 'Analytics', icon: BarChart3 },
             { id: 'users', label: 'User Management', icon: Users },
+            { id: 'referrers', label: 'Referrers', icon: UserPlus },
             { id: 'segments', label: 'Segments & Tags', icon: Tag },
             { id: 'popups', label: 'Popup Banners', icon: Image },
             { id: 'logs', label: 'Activity Logs', icon: Activity },
@@ -1022,6 +1130,183 @@ export default function AdminCRM() {
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {mainTab === 'referrers' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-bold text-white">Top Referrers</h2>
+                <p className="text-gray-400 text-sm mt-1">
+                  Users with active referrals ranked by total referral count
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const csv = [
+                      ['Rank', 'Name', 'Email', 'Referral Code', 'Total Referrals', 'Tier 2', 'Tier 3', 'Tier 4', 'Tier 5', 'Lifetime Earnings', 'This Month', 'CPA Earnings', 'Volume 30d', 'Volume All Time'].join(','),
+                      ...referrers.map((r, i) => [
+                        i + 1,
+                        `"${r.full_name}"`,
+                        `"${r.email}"`,
+                        r.referral_code,
+                        r.total_referrals,
+                        r.tier_2_referrals,
+                        r.tier_3_referrals,
+                        r.tier_4_referrals,
+                        r.tier_5_referrals,
+                        r.lifetime_earnings,
+                        r.this_month_earnings,
+                        r.cpa_earnings,
+                        r.total_volume_30d,
+                        r.total_volume_all_time
+                      ].join(','))
+                    ].join('\n');
+                    downloadFile(csv, `referrers_${Date.now()}.csv`, 'text/csv');
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg border border-green-500/30 transition-colors text-sm"
+                >
+                  <Download className="w-4 h-4" />
+                  Export CSV
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-[#0b0e11] rounded-xl border border-gray-800 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-[#1a1d24]">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Rank</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">User</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Referral Code</th>
+                      <th className="px-4 py-3 text-center text-sm font-medium text-gray-400">Total Referrals</th>
+                      <th className="px-4 py-3 text-center text-sm font-medium text-gray-400">Tier 2</th>
+                      <th className="px-4 py-3 text-center text-sm font-medium text-gray-400">Tier 3+</th>
+                      <th className="px-4 py-3 text-right text-sm font-medium text-gray-400">Lifetime Earnings</th>
+                      <th className="px-4 py-3 text-right text-sm font-medium text-gray-400">This Month</th>
+                      <th className="px-4 py-3 text-right text-sm font-medium text-gray-400">Volume (All Time)</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {referrers.map((referrer, index) => (
+                      <tr key={referrer.id} className="hover:bg-[#1a1d24]/50 transition-colors">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            {index === 0 && <span className="text-2xl">🥇</span>}
+                            {index === 1 && <span className="text-2xl">🥈</span>}
+                            {index === 2 && <span className="text-2xl">🥉</span>}
+                            {index > 2 && <span className="text-gray-400 font-medium">{index + 1}</span>}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div>
+                            <p className="text-white font-medium">{referrer.full_name}</p>
+                            {referrer.email && (
+                              <p className="text-gray-500 text-sm">{referrer.email}</p>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <code className="px-2 py-1 bg-[#f0b90b]/10 text-[#f0b90b] rounded font-mono text-sm">
+                              {referrer.referral_code}
+                            </code>
+                            <button
+                              onClick={() => copyToClipboard(referrer.referral_code)}
+                              className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-white"
+                              title="Copy code"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-lg font-bold text-sm">
+                            {referrer.total_referrals}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="text-gray-300 font-medium">{referrer.tier_2_referrals}</span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="text-gray-400 text-sm">
+                            {referrer.tier_3_referrals + referrer.tier_4_referrals + referrer.tier_5_referrals}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <span className="text-green-400 font-medium">
+                            ${parseFloat(referrer.lifetime_earnings || '0').toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <span className="text-[#f0b90b] font-medium">
+                            ${parseFloat(referrer.this_month_earnings || '0').toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <span className="text-white font-medium">
+                            ${formatNumber(parseFloat(referrer.total_volume_all_time || '0'))}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => handleViewUser(referrer.id)}
+                            className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors"
+                            title="View User Details"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {referrers.length === 0 && !loading && (
+                  <div className="text-center py-12">
+                    <UserPlus className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                    <p className="text-gray-400">No referrers found</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {referrers.length > 0 && (
+              <div className="bg-[#0b0e11] rounded-xl p-6 border border-gray-800">
+                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-[#f0b90b]" />
+                  Referral Summary
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-[#1a1d24] rounded-xl p-4 text-center">
+                    <p className="text-3xl font-bold text-blue-400">{referrers.length}</p>
+                    <p className="text-gray-400 text-sm mt-1">Total Referrers</p>
+                  </div>
+                  <div className="bg-[#1a1d24] rounded-xl p-4 text-center">
+                    <p className="text-3xl font-bold text-[#f0b90b]">
+                      {referrers.reduce((sum, r) => sum + r.total_referrals, 0)}
+                    </p>
+                    <p className="text-gray-400 text-sm mt-1">Total Referrals</p>
+                  </div>
+                  <div className="bg-[#1a1d24] rounded-xl p-4 text-center">
+                    <p className="text-3xl font-bold text-green-400">
+                      ${referrers.reduce((sum, r) => sum + parseFloat(r.lifetime_earnings || '0'), 0).toFixed(2)}
+                    </p>
+                    <p className="text-gray-400 text-sm mt-1">Total Paid Out</p>
+                  </div>
+                  <div className="bg-[#1a1d24] rounded-xl p-4 text-center">
+                    <p className="text-3xl font-bold text-cyan-400">
+                      ${formatNumber(referrers.reduce((sum, r) => sum + parseFloat(r.total_volume_all_time || '0'), 0))}
+                    </p>
+                    <p className="text-gray-400 text-sm mt-1">Total Volume</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
