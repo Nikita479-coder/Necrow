@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { useNavigation } from '../App';
-import { Star, Search, X, TrendingUp, Users as UsersIcon, Bell, Clock, RefreshCw } from 'lucide-react';
+import { Star, Search, X, TrendingUp, Users as UsersIcon, Bell, Clock, RefreshCw, Send } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
@@ -88,6 +88,7 @@ function CopyTrading() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('30');
   const [sortStat, setSortStat] = useState<SortStat>('pnl');
   const [pendingTradeIdFromUrl, setPendingTradeIdFromUrl] = useState<string | null>(null);
+  const [hasTelegram, setHasTelegram] = useState(false);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -123,6 +124,7 @@ function CopyTrading() {
       loadFavorites();
       loadActiveCopies();
       loadPendingTrades();
+      checkTelegramStatus();
 
       // Periodically expire old trades (every 30 seconds)
       const expireInterval = setInterval(async () => {
@@ -468,6 +470,20 @@ function CopyTrading() {
     }
   };
 
+  const checkTelegramStatus = async () => {
+    if (!user) return;
+    try {
+      const { data } = await supabase
+        .from('user_profiles')
+        .select('telegram_chat_id')
+        .eq('id', user.id)
+        .maybeSingle();
+      setHasTelegram(!!data?.telegram_chat_id);
+    } catch (error) {
+      console.error('Error checking telegram status:', error);
+    }
+  };
+
   const handleAcceptClick = (trade: PendingTrade) => {
     setSelectedTrade(trade);
     setResponseMode('accept');
@@ -596,6 +612,15 @@ function CopyTrading() {
             </button>
           </div>
 
+          {user && !hasTelegram && (
+            <button
+              onClick={() => navigateTo('profile')}
+              className="flex items-center gap-2 bg-[#0088cc]/20 hover:bg-[#0088cc]/30 text-[#0088cc] px-3 py-1.5 rounded-lg text-sm font-medium transition-all border border-[#0088cc]/30"
+            >
+              <Send className="w-4 h-4" />
+              <span>Connect Telegram</span>
+            </button>
+          )}
         </div>
 
         {activeTab !== 'active' && activeTab !== 'pending' && (

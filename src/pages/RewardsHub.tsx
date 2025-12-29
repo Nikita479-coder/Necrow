@@ -19,6 +19,7 @@ function RewardsHub() {
   const { user } = useAuth();
   const [currentVolume, setCurrentVolume] = useState(0);
   const [totalReferrals, setTotalReferrals] = useState(0);
+  const [qualifiedReferrals, setQualifiedReferrals] = useState(0);
   const [totalTrades, setTotalTrades] = useState(0);
   const [consecutiveDays, setConsecutiveDays] = useState(0);
   const [totalEarned, setTotalEarned] = useState(0);
@@ -85,8 +86,8 @@ function RewardsHub() {
     {
       id: 'referral_5',
       title: 'Growing Network',
-      description: 'Refer 5 active traders',
-      reward: 25,
+      description: 'Invite 5 friends who deposit at least $100 USD',
+      reward: 100,
       rewardType: 'balance',
       target: 5,
       icon: '👥',
@@ -157,6 +158,13 @@ function RewardsHub() {
       if (statsData) {
         setCurrentVolume(parseFloat(statsData.total_volume_30d));
         setTotalReferrals(statsData.total_referrals);
+      }
+
+      const { data: qualifiedData } = await supabase
+        .rpc('get_qualified_referral_count', { p_user_id: user.id });
+
+      if (qualifiedData !== null) {
+        setQualifiedReferrals(qualifiedData);
       }
 
       // Check KYC verification status
@@ -446,8 +454,16 @@ function RewardsHub() {
   };
 
   const completedTasks = tasks.filter(task => {
-    const progress = task.type === 'volume' ? currentVolume :
-                   task.type === 'referral' ? totalReferrals : 0;
+    let progress = 0;
+    if (task.type === 'volume') {
+      progress = task.id === 'copy_trading_allocation' ? copyTradingBalance : currentVolume;
+    } else if (task.type === 'referral') {
+      progress = task.id === 'referral_5' ? qualifiedReferrals : totalReferrals;
+    } else if (task.type === 'trade') {
+      if (task.id === 'kyc_verification') progress = kycVerified ? 1 : 0;
+      else if (task.id === 'first_trade') progress = totalTrades;
+      else if (task.id === 'daily_trade') progress = consecutiveDays;
+    }
     return progress >= task.target;
   });
 
@@ -561,7 +577,11 @@ function RewardsHub() {
                   progress = currentVolume;
                 }
               } else if (task.type === 'referral') {
-                progress = totalReferrals;
+                if (task.id === 'referral_5') {
+                  progress = qualifiedReferrals;
+                } else {
+                  progress = totalReferrals;
+                }
               } else if (task.type === 'trade') {
                 if (task.id === 'kyc_verification') {
                   progress = kycVerified ? 1 : 0;
