@@ -232,7 +232,7 @@ function KYC() {
         .from('kyc_verifications')
         .update({
           kyc_level: 3,
-          kyc_status: 'verified',
+          kyc_status: 'pending',
         })
         .eq('user_id', user.id);
 
@@ -241,15 +241,15 @@ function KYC() {
       const { error: profileError } = await supabase
         .from('user_profiles')
         .update({
-          kyc_status: 'verified',
-          kyc_level: 3
+          kyc_status: 'pending',
+          kyc_level: 2
         })
         .eq('id', user.id);
 
       if (profileError) throw profileError;
 
       await refreshProfile();
-      showSuccess('Selfie verification completed! You now have Advanced level access.');
+      showSuccess('Selfie submitted! Your verification is pending admin review.');
       await loadKYCData();
     } catch (error) {
       console.error('Error submitting selfie:', error);
@@ -274,7 +274,7 @@ function KYC() {
         user_id: user.id,
         verification_type: verificationType,
         kyc_level: 1,
-        kyc_status: 'verified',
+        kyc_status: 'pending',
         first_name: formData.firstName,
         last_name: formData.lastName,
         date_of_birth: formData.dateOfBirth,
@@ -290,15 +290,15 @@ function KYC() {
       const { error: profileError } = await supabase
         .from('user_profiles')
         .update({
-          kyc_status: 'verified',
-          kyc_level: 1
+          kyc_status: 'pending',
+          kyc_level: 0
         })
         .eq('id', user.id);
 
       if (profileError) throw profileError;
 
       await refreshProfile();
-      showSuccess('Personal information saved! You now have Basic verification.');
+      showSuccess('Personal information submitted! Your verification is pending admin review.');
       await loadKYCData();
       setCurrentStep(2);
     } catch (error) {

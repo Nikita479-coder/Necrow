@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { X, AlertTriangle, Send, Users, Zap, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -31,6 +31,18 @@ export default function WithdrawModal({ isOpen, onClose, crypto }: WithdrawModal
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [withdrawalBlocked, setWithdrawalBlocked] = useState(false);
   const [blockReason, setBlockReason] = useState('');
+
+  const isExternalFormValid = useMemo(() => {
+    const addressValid = address.trim().length >= 10;
+    const amountValid = parseFloat(amount) > 0;
+    return addressValid && amountValid && !withdrawalBlocked;
+  }, [address, amount, withdrawalBlocked]);
+
+  const isInternalFormValid = useMemo(() => {
+    const recipientValid = recipientInput.trim().length > 0;
+    const amountValid = parseFloat(amount) > 0;
+    return recipientValid && amountValid && !withdrawalBlocked;
+  }, [recipientInput, amount, withdrawalBlocked]);
 
   useEffect(() => {
     if (isOpen) {
@@ -80,92 +92,82 @@ export default function WithdrawModal({ isOpen, onClose, crypto }: WithdrawModal
     }
   };
 
-  const handleWithdraw = async () => {
-    console.log('=== WITHDRAWAL STARTED ===');
-    console.log('User:', user?.id);
-    console.log('Crypto data:', crypto);
-    console.log('Amount:', amount);
-    console.log('Address:', address);
-    console.log('Network:', selectedNetwork);
+  const handleWithdraw = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (isWithdrawing) return;
 
     if (!user) {
-      console.error('No user found');
       showToast('Please sign in to withdraw', 'error');
       return;
     }
 
     if (!address || address.trim().length < 10) {
-      console.error('Invalid address:', address);
       showToast('Please enter a valid wallet address', 'error');
       return;
     }
 
     const withdrawAmount = parseFloat(amount);
     if (isNaN(withdrawAmount) || withdrawAmount <= 0) {
-      console.error('Invalid amount:', amount);
       showToast('Please enter a valid amount', 'error');
       return;
     }
 
     const minWithdraw = parseFloat(crypto.minWithdraw);
     if (withdrawAmount < minWithdraw) {
-      console.error('Below minimum:', withdrawAmount, '<', minWithdraw);
       showToast(`Minimum withdrawal is ${minWithdraw} ${crypto.symbol}`, 'error');
       return;
     }
 
     const availableBalance = parseFloat(crypto.balance);
     if (withdrawAmount > availableBalance) {
-      console.error('Insufficient balance:', withdrawAmount, '>', availableBalance);
       showToast(`Insufficient balance. Available: ${availableBalance.toFixed(6)} ${crypto.symbol}`, 'error');
       return;
     }
 
     setIsWithdrawing(true);
-    try {
-      console.log('=== CALLING EDGE FUNCTION ===');
-      console.log('Payload:', {
-        currency: crypto.symbol,
-        amount: withdrawAmount,
-        address: address.trim(),
-        network: selectedNetwork
-      });
 
-      const { data, error } = await supabase.functions.invoke('submit-withdrawal', {
-        body: {
-          currency: crypto.symbol,
-          amount: withdrawAmount,
-          address: address.trim(),
-          network: selectedNetwork
+    const makeRequest = async (attempt: number): Promise<boolean> => {
+      try {
+        const { data, error } = await supabase.functions.invoke('submit-withdrawal', {
+          body: {
+            currency: crypto.symbol,
+            amount: withdrawAmount,
+            address: address.trim(),
+            network: selectedNetwork
+          }
+        });
+
+        if (error) {
+          if (attempt < 2 && (error.message?.includes('Failed to fetch') || error.message?.includes('fetch'))) {
+            await new Promise(r => setTimeout(r, 500));
+            return makeRequest(attempt + 1);
+          }
+          showToast(error.message || 'Failed to submit withdrawal', 'error');
+          return false;
         }
-      });
 
-      console.log('=== EDGE FUNCTION RESPONSE ===');
-      console.log('Data:', data);
-      console.log('Error:', error);
-
-      if (error) {
-        console.error('=== EDGE FUNCTION ERROR ===', error);
-        showToast(error.message || 'Failed to submit withdrawal', 'error');
-        setIsWithdrawing(false);
-        return;
+        if (data?.success) {
+          showToast(`Withdrawal request submitted for ${withdrawAmount} ${crypto.symbol}`, 'success');
+          onClose();
+          return true;
+        } else {
+          showToast(data?.error || 'Withdrawal failed. Please try again.', 'error');
+          return false;
+        }
+      } catch (err: any) {
+        if (attempt < 2) {
+          await new Promise(r => setTimeout(r, 500));
+          return makeRequest(attempt + 1);
+        }
+        showToast(err.message || 'Failed to submit withdrawal request', 'error');
+        return false;
       }
+    };
 
-      if (data?.success) {
-        console.log('=== SUCCESS ===');
-        showToast(`Withdrawal request submitted for ${withdrawAmount} ${crypto.symbol}`, 'success');
-        onClose();
-      } else {
-        console.error('=== FAILURE ===', data);
-        showToast(data?.error || 'Withdrawal failed. Please try again.', 'error');
-      }
-    } catch (error: any) {
-      console.error('=== CAUGHT ERROR ===', error);
-      showToast(error.message || 'Failed to submit withdrawal request', 'error');
-    } finally {
-      console.log('=== CLEANUP ===');
-      setIsWithdrawing(false);
-    }
+    await makeRequest(0);
+    setIsWithdrawing(false);
   };
 
   const handleTransferToUser = async () => {
@@ -338,7 +340,7 @@ export default function WithdrawModal({ isOpen, onClose, crypto }: WithdrawModal
                     className="w-full bg-[#0b0e11] border border-gray-700 rounded-xl px-4 py-3 text-white outline-none focus:border-[#f0b90b] transition-colors pr-24 text-lg font-semibold"
                   />
                   <button
-                    onClick={() => setAmount(crypto.balance)}
+                    onClick={() => setAmount(availableBalance.toFixed(6))}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-[#f0b90b] hover:bg-[#f8d12f] text-black font-bold px-4 py-1.5 rounded-lg text-sm transition-colors"
                   >
                     MAX
@@ -350,8 +352,7 @@ export default function WithdrawModal({ isOpen, onClose, crypto }: WithdrawModal
                       key={percent}
                       onClick={() => {
                         const percentage = parseInt(percent) / 100;
-                        const balance = parseFloat(crypto.balance);
-                        setAmount((balance * percentage).toFixed(6));
+                        setAmount((availableBalance * percentage).toFixed(6));
                       }}
                       className="flex-1 px-3 py-2 bg-[#0b0e11] hover:bg-[#2b3139] border border-gray-700 hover:border-[#f0b90b] rounded-lg text-sm text-gray-400 hover:text-white transition-colors"
                     >
@@ -399,9 +400,13 @@ export default function WithdrawModal({ isOpen, onClose, crypto }: WithdrawModal
               </div>
 
               <button
-                onClick={handleWithdraw}
-                disabled={withdrawalBlocked || !address || !amount || parseFloat(amount) <= 0 || isWithdrawing}
-                className="w-full bg-gradient-to-r from-[#f0b90b] to-[#f8d12f] hover:from-[#f8d12f] hover:to-[#f0b90b] disabled:from-gray-700 disabled:to-gray-700 disabled:cursor-not-allowed text-black disabled:text-gray-500 font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#f0b90b]/20 disabled:shadow-none"
+                type="button"
+                onClick={(e) => handleWithdraw(e)}
+                className={`w-full font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                  !isExternalFormValid || isWithdrawing
+                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-[#f0b90b] to-[#f8d12f] hover:from-[#f8d12f] hover:to-[#f0b90b] text-black shadow-lg shadow-[#f0b90b]/20'
+                }`}
               >
                 {withdrawalBlocked ? (
                   <>
@@ -447,7 +452,7 @@ export default function WithdrawModal({ isOpen, onClose, crypto }: WithdrawModal
                     className="w-full bg-[#0b0e11] border border-gray-700 rounded-xl px-4 py-3 text-white outline-none focus:border-[#0ecb81] transition-colors pr-24 text-lg font-semibold"
                   />
                   <button
-                    onClick={() => setAmount(crypto.balance)}
+                    onClick={() => setAmount(availableBalance.toFixed(6))}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-[#0ecb81] hover:bg-[#0ecb81]/80 text-black font-bold px-4 py-1.5 rounded-lg text-sm transition-colors"
                   >
                     MAX
@@ -459,8 +464,7 @@ export default function WithdrawModal({ isOpen, onClose, crypto }: WithdrawModal
                       key={percent}
                       onClick={() => {
                         const percentage = parseInt(percent) / 100;
-                        const balance = parseFloat(crypto.balance);
-                        setAmount((balance * percentage).toFixed(6));
+                        setAmount((availableBalance * percentage).toFixed(6));
                       }}
                       className="flex-1 px-3 py-2 bg-[#0b0e11] hover:bg-[#2b3139] border border-gray-700 hover:border-[#0ecb81] rounded-lg text-sm text-gray-400 hover:text-white transition-colors"
                     >
@@ -509,7 +513,7 @@ export default function WithdrawModal({ isOpen, onClose, crypto }: WithdrawModal
 
               <button
                 onClick={handleTransferToUser}
-                disabled={withdrawalBlocked || !recipientInput.trim() || !amount || parseFloat(amount) <= 0 || isTransferring}
+                disabled={!isInternalFormValid || isTransferring}
                 className="w-full bg-gradient-to-r from-[#0ecb81] to-[#0ecb81]/80 hover:from-[#0ecb81]/90 hover:to-[#0ecb81]/70 disabled:from-gray-700 disabled:to-gray-700 disabled:cursor-not-allowed text-black disabled:text-gray-500 font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#0ecb81]/20 disabled:shadow-none"
               >
                 {withdrawalBlocked ? (
