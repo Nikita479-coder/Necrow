@@ -132,6 +132,16 @@ function RewardsHub() {
       target: 10000000,
       icon: '🏆',
       type: 'volume'
+    },
+    {
+      id: 'trustpilot_review',
+      title: 'Trustpilot Review Bonus',
+      description: 'Leave a review on Trustpilot and get rewarded',
+      reward: 5,
+      rewardType: 'balance',
+      target: 1,
+      icon: '⭐',
+      type: 'trade'
     }
   ]);
 
@@ -616,7 +626,20 @@ function RewardsHub() {
                   </div>
 
                   <h3 className="text-sm font-medium text-white mb-1">{task.title}</h3>
-                  <p className="text-xs text-[#848e9c] mb-3">{task.description}</p>
+                  <p className="text-xs text-[#848e9c] mb-2">{task.description}</p>
+                  {task.id === 'trustpilot_review' && !isClaimed && (
+                    <a
+                      href="https://www.trustpilot.com/review/shark-trades.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-[#fcd535] hover:text-[#f0b90b] mb-2"
+                    >
+                      Leave a Review on Trustpilot
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
+                  )}
 
                   {!isClaimed && (
                     <div className="mb-2">
