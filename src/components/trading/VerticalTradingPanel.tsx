@@ -42,6 +42,7 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
   const [tpPnL, setTpPnL] = useState('');
   const [slPnL, setSlPnL] = useState('');
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [orderType] = useState<'Market' | 'Limit'>('Market');
   const [pendingOrder, setPendingOrder] = useState<{
     side: 'Long' | 'Short';
     orderCost: number;
@@ -935,8 +936,8 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
           orderType={orderType}
           side={pendingOrder.side}
           pair={pair}
-          price={price}
-          lastPrice={priceData?.price || price}
+          price={priceData?.price || '0'}
+          lastPrice={priceData?.price || '0'}
           quantity={size}
           leverage={leverage}
           orderCost={pendingOrder.orderCost}
