@@ -611,6 +611,16 @@ export default function AdminDashboard() {
                   Popup Banners
                 </button>
               )}
+
+              {isSuperAdmin && (
+                <button
+                  onClick={() => navigateTo('admingiveaway')}
+                  className="bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 px-6 py-3 rounded-lg font-bold transition-all border border-yellow-500/30 flex items-center gap-2"
+                >
+                  <TrendingUp className="w-5 h-5" />
+                  Giveaway
+                </button>
+              )}
             </div>
           </div>
         </div>

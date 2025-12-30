@@ -41,6 +41,8 @@ import AdminWithdrawals from './pages/AdminWithdrawals';
 import AdminDeposits from './pages/AdminDeposits';
 import AdminReferralTracking from './pages/AdminReferralTracking';
 import AdminPopupBanners from './pages/AdminPopupBanners';
+import AdminGiveaway from './pages/AdminGiveaway';
+import GiveawayHub from './pages/GiveawayHub';
 import EventDetails from './pages/EventDetails';
 import TermsPage from './pages/TermsPage';
 import BonusTermsPage from './pages/BonusTermsPage';
@@ -49,7 +51,7 @@ import LegalHub from './pages/LegalHub';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 
-type PageType = 'home' | 'markets' | 'futures' | 'profile' | 'swap' | 'swaphistory' | 'copytrading' | 'mocktrading' | 'activecopying' | 'traderprofile' | 'deposit' | 'withdraw' | 'kyc' | 'kycdocuments' | 'adminkyc' | 'wallet' | 'referral' | 'affiliate' | 'vip' | 'rewardshub' | 'earn' | 'signin' | 'signup' | 'forgotpassword' | 'resetpassword' | 'transactions' | 'admindashboard' | 'adminuser' | 'admintrader' | 'adminlogs' | 'admincrm' | 'adminemails' | 'adminbonuses' | 'adminsupport' | 'adminviptracking' | 'adminsharkcards' | 'adminstaff' | 'admintelegram' | 'adminwithdrawals' | 'admindeposits' | 'adminreferrals' | 'adminpopups' | 'event' | 'terms' | 'bonusterms' | 'support' | 'legal';
+type PageType = 'home' | 'markets' | 'futures' | 'profile' | 'swap' | 'swaphistory' | 'copytrading' | 'mocktrading' | 'activecopying' | 'traderprofile' | 'deposit' | 'withdraw' | 'kyc' | 'kycdocuments' | 'adminkyc' | 'wallet' | 'referral' | 'affiliate' | 'vip' | 'rewardshub' | 'earn' | 'signin' | 'signup' | 'forgotpassword' | 'resetpassword' | 'transactions' | 'admindashboard' | 'adminuser' | 'admintrader' | 'adminlogs' | 'admincrm' | 'adminemails' | 'adminbonuses' | 'adminsupport' | 'adminviptracking' | 'adminsharkcards' | 'adminstaff' | 'admintelegram' | 'adminwithdrawals' | 'admindeposits' | 'adminreferrals' | 'adminpopups' | 'admingiveaway' | 'giveaway' | 'event' | 'terms' | 'bonusterms' | 'support' | 'legal';
 
 interface NavigationContextType {
   currentPage: PageType;
@@ -196,6 +198,10 @@ function App() {
         return <AdminReferralTracking />;
       case 'adminpopups':
         return <AdminPopupBanners />;
+      case 'admingiveaway':
+        return <AdminGiveaway />;
+      case 'giveaway':
+        return <GiveawayHub />;
       case 'event':
         return <EventDetails />;
       case 'terms':

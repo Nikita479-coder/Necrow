@@ -94,6 +94,7 @@ export default function Navbar() {
     { label: 'Earn', hasDropdown: false, onClick: () => navigateTo('earn'), protected: false },
     { label: 'Swap', hasDropdown: false, onClick: () => handleProtectedAction(() => navigateTo('swap')), protected: true },
     { label: 'Copy Trading', hasDropdown: false, onClick: () => handleProtectedAction(() => navigateTo('copytrading')), protected: true, ...(pendingTradesCount > 0 && { badge: pendingTradesCount }) },
+    { label: 'Giveaway', hasDropdown: false, onClick: () => navigateTo('giveaway'), protected: false, highlight: true },
     { label: 'Wallet', hasDropdown: false, onClick: () => handleProtectedAction(() => navigateTo('wallet')), protected: true },
   ];
 
@@ -118,9 +119,16 @@ export default function Navbar() {
               <button
                 key={item.label}
                 onClick={item.onClick}
-                className="relative text-gray-300 hover:text-[#f0b90b] transition-all duration-300 text-sm font-medium flex items-center gap-1 group py-1"
+                className={`relative transition-all duration-300 text-sm font-medium flex items-center gap-1 group py-1 ${
+                  item.highlight
+                    ? 'text-yellow-400 hover:text-yellow-300'
+                    : 'text-gray-300 hover:text-[#f0b90b]'
+                }`}
               >
                 {item.label}
+                {item.highlight && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
+                )}
                 {item.hasDropdown && <ChevronDown className="w-3 h-3 transition-transform group-hover:rotate-180" />}
                 {item.badge !== undefined && (
                   <span className="ml-1 min-w-[18px] h-[18px] bg-[#f0b90b] text-black text-[10px] font-bold rounded-full flex items-center justify-center px-1">

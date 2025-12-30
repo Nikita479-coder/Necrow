@@ -145,13 +145,9 @@ export default function AdminUserDetail() {
         .eq('id', uid)
         .single();
 
-      let authUser = null;
-      try {
-        const { data } = await supabase.auth.admin.getUserById(uid);
-        authUser = data?.user;
-      } catch {
-        authUser = null;
-      }
+      const { data: userEmail } = await supabase.rpc('get_user_email_for_admin', {
+        p_user_id: uid
+      });
 
       let referrerInfo = null;
       if (profile?.referred_by) {
@@ -162,10 +158,12 @@ export default function AdminUserDetail() {
           .single();
 
         if (referrerProfile) {
-          const { data: referrerAuth } = await supabase.auth.admin.getUserById(profile.referred_by);
+          const { data: referrerEmail } = await supabase.rpc('get_user_email_for_admin', {
+            p_user_id: profile.referred_by
+          });
           referrerInfo = {
             ...referrerProfile,
-            email: referrerAuth?.user?.email
+            email: referrerEmail
           };
         }
       }
@@ -195,7 +193,7 @@ export default function AdminUserDetail() {
 
       setUserData({
         profile,
-        authUser,
+        userEmail,
         referrerInfo,
         wallets: wallets || [],
         futuresWallet,
