@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import SharkCardApplicationModal from '../components/SharkCardApplicationModal';
+import GiveawayPopup from '../components/GiveawayPopup';
 import CryptoIcon from '../components/CryptoIcon';
 import { Shield, ChevronDown, ArrowRight, Gift, Check, ChevronLeft, ChevronRight, Zap, Lock, Globe, Users, TrendingUp, LineChart, Clock, Headphones, Loader2, Newspaper, ExternalLink, Smartphone, Bell } from 'lucide-react';
 import { usePrices } from '../hooks/usePrices';
@@ -1154,6 +1155,8 @@ function HomePage() {
         isOpen={showSharkCardModal}
         onClose={() => setShowSharkCardModal(false)}
       />
+
+      <GiveawayPopup />
     </div>
   );
 }

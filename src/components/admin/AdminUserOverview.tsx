@@ -186,6 +186,10 @@ export default function AdminUserOverview({ userId, userData, onRefresh }: Props
               <p className="text-white">{userData?.profile?.full_name || 'Not provided'}</p>
             </div>
             <div>
+              <p className="text-sm text-gray-400 mb-1">Email</p>
+              <p className="text-white">{userData?.userEmail || 'Not available'}</p>
+            </div>
+            <div>
               <p className="text-sm text-gray-400 mb-1">Phone</p>
               <p className="text-white">{userData?.profile?.phone || 'Not provided'}</p>
             </div>

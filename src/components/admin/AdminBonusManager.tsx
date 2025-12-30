@@ -42,6 +42,8 @@ interface LockedBonus {
   expires_at: string;
   days_remaining: number;
   created_at: string;
+  bonus_trading_volume_completed: number;
+  bonus_trading_volume_required: number;
 }
 
 export default function AdminBonusManager({ userId, userData, onRefresh }: Props) {
@@ -339,9 +341,9 @@ export default function AdminBonusManager({ userId, userData, onRefresh }: Props
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500">Profits Earned</p>
-                          <p className="text-lg font-medium text-green-400">
-                            +${bonus.realized_profits.toFixed(2)}
+                          <p className="text-xs text-gray-500">Net P&L</p>
+                          <p className={`text-lg font-medium ${(bonus.current_amount - bonus.original_amount) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {(bonus.current_amount - bonus.original_amount) >= 0 ? '+' : ''}${(bonus.current_amount - bonus.original_amount).toFixed(2)}
                           </p>
                         </div>
                       </div>
@@ -356,7 +358,7 @@ export default function AdminBonusManager({ userId, userData, onRefresh }: Props
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mt-3 pt-3 border-t border-gray-800">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mt-3 pt-3 border-t border-gray-800">
                     <div>
                       <p className="text-gray-500 mb-1">Created</p>
                       <p className="text-white">{new Date(bonus.created_at).toLocaleDateString()}</p>
@@ -368,8 +370,21 @@ export default function AdminBonusManager({ userId, userData, onRefresh }: Props
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-500 mb-1">Used for Trading</p>
-                      <p className="text-white">${(bonus.original_amount - bonus.current_amount).toFixed(2)}</p>
+                      <p className="text-gray-500 mb-1">Trading Volume</p>
+                      <p className="text-white font-medium">
+                        ${bonus.bonus_trading_volume_completed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 mb-1">Volume Required</p>
+                      <p className={`font-medium ${bonus.bonus_trading_volume_completed >= bonus.bonus_trading_volume_required ? 'text-green-400' : 'text-orange-400'}`}>
+                        ${bonus.bonus_trading_volume_required.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {bonus.bonus_trading_volume_required > 0 && (
+                          <span className="text-xs text-gray-500 ml-1">
+                            ({((bonus.bonus_trading_volume_completed / bonus.bonus_trading_volume_required) * 100).toFixed(1)}%)
+                          </span>
+                        )}
+                      </p>
                     </div>
                   </div>
                 </div>

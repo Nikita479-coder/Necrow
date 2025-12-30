@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Edit2, Save, X, DollarSign, Gift } from 'lucide-react';
+import { TrendingUp, TrendingDown, Edit2, Save, X, DollarSign, Gift, Clock } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 
@@ -14,6 +14,33 @@ interface EditingPosition {
   value: string;
 }
 
+function formatDuration(openedAt: string, closedAt: string): string {
+  const start = new Date(openedAt).getTime();
+  const end = new Date(closedAt).getTime();
+  const diffMs = end - start;
+
+  if (diffMs < 0) return '-';
+
+  const seconds = Math.floor(diffMs / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) {
+    const remainingHours = hours % 24;
+    return `${days}d ${remainingHours}h`;
+  }
+  if (hours > 0) {
+    const remainingMinutes = minutes % 60;
+    return `${hours}h ${remainingMinutes}m`;
+  }
+  if (minutes > 0) {
+    const remainingSeconds = seconds % 60;
+    return `${minutes}m ${remainingSeconds}s`;
+  }
+  return `${seconds}s`;
+}
+
 export default function AdminUserTrading({ userId, userData }: Props) {
   const { user: adminUser } = useAuth();
   const [positions, setPositions] = useState<any[]>([]);
@@ -24,13 +51,15 @@ export default function AdminUserTrading({ userId, userData }: Props) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    loadTradingData();
-    const interval = setInterval(loadTradingData, 3000);
+    loadTradingData(true);
+    const interval = setInterval(() => loadTradingData(false), 5000);
     return () => clearInterval(interval);
   }, [userId]);
 
-  const loadTradingData = async () => {
-    setLoading(true);
+  const loadTradingData = async (isInitialLoad = false) => {
+    if (isInitialLoad) {
+      setLoading(true);
+    }
     try {
       const [positionsRes, ordersRes, closedPositionsRes] = await Promise.all([
         supabase
@@ -61,7 +90,9 @@ export default function AdminUserTrading({ userId, userData }: Props) {
     } catch (error) {
       console.error('Error loading trading data:', error);
     } finally {
-      setLoading(false);
+      if (isInitialLoad) {
+        setLoading(false);
+      }
     }
   };
 
@@ -345,6 +376,7 @@ export default function AdminUserTrading({ userId, userData }: Props) {
                   <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Closed</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Pair</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Side</th>
+                  <th className="text-center py-3 px-4 text-sm font-medium text-gray-400">Duration</th>
                   <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">Entry</th>
                   <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">Exit</th>
                   <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">Size</th>
@@ -383,6 +415,12 @@ export default function AdminUserTrading({ userId, userData }: Props) {
                           trade.side === 'long' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
                         }`}>
                           {trade.side.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span className="inline-flex items-center gap-1 text-gray-300 text-sm">
+                          <Clock className="w-3 h-3 text-gray-500" />
+                          {formatDuration(trade.opened_at, trade.closed_at)}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right text-white">${parseFloat(trade.entry_price).toFixed(2)}</td>
