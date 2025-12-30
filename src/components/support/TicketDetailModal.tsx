@@ -1,8 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Send, User, Shield, Upload, Image as ImageIcon, Download, Clock, CheckCircle } from 'lucide-react';
+import { X, Send, User, Shield, Upload, Image as ImageIcon, Download, Clock, CheckCircle, MessageSquare } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useNotificationSound } from '../../hooks/useNotificationSound';
+
+interface QuickReply {
+  id: string;
+  command: string;
+  label: string;
+  message: string;
+  sort_order: number;
+}
 
 interface Message {
   id: string;
@@ -54,20 +62,40 @@ export default function TicketDetailModal({ ticketId, onClose, onUpdate }: Ticke
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
+  const [showQuickReplies, setShowQuickReplies] = useState(false);
+  const [quickReplyFilter, setQuickReplyFilter] = useState('');
+  const [selectedQuickReplyIndex, setSelectedQuickReplyIndex] = useState(0);
+  const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const subscriptionRef = useRef<any>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const quickRepliesRef = useRef<HTMLDivElement>(null);
   const { playSound } = useNotificationSound({ enabled: true, volume: 0.5 });
 
   useEffect(() => {
     loadTicket();
     loadMessages();
     loadAttachments();
+    loadQuickReplies();
     const cleanup = subscribeToMessages();
 
     return () => {
       cleanup?.();
     };
   }, [ticketId]);
+
+  const loadQuickReplies = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_quick_reply_templates', {
+        p_template_type: 'user'
+      });
+
+      if (error) throw error;
+      setQuickReplies(data || []);
+    } catch (error) {
+      console.error('Error loading quick replies:', error);
+    }
+  };
 
   useEffect(() => {
     scrollToBottom();
@@ -449,6 +477,58 @@ export default function TicketDetailModal({ ticketId, onClose, onUpdate }: Ticke
     }
   };
 
+  const filteredQuickReplies = quickReplies.filter(qr =>
+    quickReplyFilter === '' ||
+    qr.command.toLowerCase().includes(quickReplyFilter.toLowerCase()) ||
+    qr.label.toLowerCase().includes(quickReplyFilter.toLowerCase())
+  );
+
+  const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNewMessage(value);
+
+    if (value.startsWith('/')) {
+      setShowQuickReplies(true);
+      setQuickReplyFilter(value);
+      setSelectedQuickReplyIndex(0);
+    } else {
+      setShowQuickReplies(false);
+      setQuickReplyFilter('');
+    }
+  };
+
+  const selectQuickReply = (reply: { command: string; label: string; message: string }) => {
+    setNewMessage(reply.message);
+    setShowQuickReplies(false);
+    setQuickReplyFilter('');
+    inputRef.current?.focus();
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (showQuickReplies && filteredQuickReplies.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedQuickReplyIndex(prev =>
+          prev < filteredQuickReplies.length - 1 ? prev + 1 : 0
+        );
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedQuickReplyIndex(prev =>
+          prev > 0 ? prev - 1 : filteredQuickReplies.length - 1
+        );
+      } else if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        selectQuickReply(filteredQuickReplies[selectedQuickReplyIndex]);
+      } else if (e.key === 'Escape') {
+        setShowQuickReplies(false);
+        setQuickReplyFilter('');
+      }
+    } else if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(e);
+    }
+  };
+
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
@@ -606,40 +686,73 @@ export default function TicketDetailModal({ ticketId, onClose, onUpdate }: Ticke
                 </div>
               )}
 
-              <div className="flex gap-3">
-                <label className="p-2 bg-gray-800/50 border border-gray-700 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
-                  <Upload className="w-5 h-5 text-gray-400" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleFileChange}
-                    className="hidden"
-                    disabled={sending}
-                  />
-                </label>
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type your message..."
-                  className="flex-1 px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                  disabled={sending}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage(e);
-                    }
-                  }}
-                />
-                <button
-                  type="submit"
-                  disabled={sending || (!newMessage.trim() && newAttachments.length === 0)}
-                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  <Send className="w-4 h-4" />
-                  Send
-                </button>
+              <div className="relative">
+                {showQuickReplies && filteredQuickReplies.length > 0 && (
+                  <div
+                    ref={quickRepliesRef}
+                    className="absolute bottom-full left-0 right-0 mb-2 bg-gray-800 border border-gray-700 rounded-lg shadow-xl overflow-hidden z-10 max-h-64 overflow-y-auto"
+                  >
+                    <div className="px-3 py-2 border-b border-gray-700 bg-gray-800/80">
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <MessageSquare className="w-3 h-3" />
+                        <span>Quick Replies - Use arrow keys to navigate, Enter to select</span>
+                      </div>
+                    </div>
+                    {filteredQuickReplies.map((reply, index) => (
+                      <button
+                        key={reply.command}
+                        type="button"
+                        onClick={() => selectQuickReply(reply)}
+                        className={`w-full px-4 py-3 text-left hover:bg-gray-700/50 transition-colors ${
+                          index === selectedQuickReplyIndex ? 'bg-blue-600/20 border-l-2 border-blue-500' : ''
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-blue-400 font-mono text-sm">{reply.command}</span>
+                          <span className="text-xs text-gray-500 bg-gray-700/50 px-2 py-0.5 rounded">{reply.label}</span>
+                        </div>
+                        <p className="text-sm text-gray-300 mt-1 truncate">{reply.message}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <label className="p-2 bg-gray-800/50 border border-gray-700 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                    <Upload className="w-5 h-5 text-gray-400" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleFileChange}
+                      className="hidden"
+                      disabled={sending}
+                    />
+                  </label>
+                  <div className="flex-1 relative">
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      value={newMessage}
+                      onChange={handleMessageChange}
+                      placeholder="Type your message... (Press / for quick replies)"
+                      className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                      disabled={sending}
+                      onKeyDown={handleInputKeyDown}
+                      onBlur={() => {
+                        setTimeout(() => setShowQuickReplies(false), 200);
+                      }}
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={sending || (!newMessage.trim() && newAttachments.length === 0)}
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    <Send className="w-4 h-4" />
+                    Send
+                  </button>
+                </div>
               </div>
             </form>
           </div>

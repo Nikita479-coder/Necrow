@@ -44,9 +44,6 @@ export default function NewTicketModal({ onClose, onSuccess }: NewTicketModalPro
 
       if (error) throw error;
       setCategories(data || []);
-      if (data && data.length > 0) {
-        setCategoryId(data[0].id);
-      }
     } catch (error) {
       console.error('Error loading categories:', error);
     }
@@ -176,14 +173,28 @@ export default function NewTicketModal({ onClose, onSuccess }: NewTicketModalPro
             <select
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
-              className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500 cursor-pointer appearance-none"
               required
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 12px center',
+                backgroundSize: '16px',
+                paddingRight: '40px',
+              }}
             >
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
+              {categories.length === 0 ? (
+                <option value="" disabled>Loading categories...</option>
+              ) : (
+                <>
+                  <option value="" disabled>Select a category</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id} className="bg-gray-800">
+                      {cat.name}
+                    </option>
+                  ))}
+                </>
+              )}
             </select>
           </div>
 
