@@ -79,6 +79,7 @@ export default function WithdrawModal({ isOpen, onClose, crypto }: WithdrawModal
 
   const networkFee = parseFloat(crypto.fee);
   const amountNum = parseFloat(amount) || 0;
+  const availableBalance = parseFloat(crypto.balance) || 0;
   const receiveAmount = withdrawType === 'external'
     ? (amountNum > networkFee ? (amountNum - networkFee).toFixed(6) : '0')
     : amount;
@@ -120,7 +121,6 @@ export default function WithdrawModal({ isOpen, onClose, crypto }: WithdrawModal
       return;
     }
 
-    const availableBalance = parseFloat(crypto.balance);
     if (withdrawAmount > availableBalance) {
       showToast(`Insufficient balance. Available: ${availableBalance.toFixed(6)} ${crypto.symbol}`, 'error');
       return;
