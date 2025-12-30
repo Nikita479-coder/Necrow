@@ -1,10 +1,20 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageSquare, Clock, CheckCircle, User, Search, Filter, Wifi, WifiOff, Eye, EyeOff } from 'lucide-react';
+import { MessageSquare, Clock, CheckCircle, User, Search, Filter, Wifi, WifiOff, Eye, EyeOff, Zap, FileText, Plus, Edit2, Trash2, Save, X, ToggleLeft, ToggleRight } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { loggingService } from '../services/loggingService';
 import { useNotificationSound, ConnectionStatus } from '../hooks/useNotificationSound';
+
+interface QuickReplyTemplate {
+  id: string;
+  command: string;
+  label: string;
+  message: string;
+  template_type: 'admin' | 'user';
+  is_active: boolean;
+  sort_order: number;
+}
 
 interface Ticket {
   id: string;
@@ -41,13 +51,31 @@ export default function AdminSupport() {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'open' | 'pending'>('open');
+  const [filter, setFilter] = useState<'all' | 'open' | 'pending' | 'templates'>('open');
   const [searchQuery, setSearchQuery] = useState('');
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
+  const [showQuickReplies, setShowQuickReplies] = useState(false);
+  const [quickReplyFilter, setQuickReplyFilter] = useState('');
+  const [selectedQuickReplyIndex, setSelectedQuickReplyIndex] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const ticketSubscriptionRef = useRef<any>(null);
   const messageSubscriptionRef = useRef<any>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const quickReplyRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const { playSound } = useNotificationSound({ enabled: true, volume: 0.5 });
+
+  const [templates, setTemplates] = useState<QuickReplyTemplate[]>([]);
+  const [adminQuickReplies, setAdminQuickReplies] = useState<QuickReplyTemplate[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<QuickReplyTemplate | null>(null);
+  const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
+  const [templateTypeFilter, setTemplateTypeFilter] = useState<'all' | 'admin' | 'user'>('all');
+  const [newTemplate, setNewTemplate] = useState({
+    command: '',
+    label: '',
+    message: '',
+    template_type: 'admin' as 'admin' | 'user',
+  });
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -56,6 +84,15 @@ export default function AdminSupport() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
+
+  useEffect(() => {
+    if (showQuickReplies && quickReplyRefs.current[selectedQuickReplyIndex]) {
+      quickReplyRefs.current[selectedQuickReplyIndex]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [selectedQuickReplyIndex, showQuickReplies]);
 
   useEffect(() => {
     if (user && profile?.is_admin) {
@@ -72,6 +109,157 @@ export default function AdminSupport() {
       return cleanup;
     }
   }, [selectedTicket]);
+
+  useEffect(() => {
+    if (filter === 'templates') {
+      loadTemplates();
+    }
+  }, [filter]);
+
+  useEffect(() => {
+    loadAdminQuickReplies();
+  }, []);
+
+  const loadAdminQuickReplies = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_quick_reply_templates', {
+        p_template_type: 'admin'
+      });
+
+      if (error) throw error;
+      setAdminQuickReplies(data || []);
+    } catch (error) {
+      console.error('Error loading admin quick replies:', error);
+    }
+  };
+
+  const loadTemplates = async () => {
+    setTemplatesLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('quick_reply_templates')
+        .select('*')
+        .order('template_type')
+        .order('sort_order')
+        .order('created_at');
+
+      if (error) throw error;
+      setTemplates(data || []);
+    } catch (error) {
+      console.error('Error loading templates:', error);
+    } finally {
+      setTemplatesLoading(false);
+    }
+  };
+
+  const handleCreateTemplate = async () => {
+    if (!newTemplate.command || !newTemplate.label || !newTemplate.message) return;
+
+    try {
+      const command = newTemplate.command.startsWith('/') ? newTemplate.command : `/${newTemplate.command}`;
+
+      const { error } = await supabase
+        .from('quick_reply_templates')
+        .insert({
+          command,
+          label: newTemplate.label,
+          message: newTemplate.message,
+          template_type: newTemplate.template_type,
+          sort_order: templates.filter(t => t.template_type === newTemplate.template_type).length + 1,
+        });
+
+      if (error) throw error;
+
+      setNewTemplate({ command: '', label: '', message: '', template_type: 'admin' });
+      setIsCreatingTemplate(false);
+      loadTemplates();
+      loadAdminQuickReplies();
+
+      await loggingService.logAdminActivity({
+        action_type: 'template_created',
+        action_description: `Created quick reply template: ${command}`,
+        metadata: { template_type: newTemplate.template_type },
+      });
+    } catch (error) {
+      console.error('Error creating template:', error);
+    }
+  };
+
+  const handleUpdateTemplate = async () => {
+    if (!editingTemplate) return;
+
+    try {
+      const command = editingTemplate.command.startsWith('/') ? editingTemplate.command : `/${editingTemplate.command}`;
+
+      const { error } = await supabase
+        .from('quick_reply_templates')
+        .update({
+          command,
+          label: editingTemplate.label,
+          message: editingTemplate.message,
+          is_active: editingTemplate.is_active,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', editingTemplate.id);
+
+      if (error) throw error;
+
+      setEditingTemplate(null);
+      loadTemplates();
+      loadAdminQuickReplies();
+
+      await loggingService.logAdminActivity({
+        action_type: 'template_updated',
+        action_description: `Updated quick reply template: ${command}`,
+        metadata: { template_id: editingTemplate.id },
+      });
+    } catch (error) {
+      console.error('Error updating template:', error);
+    }
+  };
+
+  const handleDeleteTemplate = async (template: QuickReplyTemplate) => {
+    if (!confirm(`Are you sure you want to delete the template "${template.label}"?`)) return;
+
+    try {
+      const { error } = await supabase
+        .from('quick_reply_templates')
+        .delete()
+        .eq('id', template.id);
+
+      if (error) throw error;
+
+      loadTemplates();
+      loadAdminQuickReplies();
+
+      await loggingService.logAdminActivity({
+        action_type: 'template_deleted',
+        action_description: `Deleted quick reply template: ${template.command}`,
+        metadata: { template_id: template.id },
+      });
+    } catch (error) {
+      console.error('Error deleting template:', error);
+    }
+  };
+
+  const handleToggleActive = async (template: QuickReplyTemplate) => {
+    try {
+      const { error } = await supabase
+        .from('quick_reply_templates')
+        .update({
+          is_active: !template.is_active,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', template.id);
+
+      if (error) throw error;
+
+      loadTemplates();
+      loadAdminQuickReplies();
+    } catch (error) {
+      console.error('Error toggling template:', error);
+    }
+  };
 
   const loadTickets = async () => {
     try {
@@ -456,6 +644,65 @@ export default function AdminSupport() {
     }
   };
 
+  const filteredQuickReplies = adminQuickReplies.filter(qr =>
+    quickReplyFilter === '' ||
+    qr.command.toLowerCase().includes(quickReplyFilter.toLowerCase()) ||
+    qr.label.toLowerCase().includes(quickReplyFilter.toLowerCase())
+  );
+
+  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setNewMessage(value);
+
+    if (value.startsWith('/')) {
+      setShowQuickReplies(true);
+      setQuickReplyFilter(value);
+      setSelectedQuickReplyIndex(0);
+    } else {
+      setShowQuickReplies(false);
+      setQuickReplyFilter('');
+    }
+  };
+
+  const selectQuickReply = (reply: { command: string; label: string; message: string }) => {
+    setNewMessage(reply.message);
+    setShowQuickReplies(false);
+    setQuickReplyFilter('');
+    textareaRef.current?.focus();
+  };
+
+  const filteredTemplates = templates.filter(t =>
+    templateTypeFilter === 'all' || t.template_type === templateTypeFilter
+  );
+
+  const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (showQuickReplies && filteredQuickReplies.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedQuickReplyIndex(prev =>
+          prev < filteredQuickReplies.length - 1 ? prev + 1 : 0
+        );
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedQuickReplyIndex(prev =>
+          prev > 0 ? prev - 1 : filteredQuickReplies.length - 1
+        );
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        selectQuickReply(filteredQuickReplies[selectedQuickReplyIndex]);
+      } else if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        selectQuickReply(filteredQuickReplies[selectedQuickReplyIndex]);
+      } else if (e.key === 'Escape') {
+        setShowQuickReplies(false);
+        setQuickReplyFilter('');
+      }
+    } else if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(e);
+    }
+  };
+
   const selectedTicketData = tickets.find(t => t.id === selectedTicket);
 
   const filteredTickets = tickets.filter(t =>
@@ -527,77 +774,351 @@ export default function AdminSupport() {
             </div>
 
             <div className="flex gap-2">
-              {(['all', 'open', 'pending'] as const).map((f) => (
+              {(['all', 'open', 'pending', 'templates'] as const).map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
                     filter === f
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-800/50 text-gray-400 hover:text-white'
                   }`}
                 >
+                  {f === 'templates' && <FileText className="w-4 h-4" />}
                   {f.charAt(0).toUpperCase() + f.slice(1)}
                 </button>
               ))}
             </div>
 
-            <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto">
-              {filteredTickets.map((ticket) => (
-                <div
-                  key={ticket.id}
-                  onClick={() => setSelectedTicket(ticket.id)}
-                  className={`bg-gray-800/50 border rounded-lg p-4 cursor-pointer transition-all ${
-                    selectedTicket === ticket.id
-                      ? 'border-blue-500 ring-1 ring-blue-500/50'
-                      : 'border-gray-700 hover:border-gray-600'
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <h3 className="text-white font-medium text-sm mb-1">{ticket.subject}</h3>
-                      <p className="text-xs text-gray-400">{ticket.user_profile?.username}</p>
-                      <p className="text-xs text-gray-500">{ticket.user_profile?.email}</p>
+            {filter !== 'templates' && (
+              <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto">
+                {filteredTickets.map((ticket) => (
+                  <div
+                    key={ticket.id}
+                    onClick={() => setSelectedTicket(ticket.id)}
+                    className={`bg-gray-800/50 border rounded-lg p-4 cursor-pointer transition-all ${
+                      selectedTicket === ticket.id
+                        ? 'border-blue-500 ring-1 ring-blue-500/50'
+                        : 'border-gray-700 hover:border-gray-600'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <h3 className="text-white font-medium text-sm mb-1">{ticket.subject}</h3>
+                        <p className="text-xs text-gray-400">{ticket.user_profile?.username}</p>
+                        <p className="text-xs text-gray-500">{ticket.user_profile?.email}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        {ticket.unread_count && ticket.unread_count > 0 && (
+                          <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-500/20 text-blue-400 animate-pulse">
+                            {ticket.unread_count} new
+                          </span>
+                        )}
+                        {ticket.admin_unread_by_user && ticket.admin_unread_by_user > 0 && (
+                          <span className="px-2 py-0.5 rounded text-xs font-medium bg-orange-500/20 text-orange-400">
+                            {ticket.admin_unread_by_user} unseen
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1">
-                      {ticket.unread_count && ticket.unread_count > 0 && (
-                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-500/20 text-blue-400 animate-pulse">
-                          {ticket.unread_count} new
-                        </span>
-                      )}
-                      {ticket.admin_unread_by_user && ticket.admin_unread_by_user > 0 && (
-                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-orange-500/20 text-orange-400">
-                          {ticket.admin_unread_by_user} unseen
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(ticket.status)}`}>
-                      {ticket.status.replace('_', ' ')}
-                    </span>
-                    {ticket.category && (
-                      <span
-                        className="px-2 py-0.5 rounded text-xs font-medium"
-                        style={{
-                          backgroundColor: `${ticket.category.color_code}20`,
-                          color: ticket.category.color_code,
-                        }}
-                      >
-                        {ticket.category.name}
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(ticket.status)}`}>
+                        {ticket.status.replace('_', ' ')}
                       </span>
-                    )}
-                    <span className="text-xs text-gray-500">
-                      {new Date(ticket.created_at).toLocaleDateString()}
-                    </span>
+                      {ticket.category && (
+                        <span
+                          className="px-2 py-0.5 rounded text-xs font-medium"
+                          style={{
+                            backgroundColor: `${ticket.category.color_code}20`,
+                            color: ticket.category.color_code,
+                          }}
+                        >
+                          {ticket.category.name}
+                        </span>
+                      )}
+                      <span className="text-xs text-gray-500">
+                        {new Date(ticket.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="col-span-8">
-            {selectedTicket && selectedTicketData ? (
+            {filter === 'templates' ? (
+              <div className="bg-gray-800/50 border border-gray-700 rounded-lg h-[calc(100vh-200px)] overflow-hidden flex flex-col">
+                <div className="border-b border-gray-700 p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-xl font-semibold text-white mb-1">Quick Reply Templates</h2>
+                      <p className="text-sm text-gray-400">Manage templates for admin and user support chat</p>
+                    </div>
+                    <button
+                      onClick={() => setIsCreatingTemplate(true)}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Template
+                    </button>
+                  </div>
+
+                  <div className="flex gap-2 mt-4">
+                    {(['all', 'admin', 'user'] as const).map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => setTemplateTypeFilter(type)}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                          templateTypeFilter === type
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-700/50 text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        {type === 'all' ? 'All Templates' : type === 'admin' ? 'Admin Templates' : 'User Templates'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6 space-y-3">
+                  {templatesLoading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2" />
+                      <p className="text-gray-400">Loading templates...</p>
+                    </div>
+                  ) : filteredTemplates.length === 0 ? (
+                    <div className="text-center py-8">
+                      <FileText className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                      <p className="text-gray-400">No templates found</p>
+                    </div>
+                  ) : (
+                    filteredTemplates.map((template) => (
+                      <div
+                        key={template.id}
+                        className={`bg-gray-700/30 border rounded-lg p-4 ${
+                          template.is_active ? 'border-gray-600' : 'border-gray-700 opacity-60'
+                        }`}
+                      >
+                        {editingTemplate?.id === template.id ? (
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="text-xs text-gray-400 mb-1 block">Command</label>
+                                <input
+                                  type="text"
+                                  value={editingTemplate.command}
+                                  onChange={(e) => setEditingTemplate({ ...editingTemplate, command: e.target.value })}
+                                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                                  placeholder="/command"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs text-gray-400 mb-1 block">Label</label>
+                                <input
+                                  type="text"
+                                  value={editingTemplate.label}
+                                  onChange={(e) => setEditingTemplate({ ...editingTemplate, label: e.target.value })}
+                                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                                  placeholder="Short label"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-400 mb-1 block">Message</label>
+                              <textarea
+                                value={editingTemplate.message}
+                                onChange={(e) => setEditingTemplate({ ...editingTemplate, message: e.target.value })}
+                                rows={4}
+                                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm resize-none"
+                                placeholder="Template message..."
+                              />
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={editingTemplate.is_active}
+                                  onChange={(e) => setEditingTemplate({ ...editingTemplate, is_active: e.target.checked })}
+                                  className="w-4 h-4 rounded bg-gray-700 border-gray-600 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span className="text-sm text-gray-300">Active</span>
+                              </label>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => setEditingTemplate(null)}
+                                  className="px-3 py-1.5 text-gray-400 hover:text-white transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={handleUpdateTemplate}
+                                  className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors text-sm"
+                                >
+                                  <Save className="w-3.5 h-3.5" />
+                                  Save
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-blue-400 font-mono text-sm">{template.command}</span>
+                                <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-600 text-gray-300">
+                                  {template.label}
+                                </span>
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                  template.template_type === 'admin'
+                                    ? 'bg-blue-500/20 text-blue-400'
+                                    : 'bg-green-500/20 text-green-400'
+                                }`}>
+                                  {template.template_type}
+                                </span>
+                                {!template.is_active && (
+                                  <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-500/20 text-red-400">
+                                    Inactive
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => handleToggleActive(template)}
+                                  className="p-1.5 text-gray-400 hover:text-white transition-colors"
+                                  title={template.is_active ? 'Deactivate' : 'Activate'}
+                                >
+                                  {template.is_active ? (
+                                    <ToggleRight className="w-5 h-5 text-green-500" />
+                                  ) : (
+                                    <ToggleLeft className="w-5 h-5 text-gray-500" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => setEditingTemplate(template)}
+                                  className="p-1.5 text-gray-400 hover:text-blue-400 transition-colors"
+                                  title="Edit"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteTemplate(template)}
+                                  className="p-1.5 text-gray-400 hover:text-red-400 transition-colors"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                            <p className="text-sm text-gray-300 whitespace-pre-wrap line-clamp-3">{template.message}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {isCreatingTemplate && (
+                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-gray-800 border border-gray-700 rounded-xl w-full max-w-lg mx-4 p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-white">Create New Template</h3>
+                        <button
+                          onClick={() => {
+                            setIsCreatingTemplate(false);
+                            setNewTemplate({ command: '', label: '', message: '', template_type: 'admin' });
+                          }}
+                          className="p-1 text-gray-400 hover:text-white transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm text-gray-400 mb-1 block">Template Type</label>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setNewTemplate({ ...newTemplate, template_type: 'admin' })}
+                              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                newTemplate.template_type === 'admin'
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-gray-700 text-gray-400 hover:text-white'
+                              }`}
+                            >
+                              Admin Template
+                            </button>
+                            <button
+                              onClick={() => setNewTemplate({ ...newTemplate, template_type: 'user' })}
+                              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                newTemplate.template_type === 'user'
+                                  ? 'bg-green-600 text-white'
+                                  : 'bg-gray-700 text-gray-400 hover:text-white'
+                              }`}
+                            >
+                              User Template
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-sm text-gray-400 mb-1 block">Command</label>
+                            <input
+                              type="text"
+                              value={newTemplate.command}
+                              onChange={(e) => setNewTemplate({ ...newTemplate, command: e.target.value })}
+                              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                              placeholder="/command"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm text-gray-400 mb-1 block">Label</label>
+                            <input
+                              type="text"
+                              value={newTemplate.label}
+                              onChange={(e) => setNewTemplate({ ...newTemplate, label: e.target.value })}
+                              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                              placeholder="Short label"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-sm text-gray-400 mb-1 block">Message</label>
+                          <textarea
+                            value={newTemplate.message}
+                            onChange={(e) => setNewTemplate({ ...newTemplate, message: e.target.value })}
+                            rows={5}
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white resize-none"
+                            placeholder="Enter the template message..."
+                          />
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-2">
+                          <button
+                            onClick={() => {
+                              setIsCreatingTemplate(false);
+                              setNewTemplate({ command: '', label: '', message: '', template_type: 'admin' });
+                            }}
+                            className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleCreateTemplate}
+                            disabled={!newTemplate.command || !newTemplate.label || !newTemplate.message}
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Create Template
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : selectedTicket && selectedTicketData ? (
               <div className="bg-gray-800/50 border border-gray-700 rounded-lg flex flex-col h-[calc(100vh-200px)]">
                 <div className="border-b border-gray-700 p-6">
                   <div className="flex items-start justify-between mb-4">
@@ -694,29 +1215,60 @@ export default function AdminSupport() {
 
                 {selectedTicketData.status !== 'closed' && (
                   <div className="border-t border-gray-700 p-6">
-                    <form onSubmit={handleSendMessage} className="flex gap-3">
-                      <textarea
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="Type your response..."
-                        rows={3}
-                        className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 resize-none"
-                        disabled={sending}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSendMessage(e);
-                          }
-                        }}
-                      />
-                      <button
-                        type="submit"
-                        disabled={sending || !newMessage.trim()}
-                        className="px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {sending ? 'Sending...' : 'Send'}
-                      </button>
-                    </form>
+                    <div className="relative">
+                      {showQuickReplies && filteredQuickReplies.length > 0 && (
+                        <div className="absolute bottom-full left-0 right-0 mb-2 bg-gray-800 border border-gray-600 rounded-lg shadow-xl overflow-hidden z-10 max-h-72 overflow-y-auto">
+                          <div className="px-3 py-2 border-b border-gray-700 bg-gray-800/80 sticky top-0">
+                            <div className="flex items-center gap-2 text-xs text-gray-400">
+                              <Zap className="w-3 h-3 text-yellow-500" />
+                              <span>Quick Replies - Arrow keys to navigate, Tab/Enter to select</span>
+                            </div>
+                          </div>
+                          {filteredQuickReplies.map((reply, index) => (
+                            <button
+                              key={reply.command}
+                              ref={(el) => (quickReplyRefs.current[index] = el)}
+                              type="button"
+                              onClick={() => selectQuickReply(reply)}
+                              className={`w-full px-4 py-3 text-left hover:bg-gray-700/50 transition-colors ${
+                                index === selectedQuickReplyIndex ? 'bg-blue-600/20 border-l-2 border-blue-500' : ''
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-blue-400 font-mono text-sm">{reply.command}</span>
+                                <span className="text-xs text-gray-500 bg-gray-700/50 px-2 py-0.5 rounded">{reply.label}</span>
+                              </div>
+                              <p className="text-sm text-gray-300 line-clamp-2">{reply.message}</p>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      <form onSubmit={handleSendMessage} className="flex gap-3">
+                        <div className="flex-1 relative">
+                          <textarea
+                            ref={textareaRef}
+                            value={newMessage}
+                            onChange={handleMessageChange}
+                            placeholder="Type your response... (Press / for quick replies)"
+                            rows={3}
+                            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 resize-none"
+                            disabled={sending}
+                            onKeyDown={handleTextareaKeyDown}
+                            onBlur={() => {
+                              setTimeout(() => setShowQuickReplies(false), 200);
+                            }}
+                          />
+                        </div>
+                        <button
+                          type="submit"
+                          disabled={sending || !newMessage.trim()}
+                          className="px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {sending ? 'Sending...' : 'Send'}
+                        </button>
+                      </form>
+                    </div>
                   </div>
                 )}
               </div>
