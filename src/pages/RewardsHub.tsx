@@ -30,7 +30,6 @@ function RewardsHub() {
   const [feeRebatesAvailable, setFeeRebatesAvailable] = useState(0);
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
-  const [kycVerified, setKycVerified] = useState(false);
   const [copyTradingBalance, setCopyTradingBalance] = useState(0);
   const [tasks] = useState<Task[]>([
     {
@@ -62,16 +61,6 @@ function RewardsHub() {
       target: 500000,
       icon: '💎',
       type: 'volume'
-    },
-    {
-      id: 'kyc_verification',
-      title: 'KYC Verification Bonus',
-      description: 'Complete KYC verification and unlock full trading',
-      reward: 20,
-      rewardType: 'balance',
-      target: 1,
-      icon: '✅',
-      type: 'trade'
     },
     {
       id: 'first_referral',
@@ -177,16 +166,6 @@ function RewardsHub() {
         setQualifiedReferrals(qualifiedData);
       }
 
-      // Check KYC verification status
-      const { data: profileData } = await supabase
-        .from('user_profiles')
-        .select('kyc_verified')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (profileData) {
-        setKycVerified(profileData.kyc_verified === true);
-      }
 
       // Get copy trading wallet balance
       const { data: copyWalletData } = await supabase
@@ -470,8 +449,7 @@ function RewardsHub() {
     } else if (task.type === 'referral') {
       progress = task.id === 'referral_5' ? qualifiedReferrals : totalReferrals;
     } else if (task.type === 'trade') {
-      if (task.id === 'kyc_verification') progress = kycVerified ? 1 : 0;
-      else if (task.id === 'first_trade') progress = totalTrades;
+      if (task.id === 'first_trade') progress = totalTrades;
       else if (task.id === 'daily_trade') progress = consecutiveDays;
     }
     return progress >= task.target;
@@ -593,9 +571,7 @@ function RewardsHub() {
                   progress = totalReferrals;
                 }
               } else if (task.type === 'trade') {
-                if (task.id === 'kyc_verification') {
-                  progress = kycVerified ? 1 : 0;
-                } else if (task.id === 'first_trade') {
+                if (task.id === 'first_trade') {
                   progress = totalTrades;
                 } else if (task.id === 'daily_trade') {
                   progress = consecutiveDays;
@@ -689,7 +665,7 @@ function RewardsHub() {
                 <h3 className="text-base font-medium text-[#eaecef]">Balance Rewards</h3>
               </div>
               <p className="text-sm text-[#848e9c] mb-3">Direct USDT added to your wallet balance that you can use for trading or withdraw immediately</p>
-              <div className="text-xs text-[#0ecb81]">Examples: KYC Verification, Copy Trading Bonus, Referral bonuses, First trade welcome, Million Dollar Club</div>
+              <div className="text-xs text-[#0ecb81]">Examples: Copy Trading Bonus, Referral bonuses, First trade welcome, Million Dollar Club</div>
             </div>
 
             <div className="bg-[#181a20] rounded-lg p-5">
