@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, AlertCircle, Wallet, ArrowDown } from 'lucide-react';
+import { X, AlertCircle, Wallet, ArrowDown, TrendingUp } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '../App';
@@ -35,6 +35,37 @@ export default function CopyTradingModal({
   const [transferError, setTransferError] = useState('');
   const [totalCopyBalance, setTotalCopyBalance] = useState(0);
   const [allocatedBalance, setAllocatedBalance] = useState(0);
+  const [traderROI, setTraderROI] = useState<number | null>(null);
+  const [loadingTrader, setLoadingTrader] = useState(true);
+
+  useEffect(() => {
+    const fetchTraderData = async () => {
+      if (!isOpen) return;
+
+      setLoadingTrader(true);
+      try {
+        const { data: traderData } = await supabase
+          .from('traders')
+          .select('target_monthly_roi, roi_30d, name')
+          .eq('id', traderId)
+          .maybeSingle();
+
+        if (traderData) {
+          // Use target_monthly_roi if available (for automated traders), otherwise use actual roi_30d
+          const monthlyROI = traderData.target_monthly_roi || traderData.roi_30d || 0;
+          // Convert monthly ROI to daily average
+          const dailyROI = monthlyROI / 30;
+          setTraderROI(dailyROI);
+        }
+      } catch (err) {
+        console.error('Error fetching trader data:', err);
+      } finally {
+        setLoadingTrader(false);
+      }
+    };
+
+    fetchTraderData();
+  }, [traderId, isOpen]);
 
   useEffect(() => {
     const fetchBalance = async () => {
@@ -270,6 +301,63 @@ export default function CopyTradingModal({
         <p className="text-[#848e9c] text-sm mb-4">
           Copy {traderName}'s trades {isMock && 'with virtual funds'}
         </p>
+
+        {/* Projected Daily Return */}
+        {!loadingTrader && traderROI !== null && traderROI > 0 && (() => {
+          // Calculate range: ±50% variation from the daily average
+          const minDaily = traderROI * 0.5;
+          const maxDaily = traderROI * 1.5;
+
+          return (
+            <div className="bg-gradient-to-r from-[#0ecb81]/10 to-[#0ecb81]/5 border border-[#0ecb81]/30 rounded-lg p-4 mb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-[#0ecb81]" />
+                  <div>
+                    <p className="text-white text-sm font-semibold">Projected Daily Return</p>
+                    <p className="text-[#848e9c] text-xs">Based on trader's performance range</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[#0ecb81] text-xl font-bold">
+                    {minDaily.toFixed(2)}% - {maxDaily.toFixed(2)}%
+                  </div>
+                  <div className="text-[#848e9c] text-xs">per day</div>
+                </div>
+              </div>
+              {availableBalance !== null && availableBalance > 0 && (() => {
+                const investment = (availableBalance * parseInt(allocationPercentage || '0')) / 100 * leverage;
+
+                // Daily returns
+                const dailyMin = investment * (minDaily / 100);
+                const dailyMax = investment * (maxDaily / 100);
+
+                // Monthly returns with compound interest: investment * (1 + daily_rate)^30 - investment
+                const monthlyMinCompound = investment * (Math.pow(1 + (minDaily / 100), 30) - 1);
+                const monthlyMaxCompound = investment * (Math.pow(1 + (maxDaily / 100), 30) - 1);
+
+                return (
+                  <div className="mt-3 pt-3 border-t border-[#0ecb81]/20">
+                    <p className="text-[#848e9c] text-xs mb-1">With your investment:</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-white text-sm">Daily estimate</span>
+                      <span className="text-[#0ecb81] font-semibold">
+                        +${dailyMin.toFixed(2)} - ${dailyMax.toFixed(2)} USDT
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-white text-sm">Monthly estimate</span>
+                      <span className="text-[#0ecb81] font-semibold">
+                        +${monthlyMinCompound.toFixed(2)} - ${monthlyMaxCompound.toFixed(2)} USDT
+                      </span>
+                    </div>
+                    <p className="text-[#848e9c] text-[10px] mt-1 italic">Monthly estimate includes compound returns</p>
+                  </div>
+                );
+              })()}
+            </div>
+          );
+        })()}
 
         {/* Available Balance Display */}
         <div className="bg-[#0b0e11] border border-[#2b3139] rounded-lg p-3 mb-4">
