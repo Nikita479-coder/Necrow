@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageSquare, Clock, CheckCircle, User, Search, Filter, Wifi, WifiOff, Eye, EyeOff, Zap, FileText, Plus, Edit2, Trash2, Save, X, ToggleLeft, ToggleRight } from 'lucide-react';
+import { MessageSquare, Clock, CheckCircle, User, Search, Filter, Wifi, WifiOff, Eye, EyeOff, Zap, FileText, Plus, Edit2, Trash2, Save, X, ToggleLeft, ToggleRight, Image, Download, Paperclip } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -31,6 +31,14 @@ interface Ticket {
   admin_unread_by_user?: number;
 }
 
+interface Attachment {
+  id: string;
+  file_name: string;
+  file_size: number;
+  mime_type: string;
+  created_at: string;
+}
+
 interface Message {
   id: string;
   sender_id: string;
@@ -41,6 +49,7 @@ interface Message {
   sender_profile?: { username: string };
   pending?: boolean;
   failed?: boolean;
+  attachments?: Attachment[];
 }
 
 export default function AdminSupport() {
@@ -76,6 +85,46 @@ export default function AdminSupport() {
     message: '',
     template_type: 'admin' as 'admin' | 'user',
   });
+  const [loadedImages, setLoadedImages] = useState<Record<string, string>>({});
+  const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
+
+  const loadImageAttachment = async (attachmentId: string) => {
+    if (loadedImages[attachmentId] || loadingImages.has(attachmentId)) return;
+
+    setLoadingImages(prev => new Set(prev).add(attachmentId));
+
+    try {
+      const { data, error } = await supabase.rpc('get_support_attachment_base64', {
+        attachment_id: attachmentId,
+      });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const attachment = data[0];
+        const dataUrl = `data:${attachment.mime_type};base64,${attachment.file_data_base64}`;
+        setLoadedImages(prev => ({ ...prev, [attachmentId]: dataUrl }));
+      }
+    } catch (error) {
+      console.error('Error loading image:', error);
+    } finally {
+      setLoadingImages(prev => {
+        const next = new Set(prev);
+        next.delete(attachmentId);
+        return next;
+      });
+    }
+  };
+
+  useEffect(() => {
+    messages.forEach(msg => {
+      msg.attachments?.forEach(attachment => {
+        if (attachment.mime_type.startsWith('image/')) {
+          loadImageAttachment(attachment.id);
+        }
+      });
+    });
+  }, [messages]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -458,6 +507,72 @@ export default function AdminSupport() {
         messageSubscriptionRef.current = null;
       }
     };
+  };
+
+  const viewAttachment = async (attachmentId: string) => {
+    try {
+      const { data, error } = await supabase.rpc('get_support_attachment_base64', {
+        attachment_id: attachmentId,
+      });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const attachment = data[0];
+        const dataUrl = `data:${attachment.mime_type};base64,${attachment.file_data_base64}`;
+
+        if (attachment.mime_type.startsWith('image/')) {
+          const newWindow = window.open('', '_blank');
+          if (newWindow) {
+            newWindow.document.open();
+            newWindow.document.write(`
+              <!DOCTYPE html>
+              <html>
+                <head>
+                  <title>${attachment.file_name}</title>
+                  <style>
+                    body {
+                      margin: 0;
+                      padding: 20px;
+                      background: #0a0a0a;
+                      display: flex;
+                      justify-content: center;
+                      align-items: center;
+                      min-height: 100vh;
+                    }
+                    img {
+                      max-width: 100%;
+                      max-height: 100vh;
+                      object-fit: contain;
+                      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                    }
+                  </style>
+                </head>
+                <body>
+                  <img src="${dataUrl}" alt="${attachment.file_name}" />
+                </body>
+              </html>
+            `);
+            newWindow.document.close();
+          }
+        } else {
+          const link = document.createElement('a');
+          link.href = dataUrl;
+          link.download = attachment.file_name;
+          link.click();
+        }
+      }
+    } catch (error) {
+      console.error('Error viewing attachment:', error);
+    }
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -1168,6 +1283,62 @@ export default function AdminSupport() {
                         }`}>
                           <p className="text-sm font-medium mb-1">{msg.sender_profile?.username}</p>
                           <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+
+                          {msg.attachments && msg.attachments.length > 0 && (
+                            <div className="mt-3 space-y-2">
+                              {msg.attachments.map((attachment) => (
+                                attachment.mime_type.startsWith('image/') ? (
+                                  <div key={attachment.id} className="relative group">
+                                    {loadedImages[attachment.id] ? (
+                                      <img
+                                        src={loadedImages[attachment.id]}
+                                        alt={attachment.file_name}
+                                        className="max-w-full max-h-64 rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                        onClick={() => viewAttachment(attachment.id)}
+                                      />
+                                    ) : (
+                                      <div className={`flex items-center justify-center w-full h-32 rounded-lg ${
+                                        msg.sender_type === 'admin' ? 'bg-white/10' : 'bg-gray-600/50'
+                                      }`}>
+                                        <div className="flex flex-col items-center gap-2">
+                                          <div className="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin opacity-50" />
+                                          <span className="text-xs opacity-70">Loading image...</span>
+                                        </div>
+                                      </div>
+                                    )}
+                                    <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button
+                                        onClick={() => viewAttachment(attachment.id)}
+                                        className="p-1.5 bg-black/60 rounded-lg hover:bg-black/80 transition-colors"
+                                        title="View full size"
+                                      >
+                                        <Image className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                    <p className="text-[10px] opacity-60 mt-1">{attachment.file_name}</p>
+                                  </div>
+                                ) : (
+                                  <button
+                                    key={attachment.id}
+                                    onClick={() => viewAttachment(attachment.id)}
+                                    className={`flex items-center gap-2 p-2 rounded-lg transition-colors w-full ${
+                                      msg.sender_type === 'admin'
+                                        ? 'bg-white/10 hover:bg-white/20'
+                                        : 'bg-gray-600/50 hover:bg-gray-600'
+                                    }`}
+                                  >
+                                    <Paperclip className="w-4 h-4 flex-shrink-0" />
+                                    <div className="flex-1 text-left min-w-0">
+                                      <p className="text-xs font-medium truncate">{attachment.file_name}</p>
+                                      <p className="text-[10px] opacity-70">{formatFileSize(attachment.file_size)}</p>
+                                    </div>
+                                    <Download className="w-3 h-3 flex-shrink-0 opacity-70" />
+                                  </button>
+                                )
+                              ))}
+                            </div>
+                          )}
+
                           {msg.pending && (
                             <div className="flex items-center gap-1 mt-2 text-xs opacity-70">
                               <Clock className="w-3 h-3" />

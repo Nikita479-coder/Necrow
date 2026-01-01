@@ -219,6 +219,10 @@ export default function AdminCRM() {
         supabase.from('saved_filters').select('*').or(`admin_id.eq.${user?.id},is_shared.eq.true`),
       ]);
 
+      console.log('CRM Stats result:', statsResult);
+      if (statsResult.error) {
+        console.error('CRM Stats error:', statsResult.error);
+      }
       if (statsResult.data) setStats(statsResult.data);
       if (tagsResult.data) setTags(tagsResult.data);
       if (segmentsResult.data) setSegments(segmentsResult.data);

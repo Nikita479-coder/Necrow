@@ -59,70 +59,90 @@ export default function AdminKYC() {
     loadData();
   }, []);
 
+  const fetchAllPaginated = async <T,>(
+    table: string,
+    selectQuery: string,
+    orderColumn: string = 'created_at'
+  ): Promise<T[]> => {
+    const pageSize = 1000;
+    let allData: T[] = [];
+    let page = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+
+      const { data, error } = await supabase
+        .from(table)
+        .select(selectQuery)
+        .order(orderColumn, { ascending: false })
+        .range(from, to);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        allData = [...allData, ...data as T[]];
+        hasMore = data.length === pageSize;
+        page++;
+      } else {
+        hasMore = false;
+      }
+    }
+
+    return allData;
+  };
+
   const loadData = async () => {
     try {
-      // Load all user profiles
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('user_profiles')
-        .select('id, username, full_name, kyc_level, kyc_status, created_at')
-        .order('created_at', { ascending: false });
+      // Load all user profiles with pagination
+      const usersData = await fetchAllPaginated<User>(
+        'user_profiles',
+        'id, username, full_name, kyc_level, kyc_status, created_at',
+        'created_at'
+      );
 
-      if (profilesError) throw profilesError;
-
-      // Create a simple user lookup with IDs
-      const usersData = profilesData || [];
-
-      // Load all documents with user info
-      const { data: docsData, error: docsError } = await supabase
-        .from('kyc_documents')
-        .select(`
-          id,
-          user_id,
-          document_type,
-          file_name,
-          file_size,
-          mime_type,
-          uploaded_at,
-          verified,
-          verification_notes
-        `)
-        .order('uploaded_at', { ascending: false });
-
-      if (docsError) throw docsError;
+      // Load all documents with pagination
+      const docsData = await fetchAllPaginated<Document>(
+        'kyc_documents',
+        'id, user_id, document_type, file_name, file_size, mime_type, uploaded_at, verified, verification_notes',
+        'uploaded_at'
+      );
 
       // Join user data with documents
-      const docsWithUsers = docsData?.map(doc => {
-        const userInfo = usersData?.find(u => u.id === doc.user_id);
+      const docsWithUsers = docsData.map(doc => {
+        const userInfo = usersData.find(u => u.id === doc.user_id);
         return {
           ...doc,
-          user_email: userInfo?.username || doc.user_id.substring(0, 8), // Use username or ID prefix as fallback
+          user_email: userInfo?.username || doc.user_id.substring(0, 8),
           user_name: userInfo?.full_name || 'Unknown User'
         };
-      }) || [];
+      });
 
-      setUsers(usersData || []);
+      setUsers(usersData);
       setDocuments(docsWithUsers);
 
-      // Load Otto AI verifications
-      const { data: ottoData, error: ottoError } = await supabase
-        .from('otto_verification_results')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Load Otto AI verifications with pagination
+      try {
+        const ottoData = await fetchAllPaginated<OttoVerification>(
+          'otto_verification_results',
+          '*',
+          'created_at'
+        );
 
-      if (ottoError) {
+        const ottoWithUsers = ottoData.map(verification => {
+          const userInfo = usersData.find(u => u.id === verification.user_id);
+          return {
+            ...verification,
+            user_email: userInfo?.username || verification.user_id.substring(0, 8),
+            user_name: userInfo?.full_name || 'Unknown User'
+          };
+        });
+
+        setOttoVerifications(ottoWithUsers);
+      } catch (ottoError) {
         console.error('Error loading Otto verifications:', ottoError);
       }
-
-      const ottoWithUsers = ottoData?.map(verification => {
-        const userInfo = usersData?.find(u => u.id === verification.user_id);
-        return {
-          ...verification,
-          user_email: userInfo?.username || verification.user_id.substring(0, 8),
-          user_name: userInfo?.full_name || 'Unknown User'
-        };
-      }) || [];
-
-      setOttoVerifications(ottoWithUsers);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {

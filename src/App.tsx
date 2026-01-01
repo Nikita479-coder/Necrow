@@ -1,6 +1,7 @@
 import { useState, createContext, useContext, useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import PopupBanner from './components/PopupBanner';
+import { initAcquisitionTracking } from './services/acquisitionService';
 import HomePage from './pages/HomePage';
 import Markets from './pages/Markets';
 import FuturesTrading from './pages/FuturesTrading';
@@ -42,6 +43,7 @@ import AdminDeposits from './pages/AdminDeposits';
 import AdminReferralTracking from './pages/AdminReferralTracking';
 import AdminPopupBanners from './pages/AdminPopupBanners';
 import AdminGiveaway from './pages/AdminGiveaway';
+import AdminAcquisition from './pages/AdminAcquisition';
 import GiveawayHub from './pages/GiveawayHub';
 import EventDetails from './pages/EventDetails';
 import TermsPage from './pages/TermsPage';
@@ -51,7 +53,7 @@ import LegalHub from './pages/LegalHub';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 
-type PageType = 'home' | 'markets' | 'futures' | 'profile' | 'swap' | 'swaphistory' | 'copytrading' | 'mocktrading' | 'activecopying' | 'traderprofile' | 'deposit' | 'withdraw' | 'kyc' | 'kycdocuments' | 'adminkyc' | 'wallet' | 'referral' | 'affiliate' | 'vip' | 'rewardshub' | 'earn' | 'signin' | 'signup' | 'forgotpassword' | 'resetpassword' | 'transactions' | 'admindashboard' | 'adminuser' | 'admintrader' | 'adminlogs' | 'admincrm' | 'adminemails' | 'adminbonuses' | 'adminsupport' | 'adminviptracking' | 'adminsharkcards' | 'adminstaff' | 'admintelegram' | 'adminwithdrawals' | 'admindeposits' | 'adminreferrals' | 'adminpopups' | 'admingiveaway' | 'giveaway' | 'event' | 'terms' | 'bonusterms' | 'support' | 'legal';
+type PageType = 'home' | 'markets' | 'futures' | 'profile' | 'swap' | 'swaphistory' | 'copytrading' | 'mocktrading' | 'activecopying' | 'traderprofile' | 'deposit' | 'withdraw' | 'kyc' | 'kycdocuments' | 'adminkyc' | 'wallet' | 'referral' | 'affiliate' | 'vip' | 'rewardshub' | 'earn' | 'signin' | 'signup' | 'forgotpassword' | 'resetpassword' | 'transactions' | 'admindashboard' | 'adminuser' | 'admintrader' | 'adminlogs' | 'admincrm' | 'adminemails' | 'adminbonuses' | 'adminsupport' | 'adminviptracking' | 'adminsharkcards' | 'adminstaff' | 'admintelegram' | 'adminwithdrawals' | 'admindeposits' | 'adminreferrals' | 'adminpopups' | 'admingiveaway' | 'adminacquisition' | 'giveaway' | 'event' | 'terms' | 'bonusterms' | 'support' | 'legal';
 
 interface NavigationContextType {
   currentPage: PageType;
@@ -77,6 +79,8 @@ function App() {
   const [navigationState, setNavigationState] = useState<any>();
 
   useEffect(() => {
+    initAcquisitionTracking();
+
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const type = hashParams.get('type');
     const accessToken = hashParams.get('access_token');
@@ -200,6 +204,8 @@ function App() {
         return <AdminPopupBanners />;
       case 'admingiveaway':
         return <AdminGiveaway />;
+      case 'adminacquisition':
+        return <AdminAcquisition />;
       case 'giveaway':
         return <GiveawayHub />;
       case 'event':

@@ -54,6 +54,7 @@ interface PositionHistory {
   margin_from_locked_bonus: number;
   opened_at: string;
   cumulative_fees: number;
+  status: string;
 }
 
 type TabType = 'positions' | 'orders' | 'history';
@@ -192,9 +193,9 @@ function FuturesPositionsPanel() {
     try {
       const { data, error } = await supabase
         .from('futures_positions')
-        .select('position_id, pair, side, entry_price, mark_price, quantity, leverage, realized_pnl, closed_at, margin_allocated, margin_from_locked_bonus, opened_at, cumulative_fees')
+        .select('position_id, pair, side, entry_price, mark_price, quantity, leverage, realized_pnl, closed_at, margin_allocated, margin_from_locked_bonus, opened_at, cumulative_fees, status')
         .eq('user_id', user.id)
-        .eq('status', 'closed')
+        .in('status', ['closed', 'liquidated'])
         .order('closed_at', { ascending: false })
         .limit(50);
 
@@ -631,6 +632,11 @@ function FuturesPositionsPanel() {
                   <td className="px-4 py-3 text-white font-medium">
                     <div className="flex items-center gap-2">
                       {position.pair}
+                      {position.status === 'liquidated' && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-500/20 text-red-400 rounded text-[10px] font-bold" title="Position was liquidated">
+                          LIQ
+                        </span>
+                      )}
                       {usedBonusMargin && (
                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/10 text-amber-500 rounded text-[10px] font-medium" title="Bonus margin used">
                           <Gift className="w-3 h-3" />
