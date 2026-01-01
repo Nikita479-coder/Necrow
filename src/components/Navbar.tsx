@@ -12,10 +12,13 @@ export default function Navbar() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [pendingTradesCount, setPendingTradesCount] = useState(0);
+  const [hasActiveGiveaway, setHasActiveGiveaway] = useState(false);
   const { navigateTo } = useNavigation();
   const { isAuthenticated, signOut, profile, user, canAccessAdmin, staffInfo } = useAuth();
 
   useEffect(() => {
+    checkActiveGiveaways();
+
     if (user) {
       loadUnreadCount();
       loadPendingTradesCount();
@@ -80,6 +83,25 @@ export default function Navbar() {
     }
   };
 
+  const checkActiveGiveaways = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('giveaway_campaigns')
+        .select('id')
+        .eq('status', 'active')
+        .gte('end_date', new Date().toISOString())
+        .lte('start_date', new Date().toISOString())
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      setHasActiveGiveaway(!!data);
+    } catch (error) {
+      console.error('Error checking active giveaways:', error);
+      setHasActiveGiveaway(false);
+    }
+  };
+
   const handleProtectedAction = (action: () => void) => {
     if (isAuthenticated) {
       action();
@@ -94,7 +116,7 @@ export default function Navbar() {
     { label: 'Earn', hasDropdown: false, onClick: () => navigateTo('earn'), protected: false },
     { label: 'Swap', hasDropdown: false, onClick: () => handleProtectedAction(() => navigateTo('swap')), protected: true },
     { label: 'Copy Trading', hasDropdown: false, onClick: () => handleProtectedAction(() => navigateTo('copytrading')), protected: true, ...(pendingTradesCount > 0 && { badge: pendingTradesCount }) },
-    { label: 'Giveaway', hasDropdown: false, onClick: () => navigateTo('giveaway'), protected: false, highlight: true },
+    ...(hasActiveGiveaway ? [{ label: 'Giveaway', hasDropdown: false, onClick: () => navigateTo('giveaway'), protected: false, highlight: true }] : []),
     { label: 'Wallet', hasDropdown: false, onClick: () => handleProtectedAction(() => navigateTo('wallet')), protected: true },
   ];
 

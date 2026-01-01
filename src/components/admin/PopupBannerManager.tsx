@@ -291,7 +291,8 @@ export default function PopupBannerManager() {
           is_active: true,
           target_audiences: targetAudiences.length > 0 ? targetAudiences : null,
           target_user_ids: selectedUsers.length > 0 ? selectedUsers.map(u => u.user_id) : null,
-          audience_logic: audienceLogic
+          audience_logic: audienceLogic,
+          target_count_snapshot: estimatedReach || 0
         });
 
       if (insertError) {

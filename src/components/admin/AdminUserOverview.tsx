@@ -62,7 +62,7 @@ export default function AdminUserOverview({ userId, userData, onRefresh }: Props
       .from('futures_positions')
       .select('realized_pnl')
       .eq('user_id', userId)
-      .eq('status', 'closed');
+      .in('status', ['closed', 'liquidated']);
 
     const totalRealizedPnl = closedPositions?.reduce((sum, p) => sum + parseFloat(p.realized_pnl || '0'), 0) || 0;
 

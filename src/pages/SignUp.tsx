@@ -5,6 +5,7 @@ import { Eye, EyeOff, CreditCard, Sparkles, TrendingUp, Shield, Mail, ArrowLeft,
 import Navbar from '../components/Navbar';
 import { supabase } from '../lib/supabase';
 import { countryCodes } from '../constants/countryCodes';
+import { saveAcquisitionToDatabase } from '../services/acquisitionService';
 
 type Step = 'register' | 'verify';
 
@@ -281,6 +282,8 @@ function SignUp() {
           .from('user_profiles')
           .update({ email_verified: true })
           .eq('id', signUpData.user.id);
+
+        await saveAcquisitionToDatabase(signUpData.user.id);
       }
 
       await sendWelcomeEmail(formData.email, formData.name);

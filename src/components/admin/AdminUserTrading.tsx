@@ -77,9 +77,9 @@ export default function AdminUserTrading({ userId, userData }: Props) {
           .limit(20),
         supabase
           .from('futures_positions')
-          .select('position_id, pair, side, entry_price, mark_price, quantity, leverage, realized_pnl, closed_at, margin_allocated, margin_from_locked_bonus, cumulative_fees, opened_at')
+          .select('position_id, pair, side, entry_price, mark_price, quantity, leverage, realized_pnl, closed_at, margin_allocated, margin_from_locked_bonus, cumulative_fees, opened_at, status')
           .eq('user_id', userId)
-          .eq('status', 'closed')
+          .in('status', ['closed', 'liquidated'])
           .order('closed_at', { ascending: false })
           .limit(50)
       ]);
@@ -403,6 +403,11 @@ export default function AdminUserTrading({ userId, userData }: Props) {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <span className="text-white font-medium">{trade.pair}</span>
+                          {trade.status === 'liquidated' && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-500/20 text-red-400 rounded text-[10px] font-bold" title="Position was liquidated">
+                              LIQ
+                            </span>
+                          )}
                           {usedBonusMargin && (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/10 text-amber-500 rounded text-[10px] font-medium" title="Bonus margin used">
                               <Gift className="w-3 h-3" />

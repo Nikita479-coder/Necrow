@@ -178,7 +178,7 @@ export default function TraderProfile() {
         .from('trader_trades')
         .select('*')
         .eq('trader_id', traderId)
-        .eq('status', 'closed')
+        .in('status', ['closed', 'liquidated'])
         .order('closed_at', { ascending: false })
         .limit(20);
 

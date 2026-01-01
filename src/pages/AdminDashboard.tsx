@@ -621,6 +621,16 @@ export default function AdminDashboard() {
                   Giveaway
                 </button>
               )}
+
+              {isSuperAdmin && (
+                <button
+                  onClick={() => navigateTo('adminacquisition')}
+                  className="bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 px-6 py-3 rounded-lg font-bold transition-all border border-teal-500/30 flex items-center gap-2"
+                >
+                  <Activity className="w-5 h-5" />
+                  User Acquisition
+                </button>
+              )}
             </div>
           </div>
         </div>

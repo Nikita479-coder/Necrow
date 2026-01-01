@@ -205,7 +205,7 @@ function ActiveCopyTrading() {
         .from('trader_trades')
         .select('*')
         .eq('trader_id', selectedCopy.trader_id)
-        .eq('status', 'closed')
+        .in('status', ['closed', 'liquidated'])
         .gte('opened_at', selectedCopy.created_at)
         .order('closed_at', { ascending: false })
         .limit(50);
