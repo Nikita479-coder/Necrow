@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Wallet, TrendingUp, Users, Calendar, DollarSign, Award } from 'lucide-react';
+import { Wallet, TrendingUp, Users, Calendar, DollarSign, Award, MapPin, Monitor, MousePointerClick, Clock } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import PhoneRevealButton from './PhoneRevealButton';
 
@@ -26,9 +26,22 @@ export default function AdminUserOverview({ userId, userData, onRefresh, isSuper
     rewardsEarned: 0
   });
 
+  const [acquisitionData, setAcquisitionData] = useState<any>(null);
+
   useEffect(() => {
     loadStats();
+    loadAcquisitionData();
   }, [userId]);
+
+  const loadAcquisitionData = async () => {
+    const { data } = await supabase
+      .from('visitor_sessions')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    setAcquisitionData(data);
+  };
 
   const loadStats = async () => {
     // Get total portfolio value in USD using the database function
@@ -231,6 +244,103 @@ export default function AdminUserOverview({ userId, userData, onRefresh, isSuper
           </div>
         </div>
       </div>
+
+      {acquisitionData && (
+        <div>
+          <h2 className="text-xl font-bold text-white mb-4">Acquisition Source</h2>
+          <div className="bg-[#0b0e11] rounded-xl p-6 border border-gray-800">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <MousePointerClick className="w-4 h-4 text-blue-400" />
+                  <p className="text-sm text-gray-400">Traffic Source</p>
+                </div>
+                <p className="text-white font-medium">
+                  {acquisitionData.utm_source || acquisitionData.referrer_domain || 'Direct'}
+                </p>
+                {acquisitionData.utm_medium && (
+                  <p className="text-xs text-gray-500 mt-0.5">via {acquisitionData.utm_medium}</p>
+                )}
+              </div>
+
+              {acquisitionData.utm_campaign && (
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Campaign</p>
+                  <p className="text-white font-medium">{acquisitionData.utm_campaign}</p>
+                  {acquisitionData.utm_content && (
+                    <p className="text-xs text-gray-500 mt-0.5">{acquisitionData.utm_content}</p>
+                  )}
+                </div>
+              )}
+
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Monitor className="w-4 h-4 text-green-400" />
+                  <p className="text-sm text-gray-400">Device</p>
+                </div>
+                <p className="text-white font-medium">
+                  {acquisitionData.device_type || 'Unknown'}
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {acquisitionData.browser} on {acquisitionData.os}
+                </p>
+              </div>
+
+              {(acquisitionData.country || acquisitionData.city) && (
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <MapPin className="w-4 h-4 text-purple-400" />
+                    <p className="text-sm text-gray-400">Location</p>
+                  </div>
+                  <p className="text-white font-medium">
+                    {[acquisitionData.city, acquisitionData.country].filter(Boolean).join(', ') || 'Unknown'}
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock className="w-4 h-4 text-yellow-400" />
+                  <p className="text-sm text-gray-400">First Visit</p>
+                </div>
+                <p className="text-white font-medium">
+                  {new Date(acquisitionData.first_visit_at).toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit'
+                  })}
+                </p>
+                {acquisitionData.conversion_date && (
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Converted in {Math.round((new Date(acquisitionData.conversion_date).getTime() - new Date(acquisitionData.first_visit_at).getTime()) / 60000)} minutes
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-400 mb-1">Landing Page</p>
+                <p className="text-white font-medium font-mono text-sm">
+                  {acquisitionData.landing_page || '/'}
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {acquisitionData.page_views} page view{acquisitionData.page_views !== 1 ? 's' : ''}
+                </p>
+              </div>
+
+              {acquisitionData.referrer_url && (
+                <div className="lg:col-span-3">
+                  <p className="text-sm text-gray-400 mb-1">Referrer URL</p>
+                  <p className="text-white text-sm break-all font-mono">
+                    {acquisitionData.referrer_url}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div>
         <h2 className="text-xl font-bold text-white mb-4">Financial Summary</h2>

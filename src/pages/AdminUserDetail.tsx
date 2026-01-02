@@ -190,7 +190,7 @@ export default function AdminUserDetail() {
         .from('referral_stats')
         .select('*')
         .eq('user_id', uid)
-        .single();
+        .maybeSingle();
 
       setUserData({
         profile,

@@ -65,18 +65,24 @@ interface VisitorSession {
   utm_source: string | null;
   utm_medium: string | null;
   utm_campaign: string | null;
+  utm_content: string | null;
+  utm_term: string | null;
+  referrer_url: string | null;
   referrer_domain: string | null;
   landing_page: string | null;
   device_type: string | null;
   browser: string | null;
+  os: string | null;
+  country: string | null;
+  city: string | null;
+  ip_address: string | null;
   first_visit_at: string;
   last_visit_at: string;
   page_views: number;
   converted: boolean;
-  user_profiles?: {
-    full_name: string | null;
-    email: string | null;
-  };
+  conversion_date: string | null;
+  email: string | null;
+  full_name: string | null;
 }
 
 function AdminAcquisition() {
@@ -101,6 +107,7 @@ function AdminAcquisition() {
   const [visitorSearch, setVisitorSearch] = useState('');
   const [visitorFilter, setVisitorFilter] = useState<'all' | 'converted' | 'not_converted'>('all');
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const [selectedSource, setSelectedSource] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -118,18 +125,10 @@ function AdminAcquisition() {
           p_end_date: new Date().toISOString()
         }),
         supabase.from('campaign_tracking_links').select('*').order('created_at', { ascending: false }),
-        supabase
-          .from('visitor_sessions')
-          .select(`
-            *,
-            user_profiles:user_id (
-              full_name,
-              email
-            )
-          `)
-          .gte('first_visit_at', startDate.toISOString())
-          .order('first_visit_at', { ascending: false })
-          .limit(500)
+        supabase.rpc('get_enriched_visitor_sessions', {
+          p_start_date: startDate.toISOString(),
+          p_limit: 500
+        })
       ]);
 
       if (analyticsRes.data) setAnalytics(analyticsRes.data);
@@ -215,19 +214,43 @@ function AdminAcquisition() {
     if (!error) loadData();
   };
 
+  const getVisitorSource = (visitor: VisitorSession) => {
+    const source = visitor.utm_source || visitor.referrer_domain || null;
+    return source ? source.toLowerCase() : 'direct';
+  };
+
   const filteredVisitors = visitors.filter(v => {
     if (visitorFilter === 'converted' && !v.converted) return false;
     if (visitorFilter === 'not_converted' && v.converted) return false;
 
+    if (selectedSource) {
+      const visitorSource = getVisitorSource(v);
+      const targetSource = selectedSource.toLowerCase();
+
+      // Handle 'direct' as a special case for null/empty sources
+      if (targetSource === 'direct') {
+        if (!v.utm_source && !v.referrer_domain) return true;
+        return false;
+      }
+
+      // Check if visitor source matches or contains the selected source
+      if (visitorSource !== targetSource && !visitorSource.includes(targetSource)) {
+        return false;
+      }
+    }
+
     if (!visitorSearch) return true;
     const search = visitorSearch.toLowerCase();
     return (
-      v.user_profiles?.email?.toLowerCase().includes(search) ||
-      v.user_profiles?.full_name?.toLowerCase().includes(search) ||
+      v.email?.toLowerCase().includes(search) ||
+      v.full_name?.toLowerCase().includes(search) ||
       v.utm_source?.toLowerCase().includes(search) ||
       v.utm_campaign?.toLowerCase().includes(search) ||
       v.referrer_domain?.toLowerCase().includes(search) ||
-      v.session_id?.toLowerCase().includes(search)
+      v.session_id?.toLowerCase().includes(search) ||
+      v.country?.toLowerCase().includes(search) ||
+      v.city?.toLowerCase().includes(search) ||
+      v.ip_address?.toLowerCase().includes(search)
     );
   });
 
@@ -381,7 +404,14 @@ function AdminAcquisition() {
                     <h3 className="text-lg font-semibold text-white mb-4">Traffic Sources</h3>
                     <div className="space-y-3">
                       {analytics.sources.slice(0, 10).map((source, index) => (
-                        <div key={index} className="flex items-center gap-3">
+                        <div
+                          key={index}
+                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-800/50 cursor-pointer transition-colors"
+                          onClick={() => {
+                            setSelectedSource(source.source || 'direct');
+                            setActiveTab('visitors');
+                          }}
+                        >
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                             sourceColors[source.source?.toLowerCase()] || 'bg-gray-700'
                           }`}>
@@ -420,6 +450,11 @@ function AdminAcquisition() {
                           No visitor data yet. Share your tracking links!
                         </div>
                       )}
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-gray-800">
+                      <p className="text-xs text-gray-500 text-center">
+                        Click on any source to view detailed user list
+                      </p>
                     </div>
                   </div>
 
@@ -524,48 +559,72 @@ function AdminAcquisition() {
             )}
 
             {activeTab === 'sources' && analytics && (
-              <div className="bg-[#13141b] rounded-xl border border-gray-800 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-800">
-                        <th className="text-left p-4 text-gray-400 font-medium">Source</th>
-                        <th className="text-right p-4 text-gray-400 font-medium">Visitors</th>
-                        <th className="text-right p-4 text-gray-400 font-medium">Page Views</th>
-                        <th className="text-right p-4 text-gray-400 font-medium">Signups</th>
-                        <th className="text-right p-4 text-gray-400 font-medium">Conversion Rate</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {analytics.sources.map((row, index) => (
-                        <tr key={index} className="border-b border-gray-800/50 hover:bg-gray-800/30">
-                          <td className="p-4">
-                            <div className="flex items-center gap-2">
-                              {getSourceIcon(row.source)}
-                              <span className="text-white capitalize">{row.source}</span>
-                            </div>
-                          </td>
-                          <td className="p-4 text-right text-white font-medium">{row.visitors.toLocaleString()}</td>
-                          <td className="p-4 text-right text-gray-400">{row.page_views.toLocaleString()}</td>
-                          <td className="p-4 text-right text-green-400">{row.signups}</td>
-                          <td className="p-4 text-right">
-                            <span className={`px-2 py-1 rounded text-sm ${
-                              row.conversion_rate > 5
-                                ? 'bg-green-500/10 text-green-400'
-                                : 'bg-gray-700 text-gray-300'
-                            }`}>
-                              {row.conversion_rate}%
-                            </span>
-                          </td>
+              <div className="space-y-4">
+                <div className="bg-[#13141b] rounded-xl border border-gray-800 p-4">
+                  <p className="text-sm text-gray-400">
+                    Click on any source to view users who signed up from that source
+                  </p>
+                </div>
+                <div className="bg-[#13141b] rounded-xl border border-gray-800 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-800">
+                          <th className="text-left p-4 text-gray-400 font-medium">Source</th>
+                          <th className="text-right p-4 text-gray-400 font-medium">Visitors</th>
+                          <th className="text-right p-4 text-gray-400 font-medium">Page Views</th>
+                          <th className="text-right p-4 text-gray-400 font-medium">Signups</th>
+                          <th className="text-right p-4 text-gray-400 font-medium">Conversion Rate</th>
+                          <th className="text-right p-4 text-gray-400 font-medium">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {analytics.sources.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                      No source data available yet
-                    </div>
-                  )}
+                      </thead>
+                      <tbody>
+                        {analytics.sources.map((row, index) => (
+                          <tr key={index} className="border-b border-gray-800/50 hover:bg-gray-800/30 cursor-pointer" onClick={() => {
+                            setSelectedSource(row.source || 'direct');
+                            setActiveTab('visitors');
+                          }}>
+                            <td className="p-4">
+                              <div className="flex items-center gap-2">
+                                {getSourceIcon(row.source)}
+                                <span className="text-white capitalize">{row.source}</span>
+                              </div>
+                            </td>
+                            <td className="p-4 text-right text-white font-medium">{row.visitors.toLocaleString()}</td>
+                            <td className="p-4 text-right text-gray-400">{row.page_views.toLocaleString()}</td>
+                            <td className="p-4 text-right text-green-400">{row.signups}</td>
+                            <td className="p-4 text-right">
+                              <span className={`px-2 py-1 rounded text-sm ${
+                                row.conversion_rate > 5
+                                  ? 'bg-green-500/10 text-green-400'
+                                  : 'bg-gray-700 text-gray-300'
+                              }`}>
+                                {row.conversion_rate}%
+                              </span>
+                            </td>
+                            <td className="p-4 text-right">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedSource(row.source || 'direct');
+                                  setActiveTab('visitors');
+                                }}
+                                className="flex items-center gap-1 px-3 py-1 bg-[#f0b90b]/10 hover:bg-[#f0b90b]/20 text-[#f0b90b] rounded text-sm transition-colors"
+                              >
+                                <Eye className="w-3 h-3" />
+                                View Users
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {analytics.sources.length === 0 && (
+                      <div className="text-center py-12 text-gray-500">
+                        No source data available yet
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -795,6 +854,52 @@ function AdminAcquisition() {
 
             {activeTab === 'visitors' && (
               <div className="space-y-4">
+                {selectedSource && (
+                  <div className="space-y-3">
+                    <div className="bg-[#13141b] rounded-xl border border-gray-800 p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            {getSourceIcon(selectedSource)}
+                            <span className="text-white font-medium">
+                              Showing users from <span className="text-[#f0b90b] capitalize">{selectedSource}</span>
+                            </span>
+                          </div>
+                          <span className="text-gray-400 text-sm">
+                            ({filteredVisitors.length} {filteredVisitors.length === 1 ? 'visitor' : 'visitors'})
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => setSelectedSource(null)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-sm transition-colors"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          Clear Filter
+                        </button>
+                      </div>
+                    </div>
+
+                    {filteredVisitors.length === 0 && visitors.length > 0 && (
+                      <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4">
+                        <p className="text-orange-400 text-sm mb-2">
+                          No visitors found with source "{selectedSource}". Available sources in current data:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {Array.from(new Set(visitors.map(v => getVisitorSource(v)))).map((src, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => setSelectedSource(src)}
+                              className="px-2 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-xs transition-colors capitalize"
+                            >
+                              {src}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex items-center gap-4">
                   <div className="relative flex-1 max-w-md">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
@@ -825,6 +930,7 @@ function AdminAcquisition() {
                           <th className="text-left p-4 text-gray-400 font-medium">Visitor / User</th>
                           <th className="text-left p-4 text-gray-400 font-medium">Source</th>
                           <th className="text-left p-4 text-gray-400 font-medium">Campaign</th>
+                          <th className="text-left p-4 text-gray-400 font-medium">Location</th>
                           <th className="text-left p-4 text-gray-400 font-medium">Device</th>
                           <th className="text-right p-4 text-gray-400 font-medium">Pages</th>
                           <th className="text-left p-4 text-gray-400 font-medium">First Visit</th>
@@ -836,13 +942,13 @@ function AdminAcquisition() {
                         {filteredVisitors.map((visitor) => (
                           <tr key={visitor.id} className="border-b border-gray-800/50 hover:bg-gray-800/30">
                             <td className="p-4">
-                              {visitor.converted && visitor.user_profiles ? (
+                              {visitor.converted && visitor.email ? (
                                 <div>
                                   <div className="text-white font-medium">
-                                    {visitor.user_profiles.full_name || 'Unknown'}
+                                    {visitor.full_name || 'Unknown'}
                                   </div>
                                   <div className="text-xs text-gray-500">
-                                    {visitor.user_profiles.email}
+                                    {visitor.email}
                                   </div>
                                 </div>
                               ) : (
@@ -856,7 +962,7 @@ function AdminAcquisition() {
                             </td>
                             <td className="p-4">
                               <div className="flex items-center gap-2">
-                                {getSourceIcon(visitor.utm_source || visitor.referrer_domain || 'direct')}
+                                {getSourceIcon(getVisitorSource(visitor))}
                                 <span className="text-gray-300 capitalize">
                                   {visitor.utm_source || visitor.referrer_domain || 'Direct'}
                                 </span>
@@ -866,6 +972,16 @@ function AdminAcquisition() {
                               )}
                             </td>
                             <td className="p-4 text-gray-400">{visitor.utm_campaign || '-'}</td>
+                            <td className="p-4">
+                              {visitor.city || visitor.country ? (
+                                <div className="text-gray-300">
+                                  <div>{visitor.city || '-'}</div>
+                                  <div className="text-xs text-gray-500">{visitor.country || '-'}</div>
+                                </div>
+                              ) : (
+                                <span className="text-gray-500">-</span>
+                              )}
+                            </td>
                             <td className="p-4">
                               <div className="flex items-center gap-2 text-gray-400">
                                 {getDeviceIcon(visitor.device_type || '')}
