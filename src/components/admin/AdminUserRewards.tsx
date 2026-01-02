@@ -46,7 +46,7 @@ export default function AdminUserRewards({ userId }: Props) {
           .from('referral_stats')
           .select('*')
           .eq('user_id', userId)
-          .single()
+          .maybeSingle()
       ]);
 
       const allRewards = rewardsRes.data || [];

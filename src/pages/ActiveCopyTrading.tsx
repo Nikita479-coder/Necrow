@@ -66,6 +66,7 @@ interface CopyRelationship {
   current_balance: string;
   total_pnl: string;
   is_active: boolean;
+  is_mock: boolean;
   created_at: string;
   trader: {
     id: string;
@@ -168,6 +169,7 @@ function ActiveCopyTrading() {
         current_balance: data.current_balance || '0',
         total_pnl: data.total_pnl || '0',
         is_active: data.is_active,
+        is_mock: data.is_mock || false,
         created_at: data.created_at,
         trader: {
           id: (data.traders as any).id,
@@ -389,6 +391,28 @@ function ActiveCopyTrading() {
     setWithdrawing(true);
 
     try {
+      // For mock copy trading, just stop without transferring funds
+      if (selectedCopy.is_mock) {
+        const { error: copyError } = await supabase
+          .from('copy_relationships')
+          .update({
+            is_active: false,
+            status: 'stopped',
+            ended_at: new Date().toISOString()
+          })
+          .eq('id', selectedCopy.id);
+
+        if (copyError) throw copyError;
+
+        showSuccess(`Mock copy trading with ${selectedCopy.trader.name} has been stopped`);
+        setShowWithdrawModal(false);
+
+        setTimeout(() => {
+          navigateTo('copytrading');
+        }, 2000);
+        return;
+      }
+
       const initialBalance = parseFloat(selectedCopy.initial_balance);
       const currentBalance = parseFloat(selectedCopy.current_balance);
       const profit = currentBalance - initialBalance;
@@ -541,7 +565,7 @@ function ActiveCopyTrading() {
                 onClick={() => setShowWithdrawModal(true)}
                 className="bg-[#f6465d] hover:bg-[#ff4757] text-white px-6 py-2.5 rounded-lg font-medium transition-all"
               >
-                Withdraw & Stop
+                {selectedCopy.is_mock ? 'Stop Mock Copy' : 'Withdraw & Stop'}
               </button>
             )}
           </div>
@@ -891,7 +915,7 @@ function ActiveCopyTrading() {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-[#181a20] rounded-2xl p-6 max-w-md w-full border border-gray-800">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold">Withdraw Funds</h3>
+              <h3 className="text-xl font-bold">{selectedCopy.is_mock ? 'Stop Mock Copy Trading' : 'Withdraw Funds'}</h3>
               <button
                 onClick={() => setShowWithdrawModal(false)}
                 className="text-gray-400 hover:text-white transition-colors"
@@ -900,62 +924,94 @@ function ActiveCopyTrading() {
               </button>
             </div>
 
-            <div className="space-y-4 mb-6">
-              <div className="bg-[#0b0e11] rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-gray-400 text-sm">Current Balance</span>
-                  <span className="text-white text-lg font-bold">
-                    {withdrawal.total.toFixed(2)} USDT
-                  </span>
-                </div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-gray-400 text-sm">Initial Balance</span>
-                  <span className="text-gray-400 text-sm">
-                    {parseFloat(selectedCopy.initial_balance).toFixed(2)} USDT
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400 text-sm">Profit/Loss</span>
-                  <span className={`text-sm font-semibold ${profit >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
-                    {profit >= 0 ? '+' : ''}{profit.toFixed(2)} USDT
-                  </span>
-                </div>
-              </div>
-
-              {withdrawal.fee > 0 && (
-                <div className="bg-[#f6465d]/10 border border-[#f6465d]/30 rounded-xl p-4">
+            {selectedCopy.is_mock ? (
+              <div className="space-y-4 mb-6">
+                <div className="bg-[#0b0e11] rounded-xl p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-gray-400 text-sm">Platform Fee (20% of profit)</span>
-                    <span className="text-[#f6465d] text-sm font-semibold">
-                      -{withdrawal.fee.toFixed(2)} USDT
+                    <span className="text-gray-400 text-sm">Mock Balance</span>
+                    <span className="text-white text-lg font-bold">
+                      {parseFloat(selectedCopy.current_balance).toFixed(2)} USDT
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500">
-                    We charge 20% commission on profits made through copy trading
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-400 text-sm">Initial Balance</span>
+                    <span className="text-gray-400 text-sm">
+                      {parseFloat(selectedCopy.initial_balance).toFixed(2)} USDT
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-400 text-sm">Mock Profit/Loss</span>
+                    <span className={`text-sm font-semibold ${profit >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                      {profit >= 0 ? '+' : ''}{profit.toFixed(2)} USDT
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-blue-900/20 border border-blue-700/30 rounded-xl p-4">
+                  <p className="text-xs text-blue-400">
+                    This is mock copy trading with virtual funds. No real money is involved.
+                    Stopping will end your mock copy trading session with {selectedCopy.trader.name}.
                   </p>
                 </div>
-              )}
+              </div>
+            ) : (
+              <div className="space-y-4 mb-6">
+                <div className="bg-[#0b0e11] rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-400 text-sm">Current Balance</span>
+                    <span className="text-white text-lg font-bold">
+                      {withdrawal.total.toFixed(2)} USDT
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-400 text-sm">Initial Balance</span>
+                    <span className="text-gray-400 text-sm">
+                      {parseFloat(selectedCopy.initial_balance).toFixed(2)} USDT
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-400 text-sm">Profit/Loss</span>
+                    <span className={`text-sm font-semibold ${profit >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                      {profit >= 0 ? '+' : ''}{profit.toFixed(2)} USDT
+                    </span>
+                  </div>
+                </div>
 
-              <div className="bg-[#0ecb81]/10 border border-[#0ecb81]/30 rounded-xl p-4">
-                <div className="text-sm text-gray-400 mb-1">You will receive</div>
-                <div className="text-[#0ecb81] text-2xl font-bold">
-                  {withdrawal.net.toFixed(2)} USDT
+                {withdrawal.fee > 0 && (
+                  <div className="bg-[#f6465d]/10 border border-[#f6465d]/30 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-gray-400 text-sm">Platform Fee (20% of profit)</span>
+                      <span className="text-[#f6465d] text-sm font-semibold">
+                        -{withdrawal.fee.toFixed(2)} USDT
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      We charge 20% commission on profits made through copy trading
+                    </p>
+                  </div>
+                )}
+
+                <div className="bg-[#0ecb81]/10 border border-[#0ecb81]/30 rounded-xl p-4">
+                  <div className="text-sm text-gray-400 mb-1">You will receive</div>
+                  <div className="text-[#0ecb81] text-2xl font-bold">
+                    {withdrawal.net.toFixed(2)} USDT
+                  </div>
+                </div>
+
+                <div className="bg-yellow-900/20 border border-yellow-700/30 rounded-xl p-4">
+                  <p className="text-xs text-yellow-400">
+                    Warning: This will stop copying {selectedCopy.trader.name} and withdraw all funds to your wallet. This action cannot be undone.
+                  </p>
                 </div>
               </div>
-
-              <div className="bg-yellow-900/20 border border-yellow-700/30 rounded-xl p-4">
-                <p className="text-xs text-yellow-400">
-                  Warning: This will stop copying {selectedCopy.trader.name} and withdraw all funds to your wallet. This action cannot be undone.
-                </p>
-              </div>
-            </div>
+            )}
 
             <button
               onClick={handleWithdraw}
               disabled={withdrawing}
               className="w-full bg-[#f6465d] hover:bg-[#ff4757] disabled:bg-gray-700 disabled:cursor-not-allowed text-white disabled:text-gray-500 font-bold py-3 rounded-xl transition-all"
             >
-              {withdrawing ? 'Processing...' : 'Confirm Withdrawal'}
+              {withdrawing ? 'Processing...' : (selectedCopy.is_mock ? 'Stop Mock Copy Trading' : 'Confirm Withdrawal')}
             </button>
           </div>
         </div>

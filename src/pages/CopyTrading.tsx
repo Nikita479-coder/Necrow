@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { useNavigation } from '../App';
-import { Star, Search, X, TrendingUp, Users as UsersIcon, Bell, Clock, RefreshCw, Send } from 'lucide-react';
+import { Star, Search, TrendingUp, TrendingDown, Users as UsersIcon, Bell, RefreshCw, Send, TestTube2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
@@ -71,11 +71,12 @@ function CopyTrading() {
   const { navigateTo } = useNavigation();
   const { user } = useAuth();
   const { toasts, removeToast, showSuccess, showError } = useToast();
-  const [activeTab, setActiveTab] = useState<'all' | 'favorites' | 'active' | 'pending'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'favorites' | 'active' | 'pending' | 'mock'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [traders, setTraders] = useState<Trader[]>([]);
   const [activeCopies, setActiveCopies] = useState<CopyRelationship[]>([]);
+  const [mockCopies, setMockCopies] = useState<CopyRelationship[]>([]);
   const [pendingTrades, setPendingTrades] = useState<PendingTrade[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTrader, setSelectedTrader] = useState<Trader | null>(null);
@@ -89,6 +90,7 @@ function CopyTrading() {
   const [sortStat, setSortStat] = useState<SortStat>('pnl');
   const [pendingTradeIdFromUrl, setPendingTradeIdFromUrl] = useState<string | null>(null);
   const [hasTelegram, setHasTelegram] = useState(false);
+  const [mockLoading, setMockLoading] = useState(false);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -98,6 +100,12 @@ function CopyTrading() {
       setActiveTab('pending');
     }
   }, []);
+
+  useEffect(() => {
+    if (user && activeTab === 'mock') {
+      loadMockCopies();
+    }
+  }, [user, activeTab]);
 
   useEffect(() => {
     if (pendingTradeIdFromUrl && pendingTrades.length > 0) {
@@ -314,6 +322,94 @@ function CopyTrading() {
       }
     } catch (error) {
       console.error('Error loading active copies:', error);
+    }
+  };
+
+  const loadMockCopies = async () => {
+    if (!user) return;
+    setMockLoading(true);
+
+    try {
+      const { data, error } = await supabase
+        .from('copy_relationships')
+        .select(`
+          *,
+          traders:trader_id (*)
+        `)
+        .eq('follower_id', user.id)
+        .eq('is_active', true)
+        .eq('is_mock', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data) {
+        const formattedCopiesPromises = data.map(async (copy) => {
+          const initialBalance = parseFloat(copy.initial_balance || '0');
+          const currentBalance = parseFloat(copy.current_balance || '0');
+
+          let userRoi30d = 0;
+          if (initialBalance > 0) {
+            userRoi30d = ((currentBalance - initialBalance) / initialBalance) * 100;
+          }
+
+          return {
+            id: copy.id,
+            trader_id: copy.trader_id,
+            initial_balance: copy.initial_balance || '0',
+            current_balance: copy.current_balance || '0',
+            leverage: copy.leverage,
+            is_active: copy.is_active,
+            is_mock: copy.is_mock,
+            created_at: copy.created_at,
+            user_roi_30d: userRoi30d,
+            trader: copy.traders ? {
+              id: (copy.traders as any).id,
+              name: (copy.traders as any).name,
+              avatar: (copy.traders as any).avatar,
+              rank: (copy.traders as any).rank,
+              total_rank: (copy.traders as any).total_rank,
+              api_verified: (copy.traders as any).api_verified,
+              pnl_7d: parseFloat((copy.traders as any).pnl_7d || '0'),
+              pnl_30d: parseFloat((copy.traders as any).pnl_30d || '0'),
+              pnl_90d: parseFloat((copy.traders as any).pnl_90d || '0'),
+              roi_7d: parseFloat((copy.traders as any).roi_7d || '0'),
+              roi_30d: parseFloat((copy.traders as any).roi_30d || '0'),
+              roi_90d: parseFloat((copy.traders as any).roi_90d || '0'),
+              aum: parseFloat((copy.traders as any).aum || '0'),
+              mdd_30d: parseFloat((copy.traders as any).mdd_30d || '0'),
+              sharpe_ratio: (copy.traders as any).sharpe_ratio ? parseFloat((copy.traders as any).sharpe_ratio) : null,
+              followers_count: (copy.traders as any).followers_count
+            } : undefined
+          };
+        });
+
+        const formattedCopies = await Promise.all(formattedCopiesPromises);
+        setMockCopies(formattedCopies);
+      }
+    } catch (error) {
+      console.error('Error loading mock copies:', error);
+    } finally {
+      setMockLoading(false);
+    }
+  };
+
+  const handleStopMockCopy = async (copyId: string, traderName: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('copy_relationships')
+        .update({ is_active: false })
+        .eq('id', copyId);
+
+      if (error) throw error;
+
+      showSuccess(`Stopped mock copying ${traderName}`);
+      await loadMockCopies();
+    } catch (error: any) {
+      console.error('Error stopping mock copy:', error);
+      showError(error.message || 'Failed to stop mock copying');
     }
   };
 
@@ -610,6 +706,25 @@ function CopyTrading() {
                 <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#fcd535]"></div>
               )}
             </button>
+            <button
+              onClick={() => setActiveTab('mock')}
+              className={`pb-2 text-sm sm:text-base transition-colors relative flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'mock'
+                  ? 'text-white font-medium'
+                  : 'text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              <TestTube2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Mock</span> Trading
+              {mockCopies.length > 0 && (
+                <span className="bg-[#fcd535] text-[#0b0e11] text-xs px-1.5 py-0.5 rounded-full font-semibold">
+                  {mockCopies.length}
+                </span>
+              )}
+              {activeTab === 'mock' && (
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#fcd535]"></div>
+              )}
+            </button>
           </div>
 
           {user && !hasTelegram && (
@@ -623,7 +738,7 @@ function CopyTrading() {
           )}
         </div>
 
-        {activeTab !== 'active' && activeTab !== 'pending' && (
+        {activeTab !== 'active' && activeTab !== 'pending' && activeTab !== 'mock' && (
           <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1 sm:max-w-xs">
               <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-[#848e9c]" />
@@ -781,6 +896,128 @@ function CopyTrading() {
                         >
                           View Details
                         </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : activeTab === 'mock' ? (
+          <div>
+            {mockLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="animate-spin w-12 h-12 border-4 border-[#fcd535] border-t-transparent rounded-full"></div>
+              </div>
+            ) : mockCopies.length === 0 ? (
+              <div className="text-center py-12 sm:py-20 px-4">
+                <TestTube2 className="w-12 sm:w-16 h-12 sm:h-16 mx-auto mb-4 text-gray-600" />
+                <h3 className="text-lg sm:text-xl font-semibold mb-2">No Mock Copy Trading</h3>
+                <p className="text-gray-400 mb-6 text-sm sm:text-base max-w-md mx-auto">
+                  Practice copy trading without risking real funds. Start mock copying a trader to see how their strategies perform.
+                </p>
+                <button
+                  onClick={() => setActiveTab('all')}
+                  className="bg-[#fcd535] hover:bg-[#f0b90b] text-[#0b0e11] px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg font-medium transition-all text-sm sm:text-base"
+                >
+                  Browse Traders
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="bg-[#2b3139]/50 rounded-lg p-4 mb-4 border border-[#fcd535]/20">
+                  <div className="flex items-center gap-2 text-[#fcd535] text-sm">
+                    <TestTube2 className="w-4 h-4" />
+                    <span className="font-medium">Mock Copy Trading</span>
+                  </div>
+                  <p className="text-[#848e9c] text-xs mt-1">
+                    These are simulated copy trading relationships. No real funds are used.
+                  </p>
+                </div>
+                {mockCopies.map((copy) => (
+                  <div
+                    key={copy.id}
+                    className="bg-[#2b3139] rounded-lg p-4 sm:p-6 hover:bg-[#353c47] transition-all cursor-pointer border border-[#fcd535]/20"
+                    onClick={() => {
+                      window.history.pushState({}, '', `?page=activecopying&id=${copy.id}`);
+                      navigateTo('activecopying');
+                    }}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div className="flex items-center gap-3 sm:gap-4">
+                        <div
+                          className="text-3xl sm:text-4xl cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.history.pushState({}, '', `?page=traderprofile&id=${copy.trader_id}`);
+                            navigateTo('traderprofile');
+                          }}
+                        >
+                          {copy.trader?.avatar}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span
+                              className="text-white text-base sm:text-lg font-semibold cursor-pointer hover:text-[#fcd535] transition-colors truncate"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.history.pushState({}, '', `?page=traderprofile&id=${copy.trader_id}`);
+                                navigateTo('traderprofile');
+                              }}
+                            >
+                              {copy.trader?.name}
+                            </span>
+                            <span className="bg-[#fcd535]/20 text-[#fcd535] text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0">
+                              MOCK
+                            </span>
+                            {copy.trader?.api_verified && (
+                              <span className="bg-blue-500/20 text-blue-400 text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0">API</span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-[#848e9c]">
+                            <span>{parseFloat(copy.initial_balance).toFixed(2)} USDT</span>
+                            <span>{copy.leverage}x</span>
+                            <span className="hidden sm:inline">Started: {new Date(copy.created_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <div className="sm:hidden text-right">
+                          <div className={`text-base font-bold ${(copy.user_roi_30d || 0) >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                            {(copy.user_roi_30d || 0) >= 0 ? '+' : ''}{(copy.user_roi_30d || 0).toFixed(2)}%
+                          </div>
+                          <div className="text-[#848e9c] text-[10px]">Your ROI</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between sm:justify-end gap-4">
+                        <div className="hidden sm:block text-right">
+                          <div className="text-[#848e9c] text-xs mb-1">Your ROI</div>
+                          <div className={`text-lg font-bold ${(copy.user_roi_30d || 0) >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                            {(copy.user_roi_30d || 0) >= 0 ? '+' : ''}{(copy.user_roi_30d || 0).toFixed(2)}%
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.history.pushState({}, '', `?page=activecopying&id=${copy.id}`);
+                              navigateTo('activecopying');
+                            }}
+                            className="bg-[#fcd535] hover:bg-[#f0b90b] text-[#0b0e11] px-4 sm:px-6 py-2 rounded text-sm font-medium transition-all"
+                          >
+                            View Details
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm(`Stop mock copying ${copy.trader?.name}?`)) {
+                                handleStopMockCopy(copy.id, copy.trader?.name || 'trader');
+                              }
+                            }}
+                            className="bg-[#f6465d]/20 hover:bg-[#f6465d]/30 text-[#f6465d] px-4 py-2 rounded text-sm font-medium transition-all"
+                          >
+                            Stop
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
