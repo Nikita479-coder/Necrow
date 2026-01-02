@@ -631,6 +631,16 @@ export default function AdminDashboard() {
                   User Acquisition
                 </button>
               )}
+
+              {isSuperAdmin && (
+                <button
+                  onClick={() => navigateTo('adminexclusiveaffiliates')}
+                  className="bg-[#f0b90b]/10 hover:bg-[#f0b90b]/20 text-[#f0b90b] px-6 py-3 rounded-lg font-bold transition-all border border-[#f0b90b]/30 flex items-center gap-2"
+                >
+                  <Shield className="w-5 h-5" />
+                  Exclusive Affiliates
+                </button>
+              )}
             </div>
           </div>
         </div>
