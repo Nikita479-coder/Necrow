@@ -20,21 +20,21 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log('Starting daily trader metrics recalculation...');
+    console.log('Starting daily trader metrics update with variance...');
 
-    const { data, error } = await supabase.rpc('recalculate_all_active_trader_metrics');
+    const { data, error } = await supabase.rpc('update_all_trader_metrics_with_variance');
 
     if (error) {
-      console.error('Error recalculating trader metrics:', error);
+      console.error('Error updating trader metrics:', error);
       throw error;
     }
 
-    console.log('Successfully recalculated trader metrics:', data);
+    console.log('Successfully updated trader metrics:', data);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Trader metrics recalculated successfully',
+        message: 'Trader metrics updated with daily variance',
         data: data,
         timestamp: new Date().toISOString()
       }),

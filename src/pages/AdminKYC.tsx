@@ -52,8 +52,10 @@ export default function AdminKYC() {
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
   const [selectedOtto, setSelectedOtto] = useState<OttoVerification | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'verified'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'verified' | 'rejected'>('all');
   const [activeTab, setActiveTab] = useState<'documents' | 'otto'>('documents');
+  const [verificationNotes, setVerificationNotes] = useState('');
+  const [processingAction, setProcessingAction] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -160,10 +162,9 @@ export default function AdminKYC() {
 
       if (data && data.file_data_base64) {
         const dataUrl = `data:${data.mime_type};base64,${data.file_data_base64}`;
-        console.log('Setting image URL, length:', dataUrl.length, 'starts with:', dataUrl.substring(0, 50));
         setSelectedDoc(doc);
         setImageUrl(dataUrl);
-        console.log('Image URL set in state');
+        setVerificationNotes(doc.verification_notes || '');
       } else {
         alert('No file data found');
       }
@@ -174,34 +175,39 @@ export default function AdminKYC() {
   };
 
   const updateVerification = async (docId: string, verified: boolean, notes: string) => {
+    setProcessingAction(true);
     try {
       const doc = documents.find(d => d.id === docId);
-      if (!doc) return;
+      if (!doc) {
+        alert('Document not found');
+        return;
+      }
 
       const { error } = await supabase
         .from('kyc_documents')
         .update({
           verified,
-          verification_notes: notes,
+          verification_notes: notes || (verified ? 'Approved by admin' : 'Rejected by admin'),
           updated_at: new Date().toISOString()
         })
         .eq('id', docId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating document:', error);
+        alert(`Failed to update document: ${error.message}`);
+        return;
+      }
 
-      // If document was verified, check if user should be upgraded to level 2
       if (verified) {
         const { data: userDocs } = await supabase
           .from('kyc_documents')
           .select('id, document_type, verified')
           .eq('user_id', doc.user_id);
 
-        // Count verified documents (excluding face verification as it's handled separately)
         const verifiedDocs = userDocs?.filter(d =>
           d.verified && d.document_type !== 'face_verification'
         ) || [];
 
-        // If user has at least 2 verified documents, upgrade them to level 2
         if (verifiedDocs.length >= 2) {
           const { error: profileError } = await supabase
             .from('user_profiles')
@@ -215,17 +221,43 @@ export default function AdminKYC() {
           if (profileError) {
             console.error('Error updating user profile:', profileError);
           } else {
-            console.log('User upgraded to KYC level 2 - bonus will be awarded automatically');
+            console.log('User upgraded to KYC level 2');
           }
         }
+      } else {
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .update({
+            kyc_status: 'rejected',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', doc.user_id);
+
+        if (profileError) {
+          console.error('Error updating user profile to rejected:', profileError);
+        } else {
+          console.log('User KYC status set to rejected');
+        }
+
+        await supabase.from('notifications').insert({
+          user_id: doc.user_id,
+          type: 'system',
+          title: 'KYC Document Rejected',
+          message: notes || 'Your KYC document has been rejected. Please upload a clearer document.',
+          read: false
+        });
       }
 
-      // Reload data
       await loadData();
       setImageUrl(null);
       setSelectedDoc(null);
-    } catch (error) {
+      setVerificationNotes('');
+      alert(verified ? 'Document approved successfully' : 'Document rejected successfully');
+    } catch (error: any) {
       console.error('Error updating verification:', error);
+      alert(`Error: ${error.message || 'Failed to update verification'}`);
+    } finally {
+      setProcessingAction(false);
     }
   };
 
@@ -247,16 +279,20 @@ export default function AdminKYC() {
     return types[type] || type;
   };
 
+  const getDocStatus = (doc: Document): 'verified' | 'rejected' | 'pending' => {
+    if (doc.verified) return 'verified';
+    if (doc.verification_notes && doc.verification_notes.toLowerCase().includes('reject')) return 'rejected';
+    return 'pending';
+  };
+
   const filteredDocuments = documents.filter(doc => {
     const matchesSearch =
       doc.user_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doc.user_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doc.document_type.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus =
-      statusFilter === 'all' ||
-      (statusFilter === 'verified' && doc.verified) ||
-      (statusFilter === 'pending' && !doc.verified);
+    const docStatus = getDocStatus(doc);
+    const matchesStatus = statusFilter === 'all' || statusFilter === docStatus;
 
     const matchesUser = !selectedUser || doc.user_id === selectedUser;
 
@@ -312,7 +348,7 @@ export default function AdminKYC() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6">
             <div className="text-slate-400 text-sm mb-1">Total Users</div>
             <div className="text-3xl font-bold text-white">{users.length}</div>
@@ -324,13 +360,19 @@ export default function AdminKYC() {
           <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6">
             <div className="text-slate-400 text-sm mb-1">Pending Review</div>
             <div className="text-3xl font-bold text-yellow-400">
-              {documents.filter(d => !d.verified).length}
+              {documents.filter(d => getDocStatus(d) === 'pending').length}
             </div>
           </div>
           <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6">
             <div className="text-slate-400 text-sm mb-1">Verified</div>
             <div className="text-3xl font-bold text-green-400">
-              {documents.filter(d => d.verified).length}
+              {documents.filter(d => getDocStatus(d) === 'verified').length}
+            </div>
+          </div>
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6">
+            <div className="text-slate-400 text-sm mb-1">Rejected</div>
+            <div className="text-3xl font-bold text-red-400">
+              {documents.filter(d => getDocStatus(d) === 'rejected').length}
             </div>
           </div>
         </div>
@@ -370,6 +412,7 @@ export default function AdminKYC() {
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
               <option value="verified">Verified</option>
+              <option value="rejected">Rejected</option>
             </select>
           </div>
         </div>
@@ -429,17 +472,31 @@ export default function AdminKYC() {
                         {new Date(doc.uploaded_at).toLocaleString()}
                       </td>
                       <td className="px-6 py-4">
-                        {doc.verified ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400">
-                            <CheckCircle2 className="w-3 h-3" />
-                            Verified
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-400">
-                            <Clock className="w-3 h-3" />
-                            Pending
-                          </span>
-                        )}
+                        {(() => {
+                          const status = getDocStatus(doc);
+                          if (status === 'verified') {
+                            return (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400">
+                                <CheckCircle2 className="w-3 h-3" />
+                                Verified
+                              </span>
+                            );
+                          } else if (status === 'rejected') {
+                            return (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400">
+                                <XCircle className="w-3 h-3" />
+                                Rejected
+                              </span>
+                            );
+                          } else {
+                            return (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-400">
+                                <Clock className="w-3 h-3" />
+                                Pending
+                              </span>
+                            );
+                          }
+                        })()}
                       </td>
                       <td className="px-6 py-4">
                         <button
@@ -640,33 +697,29 @@ export default function AdminKYC() {
                   <h4 className="text-white font-medium mb-3">Verification Actions</h4>
 
                   <textarea
-                    id={`notes-${selectedDoc.id}`}
-                    placeholder="Add verification notes..."
-                    defaultValue={selectedDoc.verification_notes || ''}
+                    value={verificationNotes}
+                    onChange={(e) => setVerificationNotes(e.target.value)}
+                    placeholder="Add verification notes (e.g., reason for rejection)..."
                     className="w-full px-3 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 mb-3 text-sm"
                     rows={3}
                   />
 
                   <div className="flex gap-2">
                     <button
-                      onClick={() => {
-                        const notes = (document.getElementById(`notes-${selectedDoc.id}`) as HTMLTextAreaElement)?.value;
-                        updateVerification(selectedDoc.id, true, notes);
-                      }}
-                      className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                      onClick={() => updateVerification(selectedDoc.id, true, verificationNotes)}
+                      disabled={processingAction}
+                      className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-600/50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                     >
                       <CheckCircle2 className="w-4 h-4" />
-                      Approve
+                      {processingAction ? 'Processing...' : 'Approve'}
                     </button>
                     <button
-                      onClick={() => {
-                        const notes = (document.getElementById(`notes-${selectedDoc.id}`) as HTMLTextAreaElement)?.value;
-                        updateVerification(selectedDoc.id, false, notes);
-                      }}
-                      className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                      onClick={() => updateVerification(selectedDoc.id, false, verificationNotes)}
+                      disabled={processingAction}
+                      className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-600/50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                     >
                       <XCircle className="w-4 h-4" />
-                      Reject
+                      {processingAction ? 'Processing...' : 'Reject'}
                     </button>
                   </div>
                 </div>

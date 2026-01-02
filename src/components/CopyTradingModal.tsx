@@ -286,21 +286,25 @@ export default function CopyTradingModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-      <div className="bg-[#1e2329] rounded-lg w-full max-w-md p-6 relative">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-[#848e9c] hover:text-white"
-        >
-          <X className="w-5 h-5" />
-        </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="bg-[#1e2329] rounded-lg w-full max-w-md max-h-[90vh] flex flex-col relative">
+        <div className="sticky top-0 bg-[#1e2329] rounded-t-lg px-6 pt-6 pb-4 border-b border-[#2b3139] z-10">
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-[#848e9c] hover:text-white bg-[#2b3139] hover:bg-[#3b4149] rounded-full p-1.5 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
 
-        <h2 className="text-2xl font-bold text-white mb-2">
-          {isMock ? 'Start Mock Copy Trading' : 'Start Copy Trading'}
-        </h2>
-        <p className="text-[#848e9c] text-sm mb-4">
-          Copy {traderName}'s trades {isMock && 'with virtual funds'}
-        </p>
+          <h2 className="text-xl font-bold text-white mb-1 pr-10">
+            {isMock ? 'Start Mock Copy Trading' : 'Start Copy Trading'}
+          </h2>
+          <p className="text-[#848e9c] text-sm">
+            Copy {traderName}'s trades {isMock && 'with virtual funds'}
+          </p>
+        </div>
+
+        <div className="overflow-y-auto flex-1 px-6 py-4">
 
         {/* Projected Daily Return */}
         {!loadingTrader && traderROI !== null && traderROI > 0 && (() => {
@@ -651,6 +655,7 @@ export default function CopyTradingModal({
             {loading ? 'Starting...' : isMock ? 'Start Mock Copy' : 'Start Copy Trading'}
           </button>
 
+        </div>
         </div>
       </div>
     </div>
