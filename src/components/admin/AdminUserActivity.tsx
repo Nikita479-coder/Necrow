@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Activity, TrendingUp, DollarSign, LogIn, LogOut, ArrowUpDown, Gift, Users } from 'lucide-react';
+import { Activity, TrendingUp, DollarSign, LogIn, LogOut, ArrowUpDown, Gift, Users, Eye } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 interface Props {
@@ -26,8 +26,9 @@ export default function AdminUserActivity({ userId }: Props) {
 
   const loadActivities = async () => {
     try {
-      const { data, error } = await supabase.rpc('admin_get_user_activity', {
+      const { data, error } = await supabase.rpc('get_user_recent_activity', {
         p_user_id: userId,
+        p_hours: 24,
         p_limit: 100
       });
 
@@ -46,6 +47,8 @@ export default function AdminUserActivity({ userId }: Props) {
         return <LogIn className="w-4 h-4 text-green-400" />;
       case 'logout':
         return <LogOut className="w-4 h-4 text-gray-400" />;
+      case 'page_visit':
+        return <Eye className="w-4 h-4 text-indigo-400" />;
       case 'trade':
       case 'futures_order':
         return <TrendingUp className="w-4 h-4 text-blue-400" />;
@@ -75,6 +78,10 @@ export default function AdminUserActivity({ userId }: Props) {
         return 'User logged in';
       case 'logout':
         return 'User logged out';
+      case 'page_visit':
+        const duration = details.duration_seconds;
+        const durationText = duration ? ` (${duration}s)` : '';
+        return `Visited ${details.page_title || details.page_path || 'page'}${durationText}`;
       case 'trade':
       case 'futures_order':
         return `Placed ${details.side || ''} order for ${details.pair || ''} at $${details.price || 0}`;
