@@ -1,6 +1,7 @@
 import { useState, createContext, useContext, useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import PopupBanner from './components/PopupBanner';
+import PageTracker from './components/PageTracker';
 import { initAcquisitionTracking } from './services/acquisitionService';
 import HomePage from './pages/HomePage';
 import Markets from './pages/Markets';
@@ -119,116 +120,184 @@ function App() {
     setNavigationState(state);
   };
 
+  const getPageTitle = (page: PageType): string => {
+    const titles: Record<PageType, string> = {
+      home: 'Home',
+      markets: 'Markets',
+      futures: 'Futures Trading',
+      profile: 'Profile',
+      swap: 'Swap',
+      swaphistory: 'Swap History',
+      copytrading: 'Copy Trading',
+      mocktrading: 'Mock Trading',
+      activecopying: 'Active Copy Trading',
+      traderprofile: 'Trader Profile',
+      deposit: 'Deposit',
+      withdraw: 'Withdraw',
+      kyc: 'KYC Verification',
+      kycdocuments: 'KYC Documents',
+      adminkyc: 'Admin KYC',
+      wallet: 'Wallet',
+      referral: 'Referral Program',
+      affiliate: 'Affiliate Program',
+      vip: 'VIP Program',
+      rewardshub: 'Rewards Hub',
+      earn: 'Earn',
+      signin: 'Sign In',
+      signup: 'Sign Up',
+      forgotpassword: 'Forgot Password',
+      resetpassword: 'Reset Password',
+      transactions: 'Transactions',
+      admindashboard: 'Admin Dashboard',
+      adminuser: 'Admin User Details',
+      adminuserdetail: 'Admin User Details',
+      admintrader: 'Admin Managed Trader',
+      adminlogs: 'Admin Logs',
+      admincrm: 'Admin CRM',
+      adminemails: 'Admin Email Templates',
+      adminbonuses: 'Admin Bonus Types',
+      adminsupport: 'Admin Support',
+      adminviptracking: 'Admin VIP Tracking',
+      adminsharkcards: 'Admin Shark Cards',
+      adminstaff: 'Admin Staff Management',
+      admintelegram: 'Admin Telegram CRM',
+      adminwithdrawals: 'Admin Withdrawals',
+      admindeposits: 'Admin Deposits',
+      adminreferrals: 'Admin Referrals',
+      adminpopups: 'Admin Popups',
+      admingiveaway: 'Admin Giveaway',
+      adminacquisition: 'Admin Acquisition',
+      adminexclusiveaffiliates: 'Admin Exclusive Affiliates',
+      adminphonereveals: 'Admin Phone Reveals',
+      adminstafflogs: 'Admin Staff Logs',
+      giveaway: 'Giveaway Hub',
+      event: 'Event Details',
+      terms: 'Terms & Conditions',
+      bonusterms: 'Bonus Terms',
+      support: 'Support',
+      legal: 'Legal Hub'
+    };
+    return titles[page] || page;
+  };
+
   const renderPage = () => {
+    const pageTitle = getPageTitle(currentPage);
+    const pagePath = `/${currentPage}`;
+
+    const wrapWithTracker = (component: JSX.Element) => (
+      <PageTracker pagePath={pagePath} pageTitle={pageTitle}>
+        {component}
+      </PageTracker>
+    );
     switch (currentPage) {
       case 'home':
-        return <HomePage />;
+        return wrapWithTracker(<HomePage />);
       case 'markets':
-        return <Markets />;
+        return wrapWithTracker(<Markets />);
       case 'futures':
-        return <FuturesTrading />;
+        return wrapWithTracker(<FuturesTrading />);
       case 'swap':
-        return <Swap />;
+        return wrapWithTracker(<Swap />);
       case 'swaphistory':
-        return <SwapHistory />;
+        return wrapWithTracker(<SwapHistory />);
       case 'copytrading':
-        return <CopyTrading />;
+        return wrapWithTracker(<CopyTrading />);
       case 'mocktrading':
-        return <MockTrading />;
+        return wrapWithTracker(<MockTrading />);
       case 'activecopying':
-        return <ActiveCopyTrading />;
+        return wrapWithTracker(<ActiveCopyTrading />);
       case 'traderprofile':
-        return <TraderProfile />;
+        return wrapWithTracker(<TraderProfile />);
       case 'deposit':
-        return <Deposit />;
+        return wrapWithTracker(<Deposit />);
       case 'withdraw':
-        return <Withdraw />;
+        return wrapWithTracker(<Withdraw />);
       case 'kyc':
-        return <KYC />;
+        return wrapWithTracker(<KYC />);
       case 'kycdocuments':
-        return <KYCDocuments />;
+        return wrapWithTracker(<KYCDocuments />);
       case 'adminkyc':
-        return <AdminKYC />;
+        return wrapWithTracker(<AdminKYC />);
       case 'wallet':
-        return <Wallet />;
+        return wrapWithTracker(<Wallet />);
       case 'referral':
-        return <Referral />;
+        return wrapWithTracker(<Referral />);
       case 'affiliate':
-        return <AffiliateProgram />;
+        return wrapWithTracker(<AffiliateProgram />);
       case 'vip':
-        return <VIPProgram />;
+        return wrapWithTracker(<VIPProgram />);
       case 'rewardshub':
-        return <RewardsHub />;
+        return wrapWithTracker(<RewardsHub />);
       case 'earn':
-        return <Earn />;
+        return wrapWithTracker(<Earn />);
       case 'profile':
-        return <Profile />;
+        return wrapWithTracker(<Profile />);
       case 'signin':
-        return <SignIn />;
+        return wrapWithTracker(<SignIn />);
       case 'signup':
-        return <SignUp />;
+        return wrapWithTracker(<SignUp />);
       case 'forgotpassword':
-        return <ForgotPassword />;
+        return wrapWithTracker(<ForgotPassword />);
       case 'resetpassword':
-        return <ResetPassword />;
+        return wrapWithTracker(<ResetPassword />);
       case 'transactions':
-        return <Transactions />;
+        return wrapWithTracker(<Transactions />);
       case 'admindashboard':
-        return <AdminDashboard />;
+        return wrapWithTracker(<AdminDashboard />);
       case 'adminuser':
-        return <AdminUserDetail />;
+        return wrapWithTracker(<AdminUserDetail />);
       case 'admintrader':
-        return <AdminManagedTrader />;
+        return wrapWithTracker(<AdminManagedTrader />);
       case 'adminlogs':
-        return <AdminLogs />;
+        return wrapWithTracker(<AdminLogs />);
       case 'admincrm':
-        return <AdminCRM />;
+        return wrapWithTracker(<AdminCRM />);
       case 'adminemails':
-        return <AdminEmailTemplates />;
+        return wrapWithTracker(<AdminEmailTemplates />);
       case 'adminbonuses':
-        return <AdminBonusTypes />;
+        return wrapWithTracker(<AdminBonusTypes />);
       case 'adminsupport':
-        return <AdminSupport />;
+        return wrapWithTracker(<AdminSupport />);
       case 'adminviptracking':
-        return <AdminVIPTracking />;
+        return wrapWithTracker(<AdminVIPTracking />);
       case 'adminsharkcards':
-        return <AdminSharkCards />;
+        return wrapWithTracker(<AdminSharkCards />);
       case 'adminstaff':
-        return <AdminStaffManagement />;
+        return wrapWithTracker(<AdminStaffManagement />);
       case 'admintelegram':
-        return <AdminTelegramCRM />;
+        return wrapWithTracker(<AdminTelegramCRM />);
       case 'adminwithdrawals':
-        return <AdminWithdrawals />;
+        return wrapWithTracker(<AdminWithdrawals />);
       case 'admindeposits':
-        return <AdminDeposits />;
+        return wrapWithTracker(<AdminDeposits />);
       case 'adminreferrals':
-        return <AdminReferralTracking />;
+        return wrapWithTracker(<AdminReferralTracking />);
       case 'adminpopups':
-        return <AdminPopupBanners />;
+        return wrapWithTracker(<AdminPopupBanners />);
       case 'admingiveaway':
-        return <AdminGiveaway />;
+        return wrapWithTracker(<AdminGiveaway />);
       case 'adminacquisition':
-        return <AdminAcquisition />;
+        return wrapWithTracker(<AdminAcquisition />);
       case 'adminexclusiveaffiliates':
-        return <AdminExclusiveAffiliates />;
+        return wrapWithTracker(<AdminExclusiveAffiliates />);
       case 'adminphonereveals':
-        return <AdminPhoneRevealRequests />;
+        return wrapWithTracker(<AdminPhoneRevealRequests />);
       case 'adminstafflogs':
-        return <AdminStaffActivityLogs />;
+        return wrapWithTracker(<AdminStaffActivityLogs />);
       case 'giveaway':
-        return <GiveawayHub />;
+        return wrapWithTracker(<GiveawayHub />);
       case 'event':
-        return <EventDetails />;
+        return wrapWithTracker(<EventDetails />);
       case 'terms':
-        return <TermsPage />;
+        return wrapWithTracker(<TermsPage />);
       case 'bonusterms':
-        return <BonusTermsPage />;
+        return wrapWithTracker(<BonusTermsPage />);
       case 'support':
-        return <Support />;
+        return wrapWithTracker(<Support />);
       case 'legal':
-        return <LegalHub />;
+        return wrapWithTracker(<LegalHub />);
       default:
-        return <HomePage />;
+        return wrapWithTracker(<HomePage />);
     }
   };
 
