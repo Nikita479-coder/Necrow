@@ -164,6 +164,30 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-2">
+          {isAuthenticated && (
+            <div className="relative md:hidden">
+              <button
+                data-notification-button-mobile
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="text-gray-400 hover:text-[#f0b90b] transition-all duration-300 p-2 rounded-full hover:bg-[#f0b90b]/10 relative"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-[#f0b90b] text-black text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              {showNotifications && (
+                <NotificationsPanel
+                  isOpen={showNotifications}
+                  onClose={() => setShowNotifications(false)}
+                  onNavigate={navigateTo}
+                />
+              )}
+            </div>
+          )}
+
           {!isAuthenticated ? (
             <button
               onClick={() => navigateTo('signin')}
@@ -308,22 +332,6 @@ export default function Navbar() {
                 Profile
               </button>
             )}
-
-            <button
-              onClick={() => {
-                handleProtectedAction(() => setShowNotifications(true));
-                setMobileMenuOpen(false);
-              }}
-              className="text-left text-gray-300 hover:text-[#f0b90b] px-4 py-3 rounded-lg hover:bg-[#181a20] transition-all text-base font-medium flex items-center gap-2 relative"
-            >
-              <Bell className="w-5 h-5" />
-              Notifications
-              {unreadCount > 0 && (
-                <span className="ml-auto min-w-[22px] h-[22px] bg-[#f0b90b] text-black text-xs font-bold rounded-full flex items-center justify-center px-1">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </button>
 
             {isAuthenticated && (
               <button
