@@ -1,15 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Activity, DollarSign, Shield, AlertCircle, FileText, RefreshCw, Search, Filter,
   Users, TrendingUp, Download, Tag, BarChart3, UserCheck, UserX, Clock,
   ChevronDown, Check, X, Eye, Mail, Ban, Unlock, Bell, LogIn, Copy, ExternalLink, Image,
-  UserPlus, Phone
+  UserPlus, Phone, Lock
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import PopupBannerManager from '../components/admin/PopupBannerManager';
+import PhoneRevealButton from '../components/admin/PhoneRevealButton';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '../App';
+import { loggingService } from '../services/loggingService';
 
 type MainTab = 'analytics' | 'users' | 'segments' | 'referrers' | 'logs' | 'popups' | 'phones';
 type LogType = 'admin' | 'financial' | 'kyc' | 'security' | 'system';
@@ -153,6 +155,44 @@ export default function AdminCRM() {
     error: null,
   });
 
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [hasPhoneAccess, setHasPhoneAccess] = useState(false);
+  const [searchDebounceTimer, setSearchDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const checkPermissions = async () => {
+      if (!user) return;
+
+      setIsSuperAdmin(profile?.is_admin === true);
+
+      if (profile?.is_admin) {
+        setHasPhoneAccess(true);
+        return;
+      }
+
+      const { data: staffData } = await supabase
+        .from('admin_staff')
+        .select('id, role_id')
+        .eq('id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (staffData) {
+        const { data: overrides } = await supabase
+          .from('staff_permission_overrides')
+          .select('permission_id, is_granted, admin_permissions!inner(code)')
+          .eq('staff_id', user.id);
+
+        const hasPhonePerm = overrides?.some(
+          (o: any) => o.admin_permissions?.code === 'view_phones_masked' && o.is_granted
+        );
+        setHasPhoneAccess(hasPhonePerm || false);
+      }
+    };
+
+    checkPermissions();
+  }, [user, profile]);
+
   useEffect(() => {
     if (profile?.is_admin) {
       loadInitialData();
@@ -170,6 +210,25 @@ export default function AdminCRM() {
       loadPhoneNumbers();
     }
   }, [mainTab, filters, page, pageSize, logTab, dateFilter, phoneSearch]);
+
+  const handleTabChange = useCallback((newTab: MainTab) => {
+    setMainTab(newTab);
+    if (!isSuperAdmin) {
+      loggingService.logStaffPageView(`CRM - ${newTab}`);
+    }
+  }, [isSuperAdmin]);
+
+  const handleSearchWithLogging = useCallback((query: string, pageName: string) => {
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer);
+    }
+    const timer = setTimeout(() => {
+      if (query && !isSuperAdmin) {
+        loggingService.logStaffSearch(query, pageName);
+      }
+    }, 1000);
+    setSearchDebounceTimer(timer);
+  }, [searchDebounceTimer, isSuperAdmin]);
 
   useEffect(() => {
     setPage(0);
@@ -502,6 +561,10 @@ export default function AdminCRM() {
       : mainTab === 'phones' ? phoneNumbers
       : logs;
 
+    if (!isSuperAdmin) {
+      loggingService.logStaffExport(`${mainTab}_${format}`, dataToExport.length);
+    }
+
     if (format === 'csv') {
       const headers = Object.keys(dataToExport[0] || {}).join(',');
       const rows = dataToExport.map(item =>
@@ -527,8 +590,11 @@ export default function AdminCRM() {
     URL.revokeObjectURL(url);
   };
 
-  const handleViewUser = (userId: string) => {
+  const handleViewUser = (userId: string, userName?: string) => {
     localStorage.setItem('adminSelectedUserId', userId);
+    if (!isSuperAdmin) {
+      loggingService.logStaffUserView(userId, userName);
+    }
     navigateTo('adminuserdetail');
   };
 
@@ -653,17 +719,20 @@ export default function AdminCRM() {
 
         <div className="flex flex-wrap gap-2 mb-6">
           {[
-            { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-            { id: 'users', label: 'User Management', icon: Users },
-            { id: 'referrers', label: 'Referrers', icon: UserPlus },
-            { id: 'phones', label: 'Phone Numbers', icon: Phone },
-            { id: 'segments', label: 'Segments & Tags', icon: Tag },
-            { id: 'popups', label: 'Popup Banners', icon: Image },
-            { id: 'logs', label: 'Activity Logs', icon: Activity },
-          ].map((tab) => (
+            { id: 'analytics', label: 'Analytics', icon: BarChart3, requiresPhoneAccess: false },
+            { id: 'users', label: 'User Management', icon: Users, requiresPhoneAccess: false },
+            { id: 'referrers', label: 'Referrers', icon: UserPlus, requiresPhoneAccess: false },
+            { id: 'phones', label: 'Phone Numbers', icon: Phone, requiresPhoneAccess: true },
+            { id: 'segments', label: 'Segments & Tags', icon: Tag, requiresPhoneAccess: false },
+            { id: 'popups', label: 'Popup Banners', icon: Image, requiresPhoneAccess: false },
+            { id: 'logs', label: 'Activity Logs', icon: Activity, requiresPhoneAccess: false, superAdminOnly: true },
+          ]
+            .filter(tab => !tab.requiresPhoneAccess || hasPhoneAccess)
+            .filter(tab => !tab.superAdminOnly || isSuperAdmin)
+            .map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setMainTab(tab.id as MainTab)}
+              onClick={() => handleTabChange(tab.id as MainTab)}
               className={`flex items-center gap-2 px-5 py-3 rounded-xl font-medium transition-all ${
                 mainTab === tab.id
                   ? 'bg-[#f0b90b] text-black'
@@ -672,6 +741,9 @@ export default function AdminCRM() {
             >
               <tab.icon className="w-5 h-5" />
               {tab.label}
+              {tab.id === 'phones' && !isSuperAdmin && (
+                <Lock className="w-3 h-3 text-yellow-400" />
+              )}
             </button>
           ))}
         </div>
@@ -1040,19 +1112,21 @@ export default function AdminCRM() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1">
                             <button
-                              onClick={() => handleViewUser(u.id)}
+                              onClick={() => handleViewUser(u.id, u.full_name || u.username)}
                               className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors"
                               title="View User Details"
                             >
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={() => handleLoginAs(u.id, u.username || 'User')}
-                              className="p-2 hover:bg-[#f0b90b]/20 rounded-lg text-gray-400 hover:text-[#f0b90b] transition-colors"
-                              title="Login As User"
-                            >
-                              <LogIn className="w-4 h-4" />
-                            </button>
+                            {isSuperAdmin && (
+                              <button
+                                onClick={() => handleLoginAs(u.id, u.username || 'User')}
+                                className="p-2 hover:bg-[#f0b90b]/20 rounded-lg text-gray-400 hover:text-[#f0b90b] transition-colors"
+                                title="Login As User"
+                              >
+                                <LogIn className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -1318,7 +1392,7 @@ export default function AdminCRM() {
                         </td>
                         <td className="px-4 py-3">
                           <button
-                            onClick={() => handleViewUser(referrer.id)}
+                            onClick={() => handleViewUser(referrer.id, referrer.full_name)}
                             className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors"
                             title="View User Details"
                           >
@@ -1436,14 +1510,22 @@ export default function AdminCRM() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <span className="text-[#f0b90b] font-mono">{phone.phone}</span>
-                            <button
-                              onClick={() => copyToClipboard(phone.phone)}
-                              className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-white"
-                              title="Copy phone number"
-                            >
-                              <Copy className="w-3 h-3" />
-                            </button>
+                            <PhoneRevealButton
+                              userId={phone.id}
+                              phone={phone.phone}
+                              isSuperAdmin={isSuperAdmin}
+                              userName={phone.full_name}
+                              compact
+                            />
+                            {isSuperAdmin && (
+                              <button
+                                onClick={() => copyToClipboard(phone.phone)}
+                                className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-white"
+                                title="Copy phone number"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </button>
+                            )}
                           </div>
                         </td>
                         <td className="px-4 py-3">
@@ -1468,7 +1550,7 @@ export default function AdminCRM() {
                         </td>
                         <td className="px-4 py-3">
                           <button
-                            onClick={() => handleViewUser(phone.id)}
+                            onClick={() => handleViewUser(phone.id, phone.full_name)}
                             className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors"
                             title="View User Details"
                           >
