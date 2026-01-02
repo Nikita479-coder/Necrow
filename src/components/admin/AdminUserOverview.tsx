@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Wallet, TrendingUp, Users, Calendar, DollarSign, Award } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import PhoneRevealButton from './PhoneRevealButton';
 
 interface Props {
   userId: string;
   userData: any;
   onRefresh: () => void;
+  isSuperAdmin?: boolean;
 }
 
-export default function AdminUserOverview({ userId, userData, onRefresh }: Props) {
+export default function AdminUserOverview({ userId, userData, onRefresh, isSuperAdmin = false }: Props) {
   const [stats, setStats] = useState({
     totalBalance: 0,
     totalDeposited: 0,
@@ -191,7 +193,12 @@ export default function AdminUserOverview({ userId, userData, onRefresh }: Props
             </div>
             <div>
               <p className="text-sm text-gray-400 mb-1">Phone</p>
-              <p className="text-white">{userData?.profile?.phone || 'Not provided'}</p>
+              <PhoneRevealButton
+                userId={userId}
+                phone={userData?.profile?.phone}
+                isSuperAdmin={isSuperAdmin}
+                userName={userData?.profile?.full_name}
+              />
             </div>
             <div>
               <p className="text-sm text-gray-400 mb-1">Country</p>

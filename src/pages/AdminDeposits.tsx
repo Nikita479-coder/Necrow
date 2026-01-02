@@ -84,10 +84,7 @@ export default function AdminDeposits() {
   const loadData = async () => {
     setLoading(true);
     try {
-      await Promise.all([
-        loadDeposits(),
-        loadStats()
-      ]);
+      await loadDeposits();
     } catch (error) {
       console.error('Error loading deposits:', error);
     } finally {
@@ -106,34 +103,23 @@ export default function AdminDeposits() {
       if (error) throw error;
 
       if (data?.success) {
-        setDeposits(data.deposits || []);
+        const loadedDeposits = data.deposits || [];
+        setDeposits(loadedDeposits);
+
+        const completedDeposits = loadedDeposits.filter((d: Deposit) => d.status === 'finished' || d.status === 'completed');
+        const completedAmount = completedDeposits.reduce((sum: number, d: Deposit) => sum + parseFloat(d.outcome_amount?.toString() || d.price_amount?.toString() || '0'), 0);
+        const pendingCount = loadedDeposits.filter((d: Deposit) => d.status === 'waiting' || d.status === 'confirming' || d.status === 'sending').length;
+        const failedCount = loadedDeposits.filter((d: Deposit) => d.status === 'failed' || d.status === 'expired' || d.status === 'refunded').length;
+
+        setStats({
+          total_deposits: loadedDeposits.length,
+          completed_amount: completedAmount,
+          pending_count: pendingCount,
+          failed_count: failedCount,
+        });
       }
     } catch (error) {
       console.error('Error loading deposits:', error);
-    }
-  };
-
-  const loadStats = async () => {
-    try {
-      const { data: allDeposits } = await supabase
-        .from('crypto_deposits')
-        .select('status, price_amount, outcome_amount');
-
-      if (!allDeposits) return;
-
-      const completedDeposits = allDeposits.filter(d => d.status === 'finished' || d.status === 'completed');
-      const completedAmount = completedDeposits.reduce((sum, d) => sum + parseFloat(d.outcome_amount || d.price_amount || '0'), 0);
-      const pendingCount = allDeposits.filter(d => d.status === 'waiting' || d.status === 'confirming' || d.status === 'sending').length;
-      const failedCount = allDeposits.filter(d => d.status === 'failed' || d.status === 'expired' || d.status === 'refunded').length;
-
-      setStats({
-        total_deposits: allDeposits.length,
-        completed_amount: completedAmount,
-        pending_count: pendingCount,
-        failed_count: failedCount,
-      });
-    } catch (error) {
-      console.error('Error loading stats:', error);
     }
   };
 

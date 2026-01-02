@@ -27,7 +27,8 @@ interface TabConfig {
 }
 
 export default function AdminUserDetail() {
-  const { user: adminUser, canAccessAdmin, hasPermission, hasAnyPermission, staffInfo, loading: authLoading } = useAuth();
+  const { user: adminUser, profile, canAccessAdmin, hasPermission, hasAnyPermission, staffInfo, loading: authLoading } = useAuth();
+  const isSuperAdmin = profile?.is_admin === true;
   const { navigateTo } = useNavigation();
   const [userId, setUserId] = useState<string | null>(null);
   const [userData, setUserData] = useState<any>(null);
@@ -213,7 +214,7 @@ export default function AdminUserDetail() {
     switch (activeTab) {
       case 'overview':
         return hasPermission('view_user_details') ? (
-          <AdminUserOverview userId={userId} userData={userData} onRefresh={() => loadUserData(userId)} />
+          <AdminUserOverview userId={userId} userData={userData} onRefresh={() => loadUserData(userId)} isSuperAdmin={isSuperAdmin} />
         ) : <AccessDenied />;
       case 'notes':
         return hasPermission('view_user_details') ? (

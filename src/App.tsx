@@ -45,6 +45,8 @@ import AdminPopupBanners from './pages/AdminPopupBanners';
 import AdminGiveaway from './pages/AdminGiveaway';
 import AdminAcquisition from './pages/AdminAcquisition';
 import AdminExclusiveAffiliates from './pages/AdminExclusiveAffiliates';
+import AdminPhoneRevealRequests from './pages/AdminPhoneRevealRequests';
+import AdminStaffActivityLogs from './pages/AdminStaffActivityLogs';
 import GiveawayHub from './pages/GiveawayHub';
 import EventDetails from './pages/EventDetails';
 import TermsPage from './pages/TermsPage';
@@ -54,7 +56,7 @@ import LegalHub from './pages/LegalHub';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 
-type PageType = 'home' | 'markets' | 'futures' | 'profile' | 'swap' | 'swaphistory' | 'copytrading' | 'mocktrading' | 'activecopying' | 'traderprofile' | 'deposit' | 'withdraw' | 'kyc' | 'kycdocuments' | 'adminkyc' | 'wallet' | 'referral' | 'affiliate' | 'vip' | 'rewardshub' | 'earn' | 'signin' | 'signup' | 'forgotpassword' | 'resetpassword' | 'transactions' | 'admindashboard' | 'adminuser' | 'admintrader' | 'adminlogs' | 'admincrm' | 'adminemails' | 'adminbonuses' | 'adminsupport' | 'adminviptracking' | 'adminsharkcards' | 'adminstaff' | 'admintelegram' | 'adminwithdrawals' | 'admindeposits' | 'adminreferrals' | 'adminpopups' | 'admingiveaway' | 'adminacquisition' | 'adminexclusiveaffiliates' | 'giveaway' | 'event' | 'terms' | 'bonusterms' | 'support' | 'legal';
+type PageType = 'home' | 'markets' | 'futures' | 'profile' | 'swap' | 'swaphistory' | 'copytrading' | 'mocktrading' | 'activecopying' | 'traderprofile' | 'deposit' | 'withdraw' | 'kyc' | 'kycdocuments' | 'adminkyc' | 'wallet' | 'referral' | 'affiliate' | 'vip' | 'rewardshub' | 'earn' | 'signin' | 'signup' | 'forgotpassword' | 'resetpassword' | 'transactions' | 'admindashboard' | 'adminuser' | 'adminuserdetail' | 'admintrader' | 'adminlogs' | 'admincrm' | 'adminemails' | 'adminbonuses' | 'adminsupport' | 'adminviptracking' | 'adminsharkcards' | 'adminstaff' | 'admintelegram' | 'adminwithdrawals' | 'admindeposits' | 'adminreferrals' | 'adminpopups' | 'admingiveaway' | 'adminacquisition' | 'adminexclusiveaffiliates' | 'adminphonereveals' | 'adminstafflogs' | 'giveaway' | 'event' | 'terms' | 'bonusterms' | 'support' | 'legal';
 
 interface NavigationContextType {
   currentPage: PageType;
@@ -209,6 +211,10 @@ function App() {
         return <AdminAcquisition />;
       case 'adminexclusiveaffiliates':
         return <AdminExclusiveAffiliates />;
+      case 'adminphonereveals':
+        return <AdminPhoneRevealRequests />;
+      case 'adminstafflogs':
+        return <AdminStaffActivityLogs />;
       case 'giveaway':
         return <GiveawayHub />;
       case 'event':

@@ -53,7 +53,7 @@ interface Message {
 }
 
 export default function AdminSupport() {
-  const { user, profile } = useAuth();
+  const { user, profile, canAccessAdmin, hasPermission } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -144,7 +144,8 @@ export default function AdminSupport() {
   }, [selectedQuickReplyIndex, showQuickReplies]);
 
   useEffect(() => {
-    if (user && profile?.is_admin) {
+    const canView = profile?.is_admin || (canAccessAdmin() && hasPermission('view_support'));
+    if (user && canView) {
       loadTickets();
       const cleanup = subscribeToTickets();
       return cleanup;
@@ -826,7 +827,9 @@ export default function AdminSupport() {
     t.user_profile?.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (!profile?.is_admin) {
+  const hasAccess = profile?.is_admin || (canAccessAdmin() && hasPermission('view_support'));
+
+  if (!hasAccess) {
     return (
       <div className="min-h-screen bg-[#0b0e11] text-white flex items-center justify-center">
         <div className="text-center">
