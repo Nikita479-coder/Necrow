@@ -117,12 +117,13 @@ export default function NotificationsPanel({ isOpen, onClose, onNavigate }: Noti
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
       const notificationButton = document.querySelector('[data-notification-button]');
+      const notificationButtonMobile = document.querySelector('[data-notification-button-mobile]');
 
       if (
         dropdownRef.current &&
         !dropdownRef.current.contains(target) &&
-        notificationButton &&
-        !notificationButton.contains(target)
+        (!notificationButton || !notificationButton.contains(target)) &&
+        (!notificationButtonMobile || !notificationButtonMobile.contains(target))
       ) {
         onClose();
       }
@@ -211,11 +212,21 @@ export default function NotificationsPanel({ isOpen, onClose, onNavigate }: Noti
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'referral_payout':
+      case 'referral_commission':
         return '💰';
+      case 'reward':
+      case 'bonus':
+        return '🎁';
+      case 'affiliate_payout':
+      case 'affiliate_commission':
+        return '💵';
       case 'trade_executed':
         return '📈';
       case 'kyc_update':
+      case 'kyc_approved':
         return '✅';
+      case 'kyc_rejected':
+        return '❌';
       case 'shark_card_application':
         return '💳';
       case 'shark_card_approved':
@@ -224,6 +235,15 @@ export default function NotificationsPanel({ isOpen, onClose, onNavigate }: Noti
         return '❌';
       case 'shark_card_issued':
         return '🎉';
+      case 'deposit_completed':
+        return '💵';
+      case 'withdrawal_approved':
+      case 'withdrawal_completed':
+        return '✅';
+      case 'vip_upgrade':
+        return '👑';
+      case 'system':
+        return '📢';
       default:
         return '🔔';
     }
@@ -234,16 +254,22 @@ export default function NotificationsPanel({ isOpen, onClose, onNavigate }: Noti
   return (
     <div
       ref={dropdownRef}
-      className="absolute top-12 right-0 w-96 max-h-[600px] bg-[#0b0e11]/95 backdrop-blur-xl border border-[#f0b90b]/20 rounded-lg shadow-2xl overflow-hidden z-50 animate-fade-in"
+      className="fixed md:absolute top-[60px] md:top-12 right-2 md:right-0 left-2 md:left-auto w-auto md:w-96 max-h-[calc(100vh-80px)] md:max-h-[600px] bg-[#0b0e11] md:bg-[#0b0e11]/95 md:backdrop-blur-xl border border-[#f0b90b]/20 rounded-lg shadow-2xl overflow-hidden z-[100] animate-fade-in flex flex-col"
     >
-      <div className="flex items-center justify-between p-4 border-b border-[#f0b90b]/20">
+      <div className="flex items-center justify-between p-4 border-b border-[#f0b90b]/20 bg-[#0b0e11] flex-shrink-0">
         <div className="flex items-center gap-2">
           <Bell className="w-5 h-5 text-[#f0b90b]" />
           <h3 className="text-white font-semibold">Notifications</h3>
         </div>
+        <button
+          onClick={onClose}
+          className="md:hidden text-gray-400 hover:text-white p-1 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
-      <div className="max-h-[500px] overflow-y-auto">
+      <div className="flex-1 max-h-[calc(100vh-140px)] md:max-h-[500px] overflow-y-auto overscroll-contain">
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="w-6 h-6 border-2 border-[#f0b90b] border-t-transparent rounded-full animate-spin" />

@@ -3,7 +3,7 @@ import {
   Activity, DollarSign, Shield, AlertCircle, FileText, RefreshCw, Search, Filter,
   Users, TrendingUp, Download, Tag, BarChart3, UserCheck, UserX, Clock,
   ChevronDown, Check, X, Eye, Mail, Ban, Unlock, Bell, LogIn, Copy, ExternalLink, Image,
-  UserPlus, Phone, Lock
+  UserPlus, Phone, Lock, Megaphone, Gift, Send
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import PopupBannerManager from '../components/admin/PopupBannerManager';
@@ -158,6 +158,53 @@ export default function AdminCRM() {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [hasPhoneAccess, setHasPhoneAccess] = useState(false);
   const [searchDebounceTimer, setSearchDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+
+  const [broadcastModal, setBroadcastModal] = useState<{
+    show: boolean;
+    loading: boolean;
+    title: string;
+    message: string;
+    notificationType: string;
+    redirectUrl: string;
+    success: string | null;
+    error: string | null;
+  }>({
+    show: false,
+    loading: false,
+    title: '',
+    message: '',
+    notificationType: 'reward',
+    redirectUrl: 'referral',
+    success: null,
+    error: null,
+  });
+
+  const broadcastTemplates = [
+    {
+      id: 'referral_reward',
+      name: 'Referral Reward Reminder',
+      title: 'Earn 20 USDT - Refer a Friend Today!',
+      message: 'When your verified referral deposits $100 USD, you BOTH receive 20 USDT each. Share your referral link now and start earning!',
+      notificationType: 'reward',
+      redirectUrl: 'referral',
+    },
+    {
+      id: 'first_deposit_bonus',
+      name: 'First Deposit Bonus',
+      title: 'Claim Your First Deposit Bonus!',
+      message: 'Make your first deposit today and receive an exclusive welcome bonus. Start trading with extra funds!',
+      notificationType: 'reward',
+      redirectUrl: 'deposit',
+    },
+    {
+      id: 'copy_trading_promo',
+      name: 'Copy Trading Promotion',
+      title: 'Start Copy Trading Today!',
+      message: 'Follow top traders and automatically copy their trades. Let the experts work for you!',
+      notificationType: 'reward',
+      redirectUrl: 'copytrading',
+    },
+  ];
 
   useEffect(() => {
     const checkPermissions = async () => {
@@ -590,6 +637,61 @@ export default function AdminCRM() {
     URL.revokeObjectURL(url);
   };
 
+  const handleSelectTemplate = (templateId: string) => {
+    const template = broadcastTemplates.find(t => t.id === templateId);
+    if (template) {
+      setBroadcastModal(prev => ({
+        ...prev,
+        title: template.title,
+        message: template.message,
+        notificationType: template.notificationType,
+        redirectUrl: template.redirectUrl,
+      }));
+    }
+  };
+
+  const handleBroadcastNotification = async () => {
+    if (!user || !broadcastModal.title || !broadcastModal.message) {
+      setBroadcastModal(prev => ({
+        ...prev,
+        error: 'Title and message are required',
+      }));
+      return;
+    }
+
+    setBroadcastModal(prev => ({ ...prev, loading: true, error: null, success: null }));
+
+    try {
+      const { data, error } = await supabase.rpc('broadcast_notification_to_all_users', {
+        p_admin_id: user.id,
+        p_title: broadcastModal.title,
+        p_message: broadcastModal.message,
+        p_notification_type: broadcastModal.notificationType,
+        p_redirect_url: broadcastModal.redirectUrl || null,
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        setBroadcastModal(prev => ({
+          ...prev,
+          loading: false,
+          success: `Successfully sent notification to ${data.user_count} users!`,
+          title: '',
+          message: '',
+        }));
+      } else {
+        throw new Error(data?.error || 'Failed to broadcast notification');
+      }
+    } catch (error: any) {
+      setBroadcastModal(prev => ({
+        ...prev,
+        loading: false,
+        error: error.message || 'Failed to send broadcast notification',
+      }));
+    }
+  };
+
   const handleViewUser = (userId: string, userName?: string) => {
     localStorage.setItem('adminSelectedUserId', userId);
     if (!isSuperAdmin) {
@@ -699,6 +801,13 @@ export default function AdminCRM() {
             <p className="text-gray-400">Manage users, view analytics, and track platform activity</p>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setBroadcastModal(prev => ({ ...prev, show: true, error: null, success: null }))}
+              className="flex items-center gap-2 px-4 py-2 bg-[#f0b90b]/10 hover:bg-[#f0b90b]/20 text-[#f0b90b] rounded-xl border border-[#f0b90b]/30 transition-colors"
+            >
+              <Megaphone className="w-4 h-4" />
+              Broadcast
+            </button>
             <button
               onClick={() => handleExport('csv')}
               className="flex items-center gap-2 px-4 py-2 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-xl border border-green-500/30 transition-colors"
@@ -1749,6 +1858,192 @@ export default function AdminCRM() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {broadcastModal.show && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#0b0e11] rounded-2xl border border-gray-800 max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#f0b90b]/10 flex items-center justify-center">
+                  <Megaphone className="w-5 h-5 text-[#f0b90b]" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Broadcast Notification</h3>
+                  <p className="text-gray-400 text-sm">Send a notification to all users</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setBroadcastModal(prev => ({ ...prev, show: false }))}
+                className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {broadcastModal.success && (
+              <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  <p className="text-green-400 font-medium">{broadcastModal.success}</p>
+                </div>
+              </div>
+            )}
+
+            {broadcastModal.error && (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                  <p className="text-red-400 font-medium">{broadcastModal.error}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Quick Templates
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {broadcastTemplates.map((template) => (
+                    <button
+                      key={template.id}
+                      onClick={() => handleSelectTemplate(template.id)}
+                      className="p-3 bg-[#1a1d24] hover:bg-[#22262e] border border-gray-700 rounded-xl text-left transition-colors"
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <Gift className="w-4 h-4 text-[#f0b90b]" />
+                        <span className="text-white text-sm font-medium">{template.name}</span>
+                      </div>
+                      <p className="text-gray-500 text-xs line-clamp-2">{template.message.slice(0, 60)}...</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Notification Title *
+                </label>
+                <input
+                  type="text"
+                  value={broadcastModal.title}
+                  onChange={(e) => setBroadcastModal(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="Enter notification title..."
+                  className="w-full bg-[#1a1d24] border border-gray-700 rounded-xl px-4 py-3 text-white outline-none focus:border-[#f0b90b]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Message *
+                </label>
+                <textarea
+                  value={broadcastModal.message}
+                  onChange={(e) => setBroadcastModal(prev => ({ ...prev, message: e.target.value }))}
+                  placeholder="Enter your message..."
+                  rows={4}
+                  className="w-full bg-[#1a1d24] border border-gray-700 rounded-xl px-4 py-3 text-white outline-none focus:border-[#f0b90b] resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Notification Type
+                  </label>
+                  <select
+                    value={broadcastModal.notificationType}
+                    onChange={(e) => setBroadcastModal(prev => ({ ...prev, notificationType: e.target.value }))}
+                    className="w-full bg-[#1a1d24] border border-gray-700 rounded-xl px-4 py-3 text-white outline-none focus:border-[#f0b90b]"
+                  >
+                    <option value="reward">Reward / Promotion</option>
+                    <option value="system">System Announcement</option>
+                    <option value="referral_payout">Referral</option>
+                    <option value="account_update">Account Update</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Redirect To
+                  </label>
+                  <select
+                    value={broadcastModal.redirectUrl}
+                    onChange={(e) => setBroadcastModal(prev => ({ ...prev, redirectUrl: e.target.value }))}
+                    className="w-full bg-[#1a1d24] border border-gray-700 rounded-xl px-4 py-3 text-white outline-none focus:border-[#f0b90b]"
+                  >
+                    <option value="">No redirect</option>
+                    <option value="referral">Referral Page</option>
+                    <option value="deposit">Deposit Page</option>
+                    <option value="rewardshub">Rewards Hub</option>
+                    <option value="copytrading">Copy Trading</option>
+                    <option value="futures">Futures Trading</option>
+                    <option value="earn">Earn / Staking</option>
+                    <option value="vip">VIP Program</option>
+                    <option value="wallet">Wallet</option>
+                  </select>
+                </div>
+              </div>
+
+              {broadcastModal.title && broadcastModal.message && (
+                <div className="bg-[#1a1d24] rounded-xl p-4 border border-gray-700">
+                  <p className="text-gray-400 text-xs mb-2 uppercase tracking-wide">Preview</p>
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">
+                      {broadcastModal.notificationType === 'reward' ? '🎁' :
+                       broadcastModal.notificationType === 'referral_payout' ? '💰' : '🔔'}
+                    </span>
+                    <div>
+                      <h4 className="text-white font-semibold text-sm">{broadcastModal.title}</h4>
+                      <p className="text-gray-400 text-xs mt-1">{broadcastModal.message}</p>
+                      {broadcastModal.redirectUrl && (
+                        <p className="text-[#f0b90b] text-xs mt-2">
+                          Redirects to: {broadcastModal.redirectUrl}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-yellow-400 text-xs">
+                    This will send a notification to ALL users on the platform. This action cannot be undone.
+                    Total users: <span className="font-bold">{stats?.totalUsers || '...'}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  onClick={handleBroadcastNotification}
+                  disabled={broadcastModal.loading || !broadcastModal.title || !broadcastModal.message}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-[#f0b90b] text-black rounded-xl font-medium hover:bg-[#d4a50a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {broadcastModal.loading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      Send to All Users
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => setBroadcastModal(prev => ({ ...prev, show: false }))}
+                  className="px-4 py-3 bg-gray-800 text-white rounded-xl font-medium hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
