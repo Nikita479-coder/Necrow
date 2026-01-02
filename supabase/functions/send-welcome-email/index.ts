@@ -187,12 +187,10 @@ class SmtpClient {
     try {
       await this.sendCommand('QUIT');
     } catch (_e) {
-      // Ignore quit errors
     }
     try {
       this.tlsConn?.close();
     } catch (_e) {
-      // Ignore close errors
     }
   }
 }
@@ -246,28 +244,15 @@ function generateWelcomeEmailHtml(firstName: string): string {
             <td style="padding: 20px 40px;">
               <h2 style="margin: 0 0 20px; font-size: 20px; font-weight: 600; color: #ffffff; text-align: center;">Exclusive New User Offers</h2>
               
-              <!-- KYC Bonus Card -->
-              <div style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.05) 100%); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 12px; padding: 24px; margin-bottom: 16px;">
-                <div style="display: flex; align-items: flex-start;">
-                  <div style="flex-shrink: 0; width: 48px; height: 48px; background: rgba(34, 197, 94, 0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 16px;">
-                    <span style="font-size: 24px;">$20</span>
-                  </div>
-                  <div style="flex: 1;">
-                    <h3 style="margin: 0 0 8px; font-size: 18px; font-weight: 700; color: #22c55e;">FREE Trading Credit</h3>
-                    <p style="margin: 0; font-size: 14px; color: #9ca3af; line-height: 1.5;">Complete KYC verification and receive <strong style="color: #22c55e;">$20 instantly</strong> to start trading. No deposit required!</p>
-                  </div>
-                </div>
-              </div>
-              
               <!-- First Deposit Bonus Card -->
               <div style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 12px; padding: 24px;">
                 <div style="display: flex; align-items: flex-start;">
                   <div style="flex-shrink: 0; width: 48px; height: 48px; background: rgba(212, 175, 55, 0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 16px;">
-                    <span style="font-size: 20px;">100%</span>
+                    <span style="font-size: 20px; color: #d4af37; font-weight: bold;">100%</span>
                   </div>
                   <div style="flex: 1;">
-                    <h3 style="margin: 0 0 8px; font-size: 18px; font-weight: 700; color: #d4af37;">First Deposit Match Bonus</h3>
-                    <p style="margin: 0; font-size: 14px; color: #9ca3af; line-height: 1.5;">Get <strong style="color: #d4af37;">100% match</strong> on your first deposit, up to $100. Double your trading power!</p>
+                    <h3 style="margin: 0 0 8px; font-size: 18px; font-weight: 700; color: #d4af37;">100% First Deposit Bonus</h3>
+                    <p style="margin: 0; font-size: 14px; color: #9ca3af; line-height: 1.5;">Get <strong style="color: #d4af37;">100% match</strong> on your first deposit, up to $500! Double your trading power instantly.</p>
                   </div>
                 </div>
               </div>
@@ -294,22 +279,22 @@ function generateWelcomeEmailHtml(firstName: string): string {
                     <span style="font-size: 14px; font-weight: 700; color: #0a0a0f;">1</span>
                   </div>
                   <div>
-                    <p style="margin: 0; font-size: 15px; color: #ffffff; font-weight: 500;">Complete KYC Verification</p>
-                    <p style="margin: 4px 0 0; font-size: 13px; color: #6b7280;">Unlock full platform features and get your $20 bonus</p>
+                    <p style="margin: 0; font-size: 15px; color: #ffffff; font-weight: 500;">Make Your First Deposit</p>
+                    <p style="margin: 4px 0 0; font-size: 13px; color: #6b7280;">Get 100% matched up to $500 on your first deposit</p>
                   </div>
                 </div>
-                
+
                 <!-- Step 2 -->
                 <div style="display: flex; align-items: center; padding: 16px; background: rgba(255, 255, 255, 0.03); border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);">
                   <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #d4af37, #f4d03f); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 16px; flex-shrink: 0;">
                     <span style="font-size: 14px; font-weight: 700; color: #0a0a0f;">2</span>
                   </div>
                   <div>
-                    <p style="margin: 0; font-size: 15px; color: #ffffff; font-weight: 500;">Make Your First Deposit</p>
-                    <p style="margin: 4px 0 0; font-size: 13px; color: #6b7280;">Get 100% matched up to $100 on your first deposit</p>
+                    <p style="margin: 0; font-size: 15px; color: #ffffff; font-weight: 500;">Complete KYC Verification</p>
+                    <p style="margin: 4px 0 0; font-size: 13px; color: #6b7280;">Unlock full platform features and higher withdrawal limits</p>
                   </div>
                 </div>
-                
+
                 <!-- Step 3 -->
                 <div style="display: flex; align-items: center; padding: 16px; background: rgba(255, 255, 255, 0.03); border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);">
                   <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #d4af37, #f4d03f); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 16px; flex-shrink: 0;">

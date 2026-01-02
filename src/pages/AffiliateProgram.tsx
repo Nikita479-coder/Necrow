@@ -98,19 +98,31 @@ function AffiliateProgram() {
     }
   }, [user, profile]);
 
-  const loadAffiliateData = async () => {
+  const loadAffiliateData = async (retryCount = 0) => {
     if (!user || !profile) return;
     setLoading(true);
     setError(null);
 
+    const maxRetries = 3;
+    const retryDelay = (attempt: number) => Math.min(1000 * Math.pow(2, attempt), 5000);
+
     try {
       setActiveProgram(profile.active_program || 'affiliate');
 
-      const { data: exclusiveData } = await supabase.rpc('get_exclusive_affiliate_stats', {
+      const { data: exclusiveData, error: exclusiveError } = await supabase.rpc('get_exclusive_affiliate_stats', {
         p_user_id: user.id
       });
 
-      if (exclusiveData?.enrolled) {
+      if (exclusiveError) {
+        console.error('Error checking exclusive status:', exclusiveError);
+        throw exclusiveError;
+      }
+
+      if (exclusiveData === null || exclusiveData === undefined) {
+        throw new Error('Failed to fetch exclusive affiliate status');
+      }
+
+      if (exclusiveData.enrolled === true) {
         setIsExclusiveAffiliate(true);
         setLoading(false);
         return;
@@ -156,11 +168,18 @@ function AffiliateProgram() {
         setCpaProgress(cpaData);
       }
 
+      setLoading(false);
     } catch (err: any) {
       console.error('Error loading affiliate data:', err);
-      setError(err.message || 'Failed to load affiliate data');
-    } finally {
-      setLoading(false);
+
+      if (retryCount < maxRetries && (err.message?.includes('fetch') || err.message?.includes('Failed to fetch') || err.code === 'NETWORK_ERROR')) {
+        setTimeout(() => {
+          loadAffiliateData(retryCount + 1);
+        }, retryDelay(retryCount));
+      } else {
+        setError(err.message || 'Failed to load affiliate data');
+        setLoading(false);
+      }
     }
   };
 

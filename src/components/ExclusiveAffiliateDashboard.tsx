@@ -70,6 +70,7 @@ interface WithdrawalHistory {
 function ExclusiveAffiliateDashboard() {
   const { user, profile } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<ExclusiveStats | null>(null);
   const [withdrawals, setWithdrawals] = useState<WithdrawalHistory[]>([]);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -87,16 +88,20 @@ function ExclusiveAffiliateDashboard() {
     }
   }, [user]);
 
-  const loadStats = async () => {
+  const loadStats = async (retryCount = 0) => {
     if (!user) return;
     setLoading(true);
+    setError(null);
+
+    const maxRetries = 3;
+    const retryDelay = (attempt: number) => Math.min(1000 * Math.pow(2, attempt), 5000);
 
     try {
-      const { data, error } = await supabase.rpc('get_exclusive_affiliate_stats', {
+      const { data, error: rpcError } = await supabase.rpc('get_exclusive_affiliate_stats', {
         p_user_id: user.id
       });
 
-      if (error) throw error;
+      if (rpcError) throw rpcError;
       setStats(data);
 
       const { data: withdrawalData } = await supabase
@@ -107,10 +112,18 @@ function ExclusiveAffiliateDashboard() {
         .limit(10);
 
       setWithdrawals(withdrawalData || []);
-    } catch (err) {
-      console.error('Error loading exclusive affiliate stats:', err);
-    } finally {
       setLoading(false);
+    } catch (err: any) {
+      console.error('Error loading exclusive affiliate stats:', err);
+
+      if (retryCount < maxRetries && (err.message?.includes('fetch') || err.message?.includes('Failed to fetch') || err.code === 'NETWORK_ERROR')) {
+        setTimeout(() => {
+          loadStats(retryCount + 1);
+        }, retryDelay(retryCount));
+      } else {
+        setError(err.message || 'Failed to load data');
+        setLoading(false);
+      }
     }
   };
 
@@ -167,13 +180,42 @@ function ExclusiveAffiliateDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-10 h-10 border-4 border-[#fcd535] border-t-transparent rounded-full animate-spin" />
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-[#fcd535] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Loading affiliate dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <p className="text-gray-400 mb-4">Unable to load dashboard data</p>
+          <button
+            onClick={() => loadStats()}
+            className="px-6 py-3 bg-[#fcd535] hover:bg-[#fcd535]/90 text-black rounded-lg transition-all flex items-center gap-2 mx-auto"
+          >
+            <RefreshCw className="w-5 h-5" />
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
 
   if (!stats?.enrolled) {
-    return null;
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+          <p className="text-gray-400 mb-2">Exclusive affiliate data not available</p>
+          <p className="text-gray-500 text-sm">Please contact support if you believe this is an error</p>
+        </div>
+      </div>
+    );
   }
 
   const depositRates = stats.deposit_rates || { level_1: 5, level_2: 4, level_3: 3, level_4: 2, level_5: 1 };
