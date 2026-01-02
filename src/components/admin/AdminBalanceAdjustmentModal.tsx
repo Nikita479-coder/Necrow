@@ -14,6 +14,7 @@ interface Props {
 export default function AdminBalanceAdjustmentModal({ isOpen, onClose, userId, userName, onSuccess }: Props) {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
+  const [adminNotes, setAdminNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
 
@@ -44,14 +45,16 @@ export default function AdminBalanceAdjustmentModal({ isOpen, onClose, userId, u
         p_user_id: userId,
         p_currency: 'USDT',
         p_amount: numAmount,
-        p_description: description.trim()
+        p_description: description.trim(),
+        p_admin_notes: adminNotes.trim() || null
       });
 
       const { data, error } = await supabase.rpc('admin_adjust_user_balance', {
         p_user_id: userId,
         p_currency: 'USDT',
         p_amount: numAmount,
-        p_description: description.trim()
+        p_description: description.trim(),
+        p_admin_notes: adminNotes.trim() || null
       });
 
       console.log('RPC response:', { data, error });
@@ -87,6 +90,7 @@ export default function AdminBalanceAdjustmentModal({ isOpen, onClose, userId, u
   const handleClose = () => {
     setAmount('');
     setDescription('');
+    setAdminNotes('');
     onClose();
   };
 
@@ -131,19 +135,35 @@ export default function AdminBalanceAdjustmentModal({ isOpen, onClose, userId, u
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Description
+              User-Facing Description
             </label>
             <input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g., Crypto Deposit Refund, Bonus Award"
+              placeholder="e.g., Balance adjustment, Account credit"
               className="w-full bg-[#0b0e11] border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-[#f0b90b]"
               disabled={loading}
               required
             />
             <p className="text-xs text-gray-400 mt-2">
-              This will appear in the user's transaction history
+              Generic message visible to the user (avoid using "admin" or sensitive details)
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Admin Notes (Optional)
+            </label>
+            <textarea
+              value={adminNotes}
+              onChange={(e) => setAdminNotes(e.target.value)}
+              placeholder="e.g., Balance reset - user had 0 deposits, positions avoided liquidation due to bug"
+              className="w-full bg-[#0b0e11] border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-[#f0b90b] min-h-[80px] resize-y"
+              disabled={loading}
+            />
+            <p className="text-xs text-orange-400 mt-2">
+              Internal notes only visible to admins - can include sensitive information
             </p>
           </div>
 

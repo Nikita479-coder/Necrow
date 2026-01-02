@@ -20,10 +20,12 @@ import {
   Zap,
   Target,
   Percent,
-  ArrowLeft
+  ArrowLeft,
+  Crown
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import ExclusiveAffiliateDashboard from '../components/ExclusiveAffiliateDashboard';
 
 interface AffiliateStats {
   user_id: string;
@@ -73,6 +75,7 @@ function AffiliateProgram() {
   const [switching, setSwitching] = useState(false);
   const [cpaProgress, setCpaProgress] = useState<any[]>([]);
   const [planAnalysis, setPlanAnalysis] = useState<any>(null);
+  const [isExclusiveAffiliate, setIsExclusiveAffiliate] = useState(false);
 
   const [calculatorInputs, setCalculatorInputs] = useState({
     vipLevel: 1,
@@ -102,6 +105,18 @@ function AffiliateProgram() {
 
     try {
       setActiveProgram(profile.active_program || 'affiliate');
+
+      const { data: exclusiveData } = await supabase.rpc('get_exclusive_affiliate_stats', {
+        p_user_id: user.id
+      });
+
+      if (exclusiveData?.enrolled) {
+        setIsExclusiveAffiliate(true);
+        setLoading(false);
+        return;
+      }
+
+      setIsExclusiveAffiliate(false);
 
       const { data: statsData, error: statsError } = await supabase.rpc('get_affiliate_program_stats', {
         p_user_id: user.id
@@ -1387,6 +1402,29 @@ function AffiliateProgram() {
               Retry
             </button>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isExclusiveAffiliate) {
+    return (
+      <div className="min-h-screen bg-[#0b0e11] text-white">
+        <Navbar />
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="mb-8">
+            <div className="flex items-center gap-4">
+              <Crown className="w-10 h-10 text-[#fcd535]" />
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-3xl font-bold">VIP Affiliate Program</h1>
+                  <span className="px-2 py-1 bg-[#fcd535] text-black text-xs font-bold rounded">EXCLUSIVE</span>
+                </div>
+                <p className="text-gray-400">Premium multi-level commissions with withdrawable earnings</p>
+              </div>
+            </div>
+          </div>
+          <ExclusiveAffiliateDashboard />
         </div>
       </div>
     );

@@ -162,7 +162,7 @@ function Profile() {
   const [selectedCurrency, setSelectedCurrency] = useState('BTC');
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const [loading, setLoading] = useState(true);
-  const { navigateTo } = useNavigation();
+  const { navigateTo, navigationState } = useNavigation();
   const [accountSubSection, setAccountSubSection] = useState('Profile Settings');
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
@@ -287,6 +287,14 @@ function Profile() {
       });
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (navigationState?.section === 'notifications') {
+      setActiveSection('Account');
+      setAccountExpanded(true);
+      setAccountSubSection('Notifications');
+    }
+  }, [navigationState]);
 
   const loadAssets = async () => {
     if (!user) return;
@@ -797,9 +805,9 @@ function Profile() {
               } else if (tx.transaction_type === 'fee_rebate') {
                 displayType = 'Fee Rebate';
               } else if (tx.transaction_type === 'admin_credit') {
-                displayType = 'Admin Credit';
+                displayType = 'Account Credit';
               } else if (tx.transaction_type === 'admin_debit') {
-                displayType = 'Admin Debit';
+                displayType = 'Balance Adjustment';
               } else {
                 displayType = tx.transaction_type.charAt(0).toUpperCase() + tx.transaction_type.slice(1);
               }

@@ -148,8 +148,8 @@ function Transactions() {
               <option value="fee_rebate">Fee Rebate</option>
               <option value="referral_rebate">Referral Rebate</option>
               <option value="referral_commission">Referral Commission</option>
-              <option value="admin_credit">Admin Credit</option>
-              <option value="admin_debit">Admin Debit</option>
+              <option value="admin_credit">Account Credit</option>
+              <option value="admin_debit">Balance Adjustment</option>
               <option value="staking">Staking</option>
               <option value="unstaking">Unstaking</option>
             </select>
@@ -281,8 +281,8 @@ function Transactions() {
                             <div>
                               <span className="font-medium text-white capitalize block">
                                 {tx.transaction_type === 'fee_rebate' ? 'Fee Rebate' :
-                                 tx.transaction_type === 'admin_credit' ? 'Admin Credit' :
-                                 tx.transaction_type === 'admin_debit' ? 'Admin Debit' :
+                                 tx.transaction_type === 'admin_credit' ? 'Account Credit' :
+                                 tx.transaction_type === 'admin_debit' ? 'Balance Adjustment' :
                                  tx.transaction_type === 'futures_open' ? 'Futures Open' :
                                  tx.transaction_type === 'futures_close' ? 'Futures Close' :
                                  tx.transaction_type === 'referral_rebate' ? 'Referral Rebate' :

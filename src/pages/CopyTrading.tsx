@@ -614,7 +614,7 @@ function CopyTrading() {
 
           {user && !hasTelegram && (
             <button
-              onClick={() => navigateTo('profile')}
+              onClick={() => navigateTo('profile', { section: 'notifications' })}
               className="flex items-center gap-2 bg-[#0088cc]/20 hover:bg-[#0088cc]/30 text-[#0088cc] px-3 py-1.5 rounded-lg text-sm font-medium transition-all border border-[#0088cc]/30"
             >
               <Send className="w-4 h-4" />

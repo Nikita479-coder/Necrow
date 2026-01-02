@@ -106,7 +106,9 @@ export default function TelegramLinkingSection() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Not authenticated');
+      if (!session) {
+        throw new Error('Please log in to connect Telegram');
+      }
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-generate-link-code`,
@@ -119,11 +121,18 @@ export default function TelegramLinkingSection() {
         }
       );
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate code');
+        let errorMessage = 'Failed to generate linking code';
+        try {
+          const data = await response.json();
+          errorMessage = data.error || data.details || errorMessage;
+        } catch {
+          // If JSON parsing fails, use default error
+        }
+        throw new Error(errorMessage);
       }
+
+      const data = await response.json();
 
       if (data.already_linked) {
         await loadTelegramStatus();
@@ -133,7 +142,8 @@ export default function TelegramLinkingSection() {
       setLinkingCode(data);
       setShowLinkingModal(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate code');
+      console.error('Telegram linking error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to connect. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -170,7 +180,7 @@ export default function TelegramLinkingSection() {
 
   const copyCode = () => {
     if (linkingCode) {
-      navigator.clipboard.writeText(linkingCode.code);
+      navigator.clipboard.writeText(`/start ${linkingCode.code}`);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -306,15 +316,15 @@ export default function TelegramLinkingSection() {
             </div>
 
             <div className="mb-4">
-              <p className="text-sm text-gray-400 text-center mb-2">Or enter this code in the bot:</p>
+              <p className="text-sm text-gray-400 text-center mb-2">Or copy and send this command in the bot:</p>
               <div className="flex items-center gap-2">
-                <div className="flex-1 bg-[#2b3139] rounded-lg px-4 py-3 font-mono text-xl text-center tracking-widest">
-                  {linkingCode.code}
+                <div className="flex-1 bg-[#2b3139] rounded-lg px-4 py-3 font-mono text-lg text-center">
+                  /start {linkingCode.code}
                 </div>
                 <button
                   onClick={copyCode}
                   className="p-3 bg-[#2b3139] hover:bg-[#363d47] rounded-lg transition-colors"
-                  title="Copy code"
+                  title="Copy command"
                 >
                   {copied ? (
                     <CheckCircle className="w-5 h-5 text-green-500" />

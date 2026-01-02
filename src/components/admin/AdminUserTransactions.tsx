@@ -193,6 +193,7 @@ export default function AdminUserTransactions({ userId }: Props) {
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Currency</th>
                 <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">Amount</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Details</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Admin Notes</th>
                 <th className="text-center py-3 px-4 text-sm font-medium text-gray-400">Status</th>
               </tr>
             </thead>
@@ -228,6 +229,13 @@ export default function AdminUserTransactions({ userId }: Props) {
                       <span className="ml-2 text-xs text-gray-500">
                         (Fee: {parseFloat(tx.fee).toFixed(8)} {tx.currency})
                       </span>
+                    )}
+                  </td>
+                  <td className="py-3 px-4 text-sm">
+                    {tx.admin_notes ? (
+                      <span className="text-orange-400 italic">{tx.admin_notes}</span>
+                    ) : (
+                      <span className="text-gray-600">-</span>
                     )}
                   </td>
                   <td className="py-3 px-4 text-center">

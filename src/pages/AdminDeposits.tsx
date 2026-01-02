@@ -97,37 +97,17 @@ export default function AdminDeposits() {
 
   const loadDeposits = async () => {
     try {
-      const { data: depositsData, error } = await supabase
-        .from('crypto_deposits')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.rpc('admin_get_all_deposits', {
+        p_status: filterStatus === 'all' ? null : filterStatus,
+        p_limit: 500,
+        p_offset: 0
+      });
 
       if (error) throw error;
 
-      const depositsWithUsers = await Promise.all(
-        (depositsData || []).map(async (deposit) => {
-          const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('username, full_name')
-            .eq('id', deposit.user_id)
-            .maybeSingle();
-
-          let email = 'N/A';
-          try {
-            const { data: emails } = await supabase
-              .rpc('get_user_email', { user_id: deposit.user_id });
-            email = emails || 'N/A';
-          } catch {}
-
-          return {
-            ...deposit,
-            user_email: email,
-            user_name: profile?.full_name || profile?.username || 'Unknown'
-          };
-        })
-      );
-
-      setDeposits(depositsWithUsers);
+      if (data?.success) {
+        setDeposits(data.deposits || []);
+      }
     } catch (error) {
       console.error('Error loading deposits:', error);
     }
