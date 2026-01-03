@@ -627,22 +627,22 @@ function SignUp() {
 
                 <div className="space-y-4 mb-6">
                   <div className="flex items-center gap-3 text-gray-300">
-                    <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                      <CheckCircle className="w-5 h-5 text-green-500" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-white">$20 KYC Bonus</div>
-                      <div className="text-sm text-gray-400">Free credit on verification</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 text-gray-300">
                     <div className="w-10 h-10 rounded-full bg-[#f0b90b]/20 flex items-center justify-center">
                       <TrendingUp className="w-5 h-5 text-[#f0b90b]" />
                     </div>
                     <div>
                       <div className="font-semibold text-white">100% Deposit Match</div>
-                      <div className="text-sm text-gray-400">Up to $100 bonus</div>
+                      <div className="text-sm text-gray-400">Up to $500 bonus</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 text-gray-300">
+                    <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-white">Zero Trading Fees</div>
+                      <div className="text-sm text-gray-400">For first 7 days</div>
                     </div>
                   </div>
                 </div>
@@ -651,7 +651,7 @@ function SignUp() {
                   <div className="bg-gray-900 rounded-xl p-4">
                     <div className="text-center">
                       <div className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#f0b90b] to-[#d9a506]">
-                        Up to $120
+                        Up to $500
                       </div>
                       <div className="text-gray-400 text-sm">In Welcome Bonuses</div>
                     </div>
@@ -705,11 +705,11 @@ function SignUp() {
           </div>
 
           <h2 className="text-4xl font-bold text-white mb-4">
-            {step === 'register' ? 'Get Up to $120 in Bonuses' : 'Almost There!'}
+            {step === 'register' ? 'Get Up to $500 in Bonuses' : 'Almost There!'}
           </h2>
           <p className="text-gray-400 text-lg">
             {step === 'register'
-              ? 'Complete KYC for $20 free credit, then get 100% matched on your first deposit up to $100.'
+              ? 'Get 100% matched on your first deposit up to $500, plus zero trading fees for 7 days.'
               : 'Verify your email to complete registration and unlock your welcome bonuses.'}
           </p>
         </div>

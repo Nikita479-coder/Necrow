@@ -642,7 +642,8 @@ function CopyTrading() {
 
       <div className="max-w-[1400px] mx-auto px-3 sm:px-6 py-4 sm:py-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
-          <div className="flex items-center gap-4 sm:gap-8 overflow-x-auto scrollbar-hide pb-1">
+          <div className="relative">
+            <div className="flex items-center gap-4 sm:gap-8 overflow-x-auto pb-1 pr-4 -mr-3 sm:mr-0 sm:pr-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
             <button
               onClick={() => setActiveTab('all')}
               className={`pb-2 text-sm sm:text-base transition-colors relative whitespace-nowrap ${
@@ -725,6 +726,8 @@ function CopyTrading() {
                 <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#fcd535]"></div>
               )}
             </button>
+            </div>
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#181a20] to-transparent pointer-events-none sm:hidden" />
           </div>
 
           {user && !hasTelegram && (

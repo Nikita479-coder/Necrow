@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, ArrowRight } from 'lucide-react';
+import { X, ArrowRight, Lock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
@@ -8,7 +8,7 @@ interface WalletTransferModalProps {
   onClose: () => void;
   onSuccess: () => void;
   currency?: string;
-  fromWalletType?: 'main' | 'assets' | 'copy' | 'futures';
+  fromWalletType?: 'main' | 'copy' | 'futures';
 }
 
 export default function WalletTransferModal({
@@ -21,15 +21,16 @@ export default function WalletTransferModal({
   const { user } = useAuth();
   const [currency, setCurrency] = useState(initialCurrency);
   const [amount, setAmount] = useState('');
-  const [fromWallet, setFromWallet] = useState<'main' | 'assets' | 'copy' | 'futures'>(initialFromWallet);
-  const [toWallet, setToWallet] = useState<'main' | 'assets' | 'copy' | 'futures'>('assets');
+  const [fromWallet, setFromWallet] = useState<'main' | 'copy' | 'futures'>(initialFromWallet);
+  const [toWallet, setToWallet] = useState<'main' | 'copy' | 'futures'>('copy');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [availableBalance, setAvailableBalance] = useState(0);
+  const [totalBalance, setTotalBalance] = useState(0);
+  const [allocatedBalance, setAllocatedBalance] = useState(0);
 
   const walletTypes = [
     { value: 'main', label: 'Main Wallet' },
-    { value: 'assets', label: 'Assets Wallet' },
     { value: 'copy', label: 'Copy Trading' },
     { value: 'futures', label: 'Futures Wallet' }
   ];
@@ -46,7 +47,9 @@ export default function WalletTransferModal({
     if (!user) return;
 
     try {
-      // For futures wallet, we need to get available balance (excluding locked margin)
+      setAllocatedBalance(0);
+      setTotalBalance(0);
+
       if (fromWallet === 'futures') {
         const { data, error } = await supabase.rpc('get_wallet_balances', {
           p_user_id: user.id
@@ -54,10 +57,40 @@ export default function WalletTransferModal({
 
         if (error) throw error;
 
-        // Updated to match new data structure: use total_trading_available which includes locked bonus
         setAvailableBalance(parseFloat(data?.total_trading_available || '0'));
+        setTotalBalance(parseFloat(data?.total_trading_available || '0'));
+      } else if (fromWallet === 'copy') {
+        const { data: walletData, error: walletError } = await supabase
+          .from('wallets')
+          .select('balance, locked_balance')
+          .eq('user_id', user.id)
+          .eq('currency', currency)
+          .eq('wallet_type', 'copy')
+          .maybeSingle();
+
+        if (walletError) throw walletError;
+
+        const walletBalance = parseFloat(walletData?.balance || '0');
+        const locked = parseFloat(walletData?.locked_balance || '0');
+        setTotalBalance(walletBalance - locked);
+
+        const { data: relationshipsData, error: relError } = await supabase
+          .from('copy_relationships')
+          .select('initial_balance')
+          .eq('follower_id', user.id)
+          .eq('is_active', true)
+          .eq('is_mock', false);
+
+        if (relError) throw relError;
+
+        const totalAllocated = (relationshipsData || []).reduce(
+          (sum, rel) => sum + parseFloat(rel.initial_balance || '0'),
+          0
+        );
+
+        setAllocatedBalance(totalAllocated);
+        setAvailableBalance(Math.max(0, walletBalance - locked - totalAllocated));
       } else {
-        // For other wallets, query directly
         const { data, error } = await supabase
           .from('wallets')
           .select('balance, locked_balance')
@@ -68,14 +101,16 @@ export default function WalletTransferModal({
 
         if (error) throw error;
 
-        // Available = balance - locked_balance
         const balance = parseFloat(data?.balance || '0');
         const locked = parseFloat(data?.locked_balance || '0');
         setAvailableBalance(balance - locked);
+        setTotalBalance(balance - locked);
       }
     } catch (err) {
       console.error('Error loading balance:', err);
       setAvailableBalance(0);
+      setTotalBalance(0);
+      setAllocatedBalance(0);
     }
   };
 
@@ -213,8 +248,18 @@ export default function WalletTransferModal({
                 MAX
               </button>
             </div>
-            <div className="flex items-center justify-between mt-2">
-              <p className="text-xs text-gray-500">Available: {availableBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })} {currency}</p>
+            <div className="mt-2 space-y-1">
+              <p className="text-xs text-gray-500">
+                Available: {availableBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })} {currency}
+              </p>
+              {fromWallet === 'copy' && allocatedBalance > 0 && (
+                <div className="flex items-center gap-1.5 text-xs text-amber-500">
+                  <Lock className="w-3 h-3" />
+                  <span>
+                    {allocatedBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency} allocated to active traders
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 

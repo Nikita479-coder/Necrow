@@ -721,23 +721,24 @@ function ActiveCopyTrading() {
                 <div className="space-y-3">
                   {openTrades.map((position) => (
                     <div key={position.id} className="bg-[#1e2329] rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <span className="text-white font-medium">{position.symbol}</span>
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-white font-medium text-base">{position.symbol}</span>
+                        <span className="text-xs text-[#848e9c]">
+                          {new Date(position.opened_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-3 text-sm">
+                        <div>
+                          <div className="text-[#848e9c] text-xs mb-1">Leverage</div>
+                          <div className="text-white font-medium">{position.leverage}x</div>
                         </div>
-                        <div className="flex items-center gap-6 text-sm">
-                          <div className="text-[#848e9c]">
-                            Leverage: <span className="text-white">{position.leverage}x</span>
-                          </div>
-                          <div className="text-[#848e9c]">
-                            Entry: <span className="text-white">${position.entry_price.toLocaleString()}</span>
-                          </div>
-                          <div className="text-[#848e9c]">
-                            Qty: <span className="text-white">{position.quantity}</span>
-                          </div>
-                          <div className="text-xs text-[#848e9c]">
-                            Opened: {new Date(position.opened_at).toLocaleString()}
-                          </div>
+                        <div>
+                          <div className="text-[#848e9c] text-xs mb-1">Entry</div>
+                          <div className="text-white font-medium">${position.entry_price.toLocaleString()}</div>
+                        </div>
+                        <div>
+                          <div className="text-[#848e9c] text-xs mb-1">Quantity</div>
+                          <div className="text-white font-medium truncate">{position.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })}</div>
                         </div>
                       </div>
                     </div>
@@ -763,8 +764,8 @@ function ActiveCopyTrading() {
                 <div className="space-y-3">
                   {closedTrades.map((position) => (
                     <div key={position.id} className="bg-[#1e2329] rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
                           <span className="text-white font-medium">{position.symbol}</span>
                           <span className={`text-xs px-2 py-0.5 rounded ${
                             position.side === 'long' ? 'bg-[#0ecb81]/10 text-[#0ecb81]' : 'bg-[#f6465d]/10 text-[#f6465d]'
@@ -772,30 +773,38 @@ function ActiveCopyTrading() {
                             {position.side?.toUpperCase()}
                           </span>
                         </div>
-                        <div className="flex items-center gap-6 text-sm">
-                          <div className="text-[#848e9c]">
-                            Leverage: <span className="text-white">{position.leverage}x</span>
-                          </div>
-                          <div className="text-[#848e9c]">
-                            Entry: <span className="text-white">${position.entry_price.toLocaleString()}</span>
-                          </div>
-                          <div className="text-[#848e9c]">
-                            Exit: <span className="text-white">${position.exit_price?.toLocaleString() || 'N/A'}</span>
-                          </div>
-                          <div className="text-[#848e9c]">
-                            PNL: {position.pnl ? (
-                              <span className={(position.pnl >= 0) ? 'text-[#0ecb81]' : 'text-[#f6465d]'}>
-                                {(position.pnl >= 0) ? '+' : ''}{position.pnl.toFixed(2)} USDT
-                                {(position.pnl_percent || position.pnl_percentage) && ` (${(position.pnl_percent || position.pnl_percentage || 0) >= 0 ? '+' : ''}${(position.pnl_percent || position.pnl_percentage || 0).toFixed(2)}%)`}
-                              </span>
-                            ) : (
-                              <span className="text-[#848e9c]">N/A</span>
-                            )}
-                          </div>
-                        </div>
+                        <span className="text-xs text-[#848e9c]">
+                          {position.closed_at ? new Date(position.closed_at).toLocaleDateString() : 'N/A'}
+                        </span>
                       </div>
-                      <div className="text-xs text-[#848e9c] mt-2">
-                        Closed at: {position.closed_at ? new Date(position.closed_at).toLocaleString() : 'N/A'}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                        <div>
+                          <div className="text-[#848e9c] text-xs mb-1">Leverage</div>
+                          <div className="text-white font-medium">{position.leverage}x</div>
+                        </div>
+                        <div>
+                          <div className="text-[#848e9c] text-xs mb-1">Entry</div>
+                          <div className="text-white font-medium">${position.entry_price.toLocaleString()}</div>
+                        </div>
+                        <div>
+                          <div className="text-[#848e9c] text-xs mb-1">Exit</div>
+                          <div className="text-white font-medium">${position.exit_price?.toLocaleString() || 'N/A'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[#848e9c] text-xs mb-1">PNL</div>
+                          {position.pnl ? (
+                            <div className={`font-medium ${position.pnl >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                              {position.pnl >= 0 ? '+' : ''}{position.pnl.toFixed(2)}
+                              {(position.pnl_percent || position.pnl_percentage) && (
+                                <span className="text-xs ml-1">
+                                  ({(position.pnl_percent || position.pnl_percentage || 0) >= 0 ? '+' : ''}{(position.pnl_percent || position.pnl_percentage || 0).toFixed(1)}%)
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-[#848e9c]">N/A</div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -815,95 +824,79 @@ function ActiveCopyTrading() {
                   <div className="text-gray-500">No allocations yet. Allocations will appear when the trader opens positions.</div>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-[#474d57]">
-                        <th className="text-left text-[#848e9c] text-xs font-medium pb-3 px-2">Symbol</th>
-                        <th className="text-center text-[#848e9c] text-xs font-medium pb-3 px-2">Side</th>
-                        <th className="text-right text-[#848e9c] text-xs font-medium pb-3 px-2">Quantity</th>
-                        <th className="text-right text-[#848e9c] text-xs font-medium pb-3 px-2">Entry</th>
-                        <th className="text-right text-[#848e9c] text-xs font-medium pb-3 px-2">Exit</th>
-                        <th className="text-right text-[#848e9c] text-xs font-medium pb-3 px-2">Allocated</th>
-                        <th className="text-right text-[#848e9c] text-xs font-medium pb-3 px-2">PNL</th>
-                        <th className="text-center text-[#848e9c] text-xs font-medium pb-3 px-2">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {myAllocations.map((allocation) => (
-                        <tr key={allocation.id} className="border-b border-[#474d57]/50 hover:bg-[#353c47] transition-colors">
-                          <td className="py-3 px-2 text-white text-sm font-medium">
-                            {allocation.symbol || 'N/A'}
-                          </td>
-                          <td className="py-3 px-2 text-center">
-                            {allocation.status === 'closed' ? (
-                              <span className={`text-xs px-2 py-0.5 rounded ${
-                                allocation.side === 'long' ? 'bg-[#0ecb81]/10 text-[#0ecb81]' : 'bg-[#f6465d]/10 text-[#f6465d]'
-                              }`}>
-                                {allocation.side?.toUpperCase()}
-                              </span>
-                            ) : (
-                              <span className="text-xs text-[#848e9c]">-</span>
-                            )}
-                          </td>
-                          <td className="py-3 px-2 text-right text-[#848e9c] text-sm">
-                            {allocation.quantity?.toFixed(4) || 'N/A'}
-                          </td>
-                          <td className="py-3 px-2 text-right text-[#848e9c] text-sm">
-                            ${allocation.entry_price.toLocaleString()}
-                          </td>
-                          <td className="py-3 px-2 text-right text-[#848e9c] text-sm">
-                            {allocation.exit_price ? `$${allocation.exit_price.toLocaleString()}` : '-'}
-                          </td>
-                          <td className="py-3 px-2 text-right text-[#848e9c] text-sm">
-                            {allocation.allocated_amount.toFixed(2)} USDT
-                          </td>
-                          <td className="py-3 px-2 text-right text-sm">
-                            {allocation.realized_pnl !== null && allocation.realized_pnl !== undefined && allocation.realized_pnl !== 0 ? (
-                              <div className="flex flex-col items-end gap-0.5">
-                                <span className={allocation.realized_pnl >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}>
-                                  {allocation.realized_pnl >= 0 ? '+' : ''}{allocation.realized_pnl.toFixed(2)} USDT
-                                </span>
-                                {allocation.pnl_percentage !== null && allocation.pnl_percentage !== undefined && (
-                                  <span className={`text-xs ${allocation.pnl_percentage >= 0 ? 'text-[#0ecb81]/70' : 'text-[#f6465d]/70'}`}>
-                                    {allocation.pnl_percentage >= 0 ? '+' : ''}{allocation.pnl_percentage.toFixed(2)}%
-                                  </span>
-                                )}
-                              </div>
-                            ) : allocation.pnl_percentage !== null && allocation.pnl_percentage !== undefined ? (
-                              <div className="flex items-center justify-end gap-1">
-                                {allocation.pnl_percentage >= 0 ? (
-                                  <TrendingUp className="w-4 h-4 text-[#0ecb81]" />
-                                ) : (
-                                  <TrendingDown className="w-4 h-4 text-[#f6465d]" />
-                                )}
-                                <span className={allocation.pnl_percentage >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}>
-                                  {allocation.pnl_percentage >= 0 ? '+' : ''}{allocation.pnl_percentage.toFixed(2)}%
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="text-[#848e9c]">-</span>
-                            )}
-                          </td>
-                          <td className="py-3 px-2 text-center">
-                            <span className={`px-2 py-1 rounded text-xs ${
-                              allocation.status === 'open'
-                                ? 'bg-blue-500/20 text-blue-400'
-                                : 'bg-gray-500/20 text-gray-400'
+                <div className="space-y-3">
+                  {myAllocations.map((allocation) => (
+                    <div key={allocation.id} className="bg-[#1e2329] rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-white font-medium">{allocation.symbol || 'N/A'}</span>
+                          {allocation.status === 'closed' && allocation.side && (
+                            <span className={`text-xs px-2 py-0.5 rounded ${
+                              allocation.side === 'long' ? 'bg-[#0ecb81]/10 text-[#0ecb81]' : 'bg-[#f6465d]/10 text-[#f6465d]'
                             }`}>
-                              {allocation.status.toUpperCase()}
+                              {allocation.side.toUpperCase()}
                             </span>
-                          </td>
-                          <td className="py-3 px-2 text-right text-[#848e9c] text-xs">
-                            {allocation.status === 'closed' && allocation.closed_at
-                              ? new Date(allocation.closed_at).toLocaleString()
-                              : new Date(allocation.created_at).toLocaleString()
-                            }
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          )}
+                          <span className={`px-2 py-0.5 rounded text-xs ${
+                            allocation.status === 'open'
+                              ? 'bg-blue-500/20 text-blue-400'
+                              : 'bg-gray-500/20 text-gray-400'
+                          }`}>
+                            {allocation.status.toUpperCase()}
+                          </span>
+                        </div>
+                        <span className="text-xs text-[#848e9c]">
+                          {allocation.status === 'closed' && allocation.closed_at
+                            ? new Date(allocation.closed_at).toLocaleDateString()
+                            : new Date(allocation.created_at).toLocaleDateString()
+                          }
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                        <div>
+                          <div className="text-[#848e9c] text-xs mb-1">Allocated</div>
+                          <div className="text-white font-medium">{allocation.allocated_amount.toFixed(2)} USDT</div>
+                        </div>
+                        <div>
+                          <div className="text-[#848e9c] text-xs mb-1">Entry</div>
+                          <div className="text-white font-medium">${allocation.entry_price.toLocaleString()}</div>
+                        </div>
+                        <div>
+                          <div className="text-[#848e9c] text-xs mb-1">Exit</div>
+                          <div className="text-white font-medium">{allocation.exit_price ? `$${allocation.exit_price.toLocaleString()}` : '-'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[#848e9c] text-xs mb-1">PNL</div>
+                          {allocation.realized_pnl !== null && allocation.realized_pnl !== undefined && allocation.realized_pnl !== 0 ? (
+                            <div className={`font-medium ${allocation.realized_pnl >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                              {allocation.realized_pnl >= 0 ? '+' : ''}{allocation.realized_pnl.toFixed(2)}
+                              {allocation.pnl_percentage !== null && allocation.pnl_percentage !== undefined && (
+                                <span className="text-xs ml-1">
+                                  ({allocation.pnl_percentage >= 0 ? '+' : ''}{allocation.pnl_percentage.toFixed(1)}%)
+                                </span>
+                              )}
+                            </div>
+                          ) : allocation.pnl_percentage !== null && allocation.pnl_percentage !== undefined ? (
+                            <div className={`flex items-center gap-1 font-medium ${allocation.pnl_percentage >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                              {allocation.pnl_percentage >= 0 ? (
+                                <TrendingUp className="w-3 h-3" />
+                              ) : (
+                                <TrendingDown className="w-3 h-3" />
+                              )}
+                              {allocation.pnl_percentage >= 0 ? '+' : ''}{allocation.pnl_percentage.toFixed(2)}%
+                            </div>
+                          ) : (
+                            <div className="text-[#848e9c]">-</div>
+                          )}
+                        </div>
+                      </div>
+                      {allocation.quantity && (
+                        <div className="mt-2 pt-2 border-t border-[#474d57]/30 text-xs text-[#848e9c]">
+                          Qty: {allocation.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })} | Leverage: {allocation.follower_leverage}x
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
