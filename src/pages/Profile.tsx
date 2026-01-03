@@ -204,7 +204,7 @@ function Profile() {
     return avatar?.emoji || '😊';
   };
 
-  const [vipTierName, setVipTierName] = useState('Regular');
+  const [vipTierName, setVipTierName] = useState('');
   const [sharkCardApplication, setSharkCardApplication] = useState<any>(null);
   const [sharkCard, setSharkCard] = useState<any>(null);
   const [showSharkCardModal, setShowSharkCardModal] = useState(false);
@@ -256,11 +256,15 @@ function Profile() {
 
   useEffect(() => {
     if (user) {
-      // Stagger data loading to reduce concurrent requests
       loadAssets();
-      setTimeout(() => loadRecentTransactions(), 300);
-      setTimeout(() => loadVIPStatus(), 600);
-      setTimeout(() => loadSharkCardData(), 900);
+    }
+  }, [user, prices]);
+
+  useEffect(() => {
+    if (user) {
+      loadRecentTransactions();
+      loadVIPStatus();
+      loadSharkCardData();
 
       const vipSubscription = supabase
         .channel('vip_status_updates')
@@ -278,7 +282,7 @@ function Profile() {
         vipSubscription.unsubscribe();
       };
     }
-  }, [user, prices]);
+  }, [user]);
 
   useEffect(() => {
     if (profile) {
@@ -438,9 +442,6 @@ function Profile() {
       }
 
       const levelNumber = vipStatus?.current_level || 1;
-
-      // Add delay before next query
-      await new Promise(resolve => setTimeout(resolve, 200));
 
       const { data: levelData, error: levelError } = await supabase
         .from('vip_levels')
@@ -1415,7 +1416,7 @@ function Profile() {
               className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 bg-[#2b3139] hover:bg-[#3b4149] rounded-lg text-xs font-medium text-gray-300 transition-colors"
             >
               <Crown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#f0b90b]" />
-              {vipTierName}
+              {vipTierName || 'Loading...'}
               <ChevronRight className="w-3 h-3" />
             </button>
           </div>

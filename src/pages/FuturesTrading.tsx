@@ -247,7 +247,7 @@ function FuturesTrading() {
               </div>
             </div>
 
-            <div className="border-t border-[#1e2329] flex-shrink-0 bg-[#0b0e11]" style={{ height: '280px' }}>
+            <div className="border-t border-[#1e2329] flex-shrink-0 bg-[#0b0e11]" style={{ height: '350px' }}>
               <FuturesPositionsPanel />
             </div>
           </div>
@@ -341,7 +341,7 @@ function FuturesTrading() {
                 <TradingChart pair={selectedPair} />
               </div>
               {/* Positions Panel - scroll to see */}
-              <div className="bg-[#0b0e11] border-t border-[#2b2e35]">
+              <div className="bg-[#0b0e11] border-t border-[#2b2e35]" style={{ minHeight: '350px' }}>
                 <FuturesPositionsPanel />
               </div>
             </>

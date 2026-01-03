@@ -270,7 +270,7 @@ export default function TraderProfile() {
   return (
     <div className="min-h-screen bg-[#0b0e11] text-white">
       <Navbar />
-      <div className="p-6">
+      <div className="p-3 sm:p-6">
       <button
         onClick={() => {
           window.history.back();
@@ -282,40 +282,42 @@ export default function TraderProfile() {
         Back to Copy Trading
       </button>
 
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="bg-[#2b3139] rounded-lg p-6">
-          <div className="flex items-start justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <div className="text-5xl">{trader.avatar}</div>
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-3xl font-bold">{trader.name}</h1>
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+        <div className="bg-[#2b3139] rounded-lg p-4 sm:p-6">
+          <div className="flex items-start justify-between mb-4 sm:mb-6">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="text-4xl sm:text-5xl">{trader.avatar}</div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
+                  <h1 className="text-xl sm:text-3xl font-bold">{trader.name}</h1>
                   {trader.api_verified && (
-                    <span className="bg-blue-500/20 text-blue-400 text-xs px-2 py-1 rounded font-medium">API Verified</span>
+                    <span className="bg-blue-500/20 text-blue-400 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded font-medium whitespace-nowrap">API Verified</span>
                   )}
-                  <span className={`text-xs px-2 py-1 rounded font-medium ${getRiskBadgeColor(trader.risk_level)}`}>
+                </div>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-2">
+                  <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded font-medium whitespace-nowrap ${getRiskBadgeColor(trader.risk_level)}`}>
                     {trader.risk_level.toUpperCase()} RISK
                   </span>
-                  <span className={`text-xs px-2 py-1 rounded font-medium ${getStyleBadgeColor(trader.trading_style)}`}>
+                  <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded font-medium whitespace-nowrap ${getStyleBadgeColor(trader.trading_style)}`}>
                     {trader.trading_style.replace('_', ' ').toUpperCase()}
                   </span>
                 </div>
-                <div className="flex items-center gap-4 text-sm text-[#848e9c]">
+                <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-[#848e9c]">
                   <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
+                    <Users className="w-3 h-3 sm:w-4 sm:h-4" />
                     <span>{trader.followers_count.toLocaleString()} followers</span>
                   </div>
-                  <span>•</span>
-                  <span>Rank #{trader.rank} / {trader.total_rank}</span>
+                  <span className="hidden sm:inline">•</span>
+                  <span className="hidden sm:inline">Rank #{trader.rank} / {trader.total_rank}</span>
                 </div>
               </div>
             </div>
 
             <button
               onClick={() => setIsFavorite(!isFavorite)}
-              className="text-gray-400 hover:text-[#fcd535] transition-colors"
+              className="text-gray-400 hover:text-[#fcd535] transition-colors flex-shrink-0"
             >
-              <Star className={`w-6 h-6 ${isFavorite ? 'fill-[#fcd535] text-[#fcd535]' : ''}`} />
+              <Star className={`w-5 h-5 sm:w-6 sm:h-6 ${isFavorite ? 'fill-[#fcd535] text-[#fcd535]' : ''}`} />
             </button>
           </div>
 
@@ -335,30 +337,30 @@ export default function TraderProfile() {
             ))}
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-[#1e2329] rounded-lg p-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="bg-[#1e2329] rounded-lg p-3 sm:p-4">
               <div className="text-[#848e9c] text-xs mb-1">ROI</div>
-              <div className={`text-2xl font-bold ${roi >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+              <div className={`text-xl sm:text-2xl font-bold ${roi >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
                 {roi >= 0 ? '+' : ''}{roi.toFixed(2)}%
               </div>
             </div>
 
-            <div className="bg-[#1e2329] rounded-lg p-4">
+            <div className="bg-[#1e2329] rounded-lg p-3 sm:p-4">
               <div className="text-[#848e9c] text-xs mb-1">PNL (USDT)</div>
-              <div className={`text-2xl font-bold ${pnl >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
-                {pnl >= 0 ? '+' : ''}{pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <div className={`text-lg sm:text-2xl font-bold truncate ${pnl >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                {pnl >= 0 ? '+' : ''}{pnl >= 1000000 ? `${(pnl / 1000000).toFixed(2)}M` : pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </div>
 
-            <div className="bg-[#1e2329] rounded-lg p-4">
+            <div className="bg-[#1e2329] rounded-lg p-3 sm:p-4">
               <div className="text-[#848e9c] text-xs mb-1">Win Rate</div>
-              <div className="text-2xl font-bold text-white">{winRate.toFixed(1)}%</div>
+              <div className="text-xl sm:text-2xl font-bold text-white">{winRate.toFixed(1)}%</div>
             </div>
 
-            <div className="bg-[#1e2329] rounded-lg p-4">
+            <div className="bg-[#1e2329] rounded-lg p-3 sm:p-4">
               <div className="text-[#848e9c] text-xs mb-1">AUM (USDT)</div>
-              <div className="text-2xl font-bold text-white">
-                {trader.aum.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              <div className="text-lg sm:text-2xl font-bold text-white truncate">
+                {trader.aum >= 1000000 ? `${(trader.aum / 1000000).toFixed(2)}M` : trader.aum.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </div>
             </div>
           </div>
@@ -499,121 +501,150 @@ export default function TraderProfile() {
           </div>
         </div>
 
-        <div className="bg-[#2b3139] rounded-lg p-6">
-          <div className="flex gap-8 border-b border-[#1e2329] mb-6">
-            <button
-              onClick={() => setActiveTab('positions')}
-              className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-                activeTab === 'positions'
-                  ? 'text-white'
-                  : 'text-[#848e9c] hover:text-white'
-              }`}
-            >
-              Positions
-              {activeTab === 'positions' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#fcd535]" />
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('history')}
-              className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-                activeTab === 'history'
-                  ? 'text-white'
-                  : 'text-[#848e9c] hover:text-white'
-              }`}
-            >
-              Position History
-              {activeTab === 'history' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#fcd535]" />
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('records')}
-              className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-                activeTab === 'records'
-                  ? 'text-white'
-                  : 'text-[#848e9c] hover:text-white'
-              }`}
-            >
-              Latest Records
-              {activeTab === 'records' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#fcd535]" />
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('transfer')}
-              className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-                activeTab === 'transfer'
-                  ? 'text-white'
-                  : 'text-[#848e9c] hover:text-white'
-              }`}
-            >
-              Transfer History
-              {activeTab === 'transfer' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#fcd535]" />
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('copytraders')}
-              className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-                activeTab === 'copytraders'
-                  ? 'text-white'
-                  : 'text-[#848e9c] hover:text-white'
-              }`}
-            >
-              Copy Traders
-              {activeTab === 'copytraders' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#fcd535]" />
-              )}
-            </button>
+        <div className="bg-[#2b3139] rounded-lg p-4 sm:p-6">
+          <div className="relative mb-6">
+            <div className="flex gap-4 sm:gap-8 border-b border-[#1e2329] overflow-x-auto pb-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
+              <button
+                onClick={() => setActiveTab('positions')}
+                className={`pb-3 px-1 text-xs sm:text-sm font-medium transition-colors relative whitespace-nowrap ${
+                  activeTab === 'positions'
+                    ? 'text-white'
+                    : 'text-[#848e9c] hover:text-white'
+                }`}
+              >
+                Positions
+                {activeTab === 'positions' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#fcd535]" />
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('history')}
+                className={`pb-3 px-1 text-xs sm:text-sm font-medium transition-colors relative whitespace-nowrap ${
+                  activeTab === 'history'
+                    ? 'text-white'
+                    : 'text-[#848e9c] hover:text-white'
+                }`}
+              >
+                Position History
+                {activeTab === 'history' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#fcd535]" />
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('records')}
+                className={`pb-3 px-1 text-xs sm:text-sm font-medium transition-colors relative whitespace-nowrap ${
+                  activeTab === 'records'
+                    ? 'text-white'
+                    : 'text-[#848e9c] hover:text-white'
+                }`}
+              >
+                Latest Records
+                {activeTab === 'records' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#fcd535]" />
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('transfer')}
+                className={`pb-3 px-1 text-xs sm:text-sm font-medium transition-colors relative whitespace-nowrap ${
+                  activeTab === 'transfer'
+                    ? 'text-white'
+                    : 'text-[#848e9c] hover:text-white'
+                }`}
+              >
+                Transfer History
+                {activeTab === 'transfer' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#fcd535]" />
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('copytraders')}
+                className={`pb-3 px-1 text-xs sm:text-sm font-medium transition-colors relative whitespace-nowrap pr-4 ${
+                  activeTab === 'copytraders'
+                    ? 'text-white'
+                    : 'text-[#848e9c] hover:text-white'
+                }`}
+              >
+                Copy Traders
+                {activeTab === 'copytraders' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#fcd535]" />
+                )}
+              </button>
+            </div>
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#2b3139] to-transparent pointer-events-none sm:hidden" />
           </div>
 
           {activeTab === 'copytraders' && (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="text-[#848e9c] text-sm">
-                    <th className="text-left pb-4 font-medium">User ID</th>
-                    <th className="text-right pb-4 font-medium">Copy Margin Balance ↕</th>
-                    <th className="text-right pb-4 font-medium">Total PNL ↕</th>
-                    <th className="text-right pb-4 font-medium">Total ROI ↕</th>
-                    <th className="text-right pb-4 font-medium">Duration ↕</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {copyTraders.map((copyTrader, index) => (
-                    <tr
-                      key={copyTrader.id}
-                      className={`border-t border-[#1e2329] ${
-                        index % 2 === 0 ? 'bg-[#1e2329]/30' : ''
-                      }`}
-                    >
-                      <td className="py-4 text-white">{copyTrader.userId}</td>
-                      <td className="py-4 text-right text-white">
-                        {copyTrader.balance.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2
-                        })}{' '}
-                        USDT
-                      </td>
-                      <td className="py-4 text-right text-[#0ecb81]">
-                        +{copyTrader.pnl.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2
-                        })}{' '}
-                        USDT
-                      </td>
-                      <td className="py-4 text-right text-[#0ecb81]">
-                        +{copyTrader.roi.toFixed(2)}%
-                      </td>
-                      <td className="py-4 text-right text-white">
-                        {copyTrader.duration} Days
-                      </td>
+            <>
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-[#848e9c] text-sm">
+                      <th className="text-left pb-4 font-medium">User ID</th>
+                      <th className="text-right pb-4 font-medium">Copy Margin Balance</th>
+                      <th className="text-right pb-4 font-medium">Total PNL</th>
+                      <th className="text-right pb-4 font-medium">Total ROI</th>
+                      <th className="text-right pb-4 font-medium">Duration</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {copyTraders.map((copyTrader, index) => (
+                      <tr
+                        key={copyTrader.id}
+                        className={`border-t border-[#1e2329] ${
+                          index % 2 === 0 ? 'bg-[#1e2329]/30' : ''
+                        }`}
+                      >
+                        <td className="py-4 text-white">{copyTrader.userId}</td>
+                        <td className="py-4 text-right text-white">
+                          {copyTrader.balance.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          })}{' '}
+                          USDT
+                        </td>
+                        <td className="py-4 text-right text-[#0ecb81]">
+                          +{copyTrader.pnl.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          })}{' '}
+                          USDT
+                        </td>
+                        <td className="py-4 text-right text-[#0ecb81]">
+                          +{copyTrader.roi.toFixed(2)}%
+                        </td>
+                        <td className="py-4 text-right text-white">
+                          {copyTrader.duration} Days
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="sm:hidden space-y-3">
+                {copyTraders.map((copyTrader) => (
+                  <div key={copyTrader.id} className="bg-[#1e2329] rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-white font-medium">{copyTrader.userId}</span>
+                      <span className="text-xs text-[#848e9c]">{copyTrader.duration} Days</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-sm">
+                      <div>
+                        <div className="text-[#848e9c] text-xs mb-1">Balance</div>
+                        <div className="text-white font-medium">{copyTrader.balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                      </div>
+                      <div>
+                        <div className="text-[#848e9c] text-xs mb-1">PNL</div>
+                        <div className="text-[#0ecb81] font-medium">+{copyTrader.pnl.toFixed(0)}</div>
+                      </div>
+                      <div>
+                        <div className="text-[#848e9c] text-xs mb-1">ROI</div>
+                        <div className="text-[#0ecb81] font-medium">+{copyTrader.roi.toFixed(1)}%</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
 
           {activeTab === 'positions' && (
@@ -631,8 +662,8 @@ export default function TraderProfile() {
                 <div className="space-y-3">
                   {openPositions.map((position) => (
                     <div key={position.id} className="bg-[#1e2329] rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
                           <span className="text-white font-medium">{position.symbol}</span>
                           <span className={`px-2 py-0.5 rounded text-xs ${
                             position.side === 'long'
@@ -643,16 +674,18 @@ export default function TraderProfile() {
                           </span>
                           <span className="text-[#848e9c] text-xs">{position.leverage}x</span>
                         </div>
-                        <div className="flex items-center gap-6 text-sm">
-                          <div className="text-[#848e9c]">
-                            Entry: <span className="text-white">${parseFloat(position.entry_price.toString()).toFixed(2)}</span>
-                          </div>
-                          <div className="text-[#848e9c]">
-                            Size: <span className="text-white">{parseFloat(position.quantity.toString()).toFixed(4)}</span>
-                          </div>
-                          <div className="text-[#848e9c]">
-                            Opened: <span className="text-white">{new Date(position.opened_at).toLocaleDateString()}</span>
-                          </div>
+                        <span className="text-xs text-[#848e9c]">
+                          {new Date(position.opened_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <div className="text-[#848e9c] text-xs mb-1">Entry</div>
+                          <div className="text-white font-medium">${parseFloat(position.entry_price.toString()).toFixed(2)}</div>
+                        </div>
+                        <div>
+                          <div className="text-[#848e9c] text-xs mb-1">Size</div>
+                          <div className="text-white font-medium truncate">{parseFloat(position.quantity.toString()).toLocaleString(undefined, { maximumFractionDigits: 4 })}</div>
                         </div>
                       </div>
                     </div>
@@ -682,8 +715,8 @@ export default function TraderProfile() {
 
                     return (
                       <div key={position.id} className="bg-[#1e2329] rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
                             <span className="text-white font-medium">{position.symbol}</span>
                             <span className={`px-2 py-0.5 rounded text-xs ${
                               position.side === 'long'
@@ -694,16 +727,18 @@ export default function TraderProfile() {
                             </span>
                             <span className="text-[#848e9c] text-xs">{position.leverage}x</span>
                           </div>
-                          <div className="flex items-center gap-6 text-sm">
-                            <div className="text-[#848e9c]">
-                              Entry: <span className="text-white">${parseFloat(position.entry_price.toString()).toFixed(2)}</span>
-                            </div>
-                            <div className="text-[#848e9c]">
-                              Exit: <span className="text-white">${position.exit_price ? parseFloat(position.exit_price.toString()).toFixed(2) : 'N/A'}</span>
-                            </div>
-                            <div className={isProfit ? 'text-[#0ecb81]' : 'text-[#f6465d]'}>
-                              PNL: {isProfit ? '+' : ''}{pnlPercent.toFixed(2)}%
-                            </div>
+                          <span className={`text-sm font-medium ${isProfit ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                            {isProfit ? '+' : ''}{pnlPercent.toFixed(2)}%
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <div className="text-[#848e9c] text-xs mb-1">Entry</div>
+                            <div className="text-white font-medium">${parseFloat(position.entry_price.toString()).toFixed(2)}</div>
+                          </div>
+                          <div>
+                            <div className="text-[#848e9c] text-xs mb-1">Exit</div>
+                            <div className="text-white font-medium">${position.exit_price ? parseFloat(position.exit_price.toString()).toFixed(2) : 'N/A'}</div>
                           </div>
                         </div>
                       </div>

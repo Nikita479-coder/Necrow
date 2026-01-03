@@ -130,6 +130,11 @@ export default function SecuritySettings() {
     setPasswordError('');
     setPasswordSuccess('');
 
+    if (!currentPassword) {
+      setPasswordError('Current password is required');
+      return;
+    }
+
     if (newPassword.length < 8) {
       setPasswordError('Password must be at least 8 characters long');
       return;
@@ -140,8 +145,24 @@ export default function SecuritySettings() {
       return;
     }
 
+    if (!user?.email) {
+      setPasswordError('Unable to verify identity. Please try again.');
+      return;
+    }
+
     setLoading(true);
     try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword
+      });
+
+      if (signInError) {
+        setPasswordError('Current password is incorrect');
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });

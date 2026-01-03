@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
-import { X, Edit2, FileText, Gift } from 'lucide-react';
+import { X, Edit2, FileText, Gift, ChevronLeft, ChevronRight } from 'lucide-react';
 import { usePrices } from '../../hooks/usePrices';
 import { useToast } from '../../hooks/useToast';
 import { ToastContainer } from '../Toast';
@@ -71,6 +71,9 @@ function FuturesPositionsPanel() {
   const [closingPosition, setClosingPosition] = useState<string | null>(null);
   const [tpslModal, setTpslModal] = useState<{ position: Position; mode: 'TP' | 'SL' } | null>(null);
   const [detailsModal, setDetailsModal] = useState<Position | null>(null);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const historyPerPage = 10;
 
   useEffect(() => {
     if (!user) return;
@@ -187,17 +190,29 @@ function FuturesPositionsPanel() {
     }
   };
 
-  const fetchHistory = async () => {
+  const fetchHistory = async (page: number = 1) => {
     if (!user) return;
 
     try {
+      const from = (page - 1) * historyPerPage;
+      const to = from + historyPerPage - 1;
+
+      const { count, error: countError } = await supabase
+        .from('futures_positions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .in('status', ['closed', 'liquidated']);
+
+      if (countError) throw countError;
+      setHistoryTotal(count || 0);
+
       const { data, error } = await supabase
         .from('futures_positions')
         .select('position_id, pair, side, entry_price, mark_price, quantity, leverage, realized_pnl, closed_at, margin_allocated, margin_from_locked_bonus, opened_at, cumulative_fees, status')
         .eq('user_id', user.id)
         .in('status', ['closed', 'liquidated'])
         .order('closed_at', { ascending: false })
-        .limit(50);
+        .range(from, to);
 
       if (error) throw error;
       setHistory(data || []);
@@ -205,6 +220,12 @@ function FuturesPositionsPanel() {
       console.error('Error fetching history:', error);
     }
   };
+
+  useEffect(() => {
+    if (user && activeTab === 'history') {
+      fetchHistory(historyPage);
+    }
+  }, [historyPage]);
 
   const handleClosePosition = async (positionId: string) => {
     setClosingPosition(positionId);
@@ -583,7 +604,9 @@ function FuturesPositionsPanel() {
   };
 
   const renderHistory = () => {
-    if (history.length === 0) {
+    const totalPages = Math.ceil(historyTotal / historyPerPage);
+
+    if (history.length === 0 && historyTotal === 0) {
       return (
         <div className="p-8 flex flex-col items-center justify-center text-center">
           <div className="w-16 h-16 mb-4 bg-gray-800 rounded-full flex items-center justify-center">
@@ -597,101 +620,154 @@ function FuturesPositionsPanel() {
     }
 
     return (
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="border-b border-gray-800">
-            <tr className="text-gray-400 text-xs">
-              <th className="text-left px-4 py-2 font-medium">Closed At</th>
-              <th className="text-left px-4 py-2 font-medium">Pair</th>
-              <th className="text-left px-4 py-2 font-medium">Side</th>
-              <th className="text-right px-4 py-2 font-medium">Entry</th>
-              <th className="text-right px-4 py-2 font-medium">Close</th>
-              <th className="text-right px-4 py-2 font-medium">Size</th>
-              <th className="text-center px-4 py-2 font-medium">Leverage</th>
-              <th className="text-right px-4 py-2 font-medium">Margin</th>
-              <th className="text-right px-4 py-2 font-medium">Fees</th>
-              <th className="text-right px-4 py-2 font-medium">Realized PnL</th>
-              <th className="text-center px-4 py-2 font-medium">Details</th>
-            </tr>
-          </thead>
-          <tbody>
-            {history.map((position) => {
-              const pnlColor = parseFloat(position.realized_pnl || 0) >= 0 ? 'text-green-500' : 'text-red-500';
-              const sideColor = position.side === 'long' ? 'text-green-500' : 'text-red-500';
-              const usedBonusMargin = parseFloat(position.margin_from_locked_bonus || 0) > 0;
-              const bonusMarginPercent = position.margin_allocated > 0
-                ? (parseFloat(position.margin_from_locked_bonus || 0) / parseFloat(position.margin_allocated || 1)) * 100
-                : 0;
+      <div className="flex flex-col h-full">
+        <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+          <table className="w-full text-sm">
+            <thead className="border-b border-gray-800 sticky top-0 bg-[#0b0e11] z-10">
+              <tr className="text-gray-400 text-xs">
+                <th className="text-left px-4 py-2 font-medium">Closed At</th>
+                <th className="text-left px-4 py-2 font-medium">Pair</th>
+                <th className="text-left px-4 py-2 font-medium">Side</th>
+                <th className="text-right px-4 py-2 font-medium">Entry</th>
+                <th className="text-right px-4 py-2 font-medium">Close</th>
+                <th className="text-right px-4 py-2 font-medium">Size</th>
+                <th className="text-center px-4 py-2 font-medium">Leverage</th>
+                <th className="text-right px-4 py-2 font-medium">Margin</th>
+                <th className="text-right px-4 py-2 font-medium">Fees</th>
+                <th className="text-right px-4 py-2 font-medium">Realized PnL</th>
+                <th className="text-center px-4 py-2 font-medium">Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {history.map((position) => {
+                const pnlColor = parseFloat(position.realized_pnl || 0) >= 0 ? 'text-green-500' : 'text-red-500';
+                const sideColor = position.side === 'long' ? 'text-green-500' : 'text-red-500';
+                const usedBonusMargin = parseFloat(position.margin_from_locked_bonus || 0) > 0;
+                const bonusMarginPercent = position.margin_allocated > 0
+                  ? (parseFloat(position.margin_from_locked_bonus || 0) / parseFloat(position.margin_allocated || 1)) * 100
+                  : 0;
 
-              return (
-                <tr key={position.position_id} className="border-b border-gray-800 hover:bg-gray-900/30">
-                  <td className="px-4 py-3 text-gray-400 text-xs">
-                    <div>{new Date(position.closed_at).toLocaleDateString()}</div>
-                    <div className="text-gray-500">{new Date(position.closed_at).toLocaleTimeString()}</div>
-                  </td>
-                  <td className="px-4 py-3 text-white font-medium">
-                    <div className="flex items-center gap-2">
-                      {position.pair}
-                      {position.status === 'liquidated' && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-500/20 text-red-400 rounded text-[10px] font-bold" title="Position was liquidated">
-                          LIQ
-                        </span>
-                      )}
-                      {usedBonusMargin && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/10 text-amber-500 rounded text-[10px] font-medium" title="Bonus margin used">
-                          <Gift className="w-3 h-3" />
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className={`px-4 py-3 font-semibold ${sideColor}`}>
-                    {position.side.toUpperCase()}
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-300">
-                    ${parseFloat(position.entry_price || 0).toFixed(2)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-300">
-                    ${parseFloat(position.mark_price || position.entry_price || 0).toFixed(2)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-300">
-                    {parseFloat(position.quantity || 0).toFixed(4)}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <span className="px-2 py-1 bg-[#f0b90b]/10 text-[#f0b90b] rounded text-xs font-semibold">
-                      {position.leverage}x
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="text-gray-300">${parseFloat(position.margin_allocated || 0).toFixed(2)}</div>
-                    {usedBonusMargin && (
-                      <div className="text-amber-500 text-xs flex items-center justify-end gap-1">
-                        <Gift className="w-3 h-3" />
-                        <span>${parseFloat(position.margin_from_locked_bonus || 0).toFixed(2)}</span>
-                        <span className="text-gray-500">({bonusMarginPercent.toFixed(0)}%)</span>
+                return (
+                  <tr key={position.position_id} className="border-b border-gray-800 hover:bg-gray-900/30">
+                    <td className="px-4 py-3 text-gray-400 text-xs">
+                      <div>{new Date(position.closed_at).toLocaleDateString()}</div>
+                      <div className="text-gray-500">{new Date(position.closed_at).toLocaleTimeString()}</div>
+                    </td>
+                    <td className="px-4 py-3 text-white font-medium">
+                      <div className="flex items-center gap-2">
+                        {position.pair}
+                        {position.status === 'liquidated' && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-500/20 text-red-400 rounded text-[10px] font-bold" title="Position was liquidated">
+                            LIQ
+                          </span>
+                        )}
+                        {usedBonusMargin && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/10 text-amber-500 rounded text-[10px] font-medium" title="Bonus margin used">
+                            <Gift className="w-3 h-3" />
+                          </span>
+                        )}
                       </div>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right text-orange-400">
-                    -${parseFloat(position.cumulative_fees || 0).toFixed(2)}
-                  </td>
-                  <td className={`px-4 py-3 text-right font-semibold ${pnlColor}`}>
-                    {parseFloat(position.realized_pnl || 0) >= 0 ? '+' : ''}
-                    ${parseFloat(position.realized_pnl || 0).toFixed(2)}
-                  </td>
-                  <td className="px-4 py-3 text-center">
+                    </td>
+                    <td className={`px-4 py-3 font-semibold ${sideColor}`}>
+                      {position.side.toUpperCase()}
+                    </td>
+                    <td className="px-4 py-3 text-right text-gray-300">
+                      ${parseFloat(position.entry_price || 0).toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-gray-300">
+                      ${parseFloat(position.mark_price || position.entry_price || 0).toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-gray-300">
+                      {parseFloat(position.quantity || 0).toFixed(4)}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className="px-2 py-1 bg-[#f0b90b]/10 text-[#f0b90b] rounded text-xs font-semibold">
+                        {position.leverage}x
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="text-gray-300">${parseFloat(position.margin_allocated || 0).toFixed(2)}</div>
+                      {usedBonusMargin && (
+                        <div className="text-amber-500 text-xs flex items-center justify-end gap-1">
+                          <Gift className="w-3 h-3" />
+                          <span>${parseFloat(position.margin_from_locked_bonus || 0).toFixed(2)}</span>
+                          <span className="text-gray-500">({bonusMarginPercent.toFixed(0)}%)</span>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right text-orange-400">
+                      -${parseFloat(position.cumulative_fees || 0).toFixed(2)}
+                    </td>
+                    <td className={`px-4 py-3 text-right font-semibold ${pnlColor}`}>
+                      {parseFloat(position.realized_pnl || 0) >= 0 ? '+' : ''}
+                      ${parseFloat(position.realized_pnl || 0).toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        onClick={() => setDetailsModal(position)}
+                        className="p-2 bg-gray-700/50 hover:bg-gray-700 text-gray-300 rounded transition-colors"
+                        title="View Details"
+                      >
+                        <FileText className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-800 bg-[#0b0e11] flex-shrink-0">
+            <div className="text-sm text-gray-400">
+              Showing {((historyPage - 1) * historyPerPage) + 1}-{Math.min(historyPage * historyPerPage, historyTotal)} of {historyTotal} positions
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
+                disabled={historyPage === 1}
+                className="p-2 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 disabled:text-gray-600 text-gray-300 rounded transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum: number;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (historyPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (historyPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = historyPage - 2 + i;
+                  }
+                  return (
                     <button
-                      onClick={() => setDetailsModal(position)}
-                      className="p-2 bg-gray-700/50 hover:bg-gray-700 text-gray-300 rounded transition-colors"
-                      title="View Details"
+                      key={pageNum}
+                      onClick={() => setHistoryPage(pageNum)}
+                      className={`w-8 h-8 rounded text-sm font-medium transition-colors ${
+                        historyPage === pageNum
+                          ? 'bg-[#f0b90b] text-[#0b0e11]'
+                          : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+                      }`}
                     >
-                      <FileText className="w-4 h-4" />
+                      {pageNum}
                     </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  );
+                })}
+              </div>
+              <button
+                onClick={() => setHistoryPage(p => Math.min(totalPages, p + 1))}
+                disabled={historyPage === totalPages}
+                className="p-2 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 disabled:text-gray-600 text-gray-300 rounded transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -707,8 +783,8 @@ function FuturesPositionsPanel() {
   return (
     <>
       <ToastContainer toasts={toasts} removeToast={removeToast} />
-      <div className="bg-[#0b0e11] border-t border-gray-800 overflow-hidden flex flex-col">
-        <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
+      <div className="bg-[#0b0e11] border-t border-gray-800 flex flex-col h-full">
+        <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-6">
             <button
               onClick={() => setActiveTab('positions')}
@@ -752,7 +828,7 @@ function FuturesPositionsPanel() {
           )}
         </div>
 
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto min-h-0">
         {activeTab === 'positions' && renderPositions()}
         {activeTab === 'orders' && renderOrders()}
         {activeTab === 'history' && renderHistory()}
