@@ -19,6 +19,8 @@ interface UserSummary {
   vip_tier?: string;
   is_online?: boolean;
   last_activity?: string;
+  has_referrer?: boolean;
+  referral_count?: number;
 }
 
 export default function AdminDashboard() {
@@ -44,6 +46,7 @@ export default function AdminDashboard() {
   const [filterBalance, setFilterBalance] = useState<string>('all');
   const [filterPositions, setFilterPositions] = useState<string>('all');
   const [filterOnlineStatus, setFilterOnlineStatus] = useState<string>('all');
+  const [filterReferralStatus, setFilterReferralStatus] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('newest');
 
   const [loginAsModal, setLoginAsModal] = useState<{
@@ -86,6 +89,14 @@ export default function AdminDashboard() {
 
   const broadcastTemplates = [
     {
+      id: 'first_deposit_bonus',
+      name: '100% Deposit Bonus',
+      title: 'Get 100% Bonus on Your Deposit!',
+      message: 'Deposit now and get a 100% bonus match up to $500 USD! Double your trading power and maximize your potential profits. Limited time offer - deposit today!',
+      notificationType: 'reward',
+      redirectUrl: 'deposit',
+    },
+    {
       id: 'referral_reward',
       name: 'Referral Reward Reminder',
       title: 'Earn 20 USDT - Refer a Friend Today!',
@@ -94,20 +105,52 @@ export default function AdminDashboard() {
       redirectUrl: 'referral',
     },
     {
-      id: 'first_deposit_bonus',
-      name: 'First Deposit Bonus',
-      title: 'Claim Your First Deposit Bonus!',
-      message: 'Make your first deposit today and receive an exclusive welcome bonus. Start trading with extra funds!',
+      id: 'copy_trading_promo',
+      name: 'Copy Trading Promotion',
+      title: 'Start Copy Trading Today!',
+      message: 'Follow top traders and automatically copy their trades. Let the experts work for you while you earn!',
+      notificationType: 'reward',
+      redirectUrl: 'copytrading',
+    },
+    {
+      id: 'vip_upgrade',
+      name: 'VIP Benefits Reminder',
+      title: 'Unlock VIP Trading Benefits!',
+      message: 'Increase your trading volume to unlock VIP status! Enjoy lower fees, higher rebates, and exclusive perks. Check your VIP progress now.',
+      notificationType: 'reward',
+      redirectUrl: 'vip',
+    },
+    {
+      id: 'market_opportunity',
+      name: 'Market Opportunity Alert',
+      title: 'Market Volatility = Trading Opportunity!',
+      message: 'Markets are moving! High volatility periods offer exceptional trading opportunities. Open positions now and capitalize on price swings.',
+      notificationType: 'system',
+      redirectUrl: 'futures',
+    },
+    {
+      id: 'kyc_reminder',
+      name: 'KYC Verification Reminder',
+      title: 'Complete Your Verification',
+      message: 'Verify your identity to unlock full platform features including higher withdrawal limits and exclusive bonuses. Takes less than 5 minutes!',
+      notificationType: 'system',
+      redirectUrl: 'kyc',
+    },
+    {
+      id: 'inactive_user',
+      name: 'We Miss You!',
+      title: 'Welcome Back - Special Offer Inside!',
+      message: 'We noticed you have been away. Come back and trade today - the markets are waiting for you! Check out our latest promotions.',
       notificationType: 'reward',
       redirectUrl: 'deposit',
     },
     {
-      id: 'copy_trading_promo',
-      name: 'Copy Trading Promotion',
-      title: 'Start Copy Trading Today!',
-      message: 'Follow top traders and automatically copy their trades. Let the experts work for you!',
-      notificationType: 'reward',
-      redirectUrl: 'copytrading',
+      id: 'new_feature',
+      name: 'New Feature Announcement',
+      title: 'New Features Available!',
+      message: 'We have added exciting new features to improve your trading experience. Explore the latest updates and enhancements now!',
+      notificationType: 'system',
+      redirectUrl: 'futures',
     },
   ];
 
@@ -160,6 +203,41 @@ export default function AdminDashboard() {
     };
   }, [hasAccess]);
 
+  useEffect(() => {
+    if (!hasAccess) return;
+
+    const refreshOnlineStatus = async () => {
+      try {
+        const { data: sessions } = await supabase
+          .from('user_sessions')
+          .select('user_id, is_online, last_activity, heartbeat');
+
+        if (sessions) {
+          const now = Date.now();
+          const sessionsMap = new Map(
+            sessions.map(s => {
+              const heartbeat = new Date(s.heartbeat || s.last_activity).getTime();
+              const isOnline = s.is_online && (now - heartbeat) < 2 * 60 * 1000;
+              return [s.user_id, { is_online: isOnline, last_activity: s.last_activity }];
+            })
+          );
+
+          setUsers(prevUsers => prevUsers.map(user => ({
+            ...user,
+            is_online: sessionsMap.get(user.id)?.is_online || false,
+            last_activity: sessionsMap.get(user.id)?.last_activity || user.last_activity,
+          })));
+        }
+      } catch (error) {
+        console.error('Failed to refresh online status:', error);
+      }
+    };
+
+    const interval = setInterval(refreshOnlineStatus, 15000);
+
+    return () => clearInterval(interval);
+  }, [hasAccess]);
+
   const checkAccess = async () => {
     if (authLoading) return;
 
@@ -196,28 +274,27 @@ export default function AdminDashboard() {
     }
 
     try {
-      const { data: usersData, error } = await supabase.rpc('get_admin_users_list');
+      const [usersResult, sessionsResult] = await Promise.all([
+        supabase.rpc('get_admin_users_list'),
+        supabase.from('user_sessions').select('user_id, is_online, last_activity, heartbeat')
+      ]);
 
-      if (error || !usersData) {
-        console.error('Error loading users with RPC:', error);
+      if (usersResult.error || !usersResult.data) {
+        console.error('Error loading users with RPC:', usersResult.error);
         await loadUsersDirectly();
         return;
       }
 
-      const { data: sessions } = await supabase
-        .from('user_sessions')
-        .select('user_id, is_online, last_activity, heartbeat');
-
+      const now = Date.now();
       const sessionsMap = new Map(
-        sessions?.map(s => {
-          const heartbeat = new Date(s.heartbeat || s.last_activity);
-          const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
-          const isOnline = s.is_online && heartbeat > twoMinutesAgo;
+        sessionsResult.data?.map(s => {
+          const heartbeat = new Date(s.heartbeat || s.last_activity).getTime();
+          const isOnline = s.is_online && (now - heartbeat) < 2 * 60 * 1000;
           return [s.user_id, { is_online: isOnline, last_activity: s.last_activity }];
         }) || []
       );
 
-      const usersWithOnlineStatus = usersData.map(u => ({
+      const usersWithOnlineStatus = usersResult.data.map(u => ({
         ...u,
         is_online: sessionsMap.get(u.id)?.is_online || false,
         last_activity: sessionsMap.get(u.id)?.last_activity,
@@ -239,67 +316,70 @@ export default function AdminDashboard() {
         full_name,
         kyc_status,
         kyc_level,
-        created_at
+        created_at,
+        referred_by
       `)
       .order('created_at', { ascending: false });
 
     if (!profiles) return;
 
-    const usersWithData = await Promise.all(
-      profiles.map(async (profile) => {
-        let email = 'N/A';
-        try {
-          const { data: emails } = await supabase
-            .rpc('get_user_email', { user_id: profile.id });
-          email = emails || 'N/A';
-        } catch {
-          email = 'N/A';
-        }
+    const [walletsRes, positionsRes, vipRes, referralRes, sessionsRes] = await Promise.all([
+      supabase.from('wallets').select('user_id, balance'),
+      supabase.from('futures_positions').select('user_id, unrealized_pnl').eq('status', 'open'),
+      supabase.from('user_vip_status').select('user_id, current_level'),
+      supabase.from('referral_stats').select('user_id, total_referrals'),
+      supabase.from('user_sessions').select('user_id, is_online, last_activity, heartbeat')
+    ]);
 
-        const { data: wallets } = await supabase
-          .from('wallets')
-          .select('balance')
-          .eq('user_id', profile.id)
-          .eq('currency', 'USDT');
+    const walletMap = new Map<string, number>();
+    walletsRes.data?.forEach(w => {
+      const current = walletMap.get(w.user_id) || 0;
+      walletMap.set(w.user_id, current + parseFloat(w.balance || '0'));
+    });
 
-        const totalBalance = wallets?.reduce((sum, w) => sum + parseFloat(w.balance || '0'), 0) || 0;
+    const positionMap = new Map<string, { count: number; pnl: number }>();
+    positionsRes.data?.forEach(p => {
+      const current = positionMap.get(p.user_id) || { count: 0, pnl: 0 };
+      positionMap.set(p.user_id, {
+        count: current.count + 1,
+        pnl: current.pnl + parseFloat(p.unrealized_pnl || '0')
+      });
+    });
 
-        const { count: positionsCount } = await supabase
-          .from('futures_positions')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', profile.id)
-          .eq('status', 'open');
+    const vipMap = new Map(vipRes.data?.map(v => [v.user_id, v.current_level]) || []);
+    const referralMap = new Map(referralRes.data?.map(r => [r.user_id, r.total_referrals]) || []);
 
-        const { data: positions } = await supabase
-          .from('futures_positions')
-          .select('unrealized_pnl')
-          .eq('user_id', profile.id)
-          .eq('status', 'open');
-
-        const unrealizedPnl = positions?.reduce((sum, p) => sum + parseFloat(p.unrealized_pnl || '0'), 0) || 0;
-
-        // Get VIP tier
-        const { data: vipData } = await supabase
-          .from('user_vip_status')
-          .select('current_level')
-          .eq('user_id', profile.id)
-          .maybeSingle();
-
-        return {
-          id: profile.id,
-          email,
-          username: profile.username,
-          full_name: profile.full_name,
-          kyc_status: profile.kyc_status,
-          kyc_level: profile.kyc_level,
-          created_at: profile.created_at,
-          total_balance: totalBalance,
-          open_positions: positionsCount || 0,
-          unrealized_pnl: unrealizedPnl,
-          vip_tier: vipData?.current_level || 'None'
-        };
-      })
+    const now = Date.now();
+    const sessionsMap = new Map(
+      sessionsRes.data?.map(s => {
+        const heartbeat = new Date(s.heartbeat || s.last_activity).getTime();
+        const isOnline = s.is_online && (now - heartbeat) < 2 * 60 * 1000;
+        return [s.user_id, { is_online: isOnline, last_activity: s.last_activity }];
+      }) || []
     );
+
+    const emailMap = new Map<string, string>();
+    const userIds = profiles.map(p => p.id);
+    const { data: emailsData } = await supabase.rpc('get_user_emails_bulk', { user_ids: userIds });
+    emailsData?.forEach((e: { user_id: string; email: string }) => emailMap.set(e.user_id, e.email || 'N/A'));
+
+    const usersWithData = profiles.map(profile => ({
+      id: profile.id,
+      email: emailMap.get(profile.id) || 'N/A',
+      username: profile.username,
+      full_name: profile.full_name,
+      kyc_status: profile.kyc_status,
+      kyc_level: profile.kyc_level,
+      created_at: profile.created_at,
+      total_balance: walletMap.get(profile.id) || 0,
+      open_positions: positionMap.get(profile.id)?.count || 0,
+      unrealized_pnl: positionMap.get(profile.id)?.pnl || 0,
+      vip_tier: vipMap.get(profile.id) || 'None',
+      has_referrer: !!profile.referred_by,
+      referral_count: referralMap.get(profile.id) || 0,
+      is_online: sessionsMap.get(profile.id)?.is_online || false,
+      last_activity: sessionsMap.get(profile.id)?.last_activity
+    }));
 
     setUsers(usersWithData);
   };
@@ -360,6 +440,12 @@ export default function AdminDashboard() {
       if (filterOnlineStatus === 'online' && !u.is_online) return false;
       if (filterOnlineStatus === 'offline' && u.is_online) return false;
 
+      // Referral status filter
+      if (filterReferralStatus === 'no_referrer' && u.has_referrer) return false;
+      if (filterReferralStatus === 'has_referrer' && !u.has_referrer) return false;
+      if (filterReferralStatus === 'has_referrals' && (u.referral_count || 0) === 0) return false;
+      if (filterReferralStatus === 'no_referrals' && (u.referral_count || 0) > 0) return false;
+
       return true;
     })
     .sort((a, b) => {
@@ -397,7 +483,7 @@ export default function AdminDashboard() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(0);
-  }, [searchTerm, filterVipTier, filterKycStatus, filterBalance, filterPositions, filterOnlineStatus, sortBy]);
+  }, [searchTerm, filterVipTier, filterKycStatus, filterBalance, filterPositions, filterOnlineStatus, filterReferralStatus, sortBy]);
 
   const clearFilters = () => {
     setFilterVipTier('all');
@@ -405,6 +491,7 @@ export default function AdminDashboard() {
     setFilterBalance('all');
     setFilterPositions('all');
     setFilterOnlineStatus('all');
+    setFilterReferralStatus('all');
     setSortBy('newest');
   };
 
@@ -414,6 +501,7 @@ export default function AdminDashboard() {
     filterBalance !== 'all',
     filterPositions !== 'all',
     filterOnlineStatus !== 'all',
+    filterReferralStatus !== 'all',
     sortBy !== 'newest'
   ].filter(Boolean).length;
 
@@ -967,6 +1055,22 @@ export default function AdminDashboard() {
                         <option value="all">All Users</option>
                         <option value="online">Online Only</option>
                         <option value="offline">Offline Only</option>
+                      </select>
+                    </div>
+
+                    {/* Referral Status Filter */}
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-2">Referral Status</label>
+                      <select
+                        value={filterReferralStatus}
+                        onChange={(e) => setFilterReferralStatus(e.target.value)}
+                        className="w-full bg-[#1a1d24] border border-gray-700 rounded-lg px-3 py-2 text-white outline-none focus:border-[#f0b90b] transition-colors"
+                      >
+                        <option value="all">All Users</option>
+                        <option value="no_referrer">No Referrer (Organic)</option>
+                        <option value="has_referrer">Has Referrer</option>
+                        <option value="has_referrals">Has Referred Others</option>
+                        <option value="no_referrals">Has Not Referred Anyone</option>
                       </select>
                     </div>
 

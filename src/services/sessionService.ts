@@ -20,7 +20,7 @@ class SessionService {
 
     this.updateInterval = setInterval(() => {
       this.updateSession(true);
-    }, 30000); // Update every 30 seconds for better real-time accuracy
+    }, 15000); // Update every 15 seconds for real-time accuracy
 
     this.setupRealtimeSubscription();
 

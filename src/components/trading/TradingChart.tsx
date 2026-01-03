@@ -120,7 +120,6 @@ const TradingChart: React.FC<TradingChartProps> = ({ pair }) => {
 
       try {
         const tradingViewSymbol = formatSymbolForTradingView(pair);
-        console.log('Creating TradingView widget for symbol:', tradingViewSymbol);
 
         widgetRef.current = new window.TradingView.widget({
           width: '100%',
@@ -170,7 +169,6 @@ const TradingChart: React.FC<TradingChartProps> = ({ pair }) => {
             'volume.volume.transparency': 65,
           },
           onChartReady: () => {
-            console.log('TradingView chart ready for', pair);
             setIsLoading(false);
           },
           onLoadError: (error: any) => {
@@ -181,7 +179,6 @@ const TradingChart: React.FC<TradingChartProps> = ({ pair }) => {
         });
 
         const fallbackTimeout = setTimeout(() => {
-          console.log('TradingView chart fallback timeout - hiding loading state');
           setIsLoading(false);
         }, 2000);
 
@@ -203,7 +200,6 @@ const TradingChart: React.FC<TradingChartProps> = ({ pair }) => {
       script.async = true;
 
       script.onload = () => {
-        console.log('TradingView library loaded');
         loadTradingViewWidget();
       };
 

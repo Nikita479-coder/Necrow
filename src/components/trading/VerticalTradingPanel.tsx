@@ -132,7 +132,6 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
       const { data, error } = await supabase.rpc('get_wallet_balances', {
         p_user_id: user.id
       });
-      console.log('Balance Data:', data);
       if (!error && data) {
         // Updated to match new data structure from get_wallet_balances
         const available = parseFloat(data.futures?.available_balance || 0);
@@ -140,7 +139,6 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
         const totalAvailable = parseFloat(data.total_trading_available || 0);
         const totalEquity = parseFloat(data.futures?.total_equity || 0);
 
-        console.log('Setting balances - Available:', available, 'Locked Bonus:', lockedBonus, 'Total:', totalAvailable);
         setFuturesBalance(totalEquity);
         setAvailableMargin(totalAvailable); // Use total_trading_available which includes locked bonus
       } else {
@@ -314,6 +312,7 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
 
     try {
       const quantity = getSizeInBaseCurrency();
+      const requiredMargin = getRequiredMargin();
 
       const tpValue = enableTPSL && takeProfitPrice ? parseFloat(takeProfitPrice) : null;
       const slValue = enableTPSL && stopLossPrice ? parseFloat(stopLossPrice) : null;
@@ -325,14 +324,13 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
         p_pair: pair,
         p_side: orderSide,
         p_order_type: 'market',
-        p_quantity: quantity,
         p_leverage: leverage,
-        p_margin_mode: 'cross',
-        p_price: null,
-        p_stop_loss: slValue,
+        p_margin: requiredMargin,
+        p_quantity: quantity,
+        p_limit_price: null,
         p_take_profit: tpValue,
-        p_reduce_only: false,
-        p_market_price: currentMarketPrice
+        p_stop_loss: slValue,
+        p_current_price: currentMarketPrice
       });
 
       if (error) throw error;
