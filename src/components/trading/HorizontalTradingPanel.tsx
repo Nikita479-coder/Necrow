@@ -220,14 +220,13 @@ function HorizontalTradingPanel({ pair }: HorizontalTradingPanelProps) {
         p_pair: pair,
         p_side: orderSide,
         p_order_type: 'market',
-        p_quantity: quantity,
         p_leverage: leverage,
-        p_margin_mode: marginMode.toLowerCase(),
-        p_price: null,
-        p_stop_loss: slPrice,
+        p_margin: requiredMargin,
+        p_quantity: quantity,
+        p_limit_price: null,
         p_take_profit: tpPrice,
-        p_reduce_only: false,
-        p_market_price: currentMarketPrice
+        p_stop_loss: slPrice,
+        p_current_price: currentMarketPrice
       });
 
       if (error) {

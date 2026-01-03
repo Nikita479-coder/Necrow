@@ -31,7 +31,8 @@ function RewardsHub() {
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
   const [copyTradingBalance, setCopyTradingBalance] = useState(0);
-  const [tasks] = useState<Task[]>([
+  const [userCountry, setUserCountry] = useState<string | null>(null);
+  const [allTasks] = useState<Task[]>([
     {
       id: 'volume_25k',
       title: 'Trading Volume Milestone',
@@ -144,6 +145,17 @@ function RewardsHub() {
     if (!user) return;
 
     try {
+      // Get user's country
+      const { data: profileData } = await supabase
+        .from('user_profiles')
+        .select('country')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileData) {
+        setUserCountry(profileData.country);
+      }
+
       const { data: statsData, error: statsError } = await supabase
         .from('referral_stats')
         .select('*')
@@ -441,6 +453,16 @@ function RewardsHub() {
       setTimeout(() => setNotification(null), 3000);
     }
   };
+
+  // Filter tasks based on geographic restrictions
+  const allowedCountries = ['IN', 'PK', 'BD', 'ID', 'MY', 'TH', 'VN', 'PH', 'LK', 'NP'];
+  const tasks = allTasks.filter(task => {
+    // Filter out Trustpilot Review if user is not from allowed countries
+    if (task.id === 'trustpilot_review') {
+      return userCountry && allowedCountries.includes(userCountry);
+    }
+    return true;
+  });
 
   const completedTasks = tasks.filter(task => {
     let progress = 0;

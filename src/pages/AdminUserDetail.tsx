@@ -291,7 +291,7 @@ export default function AdminUserDetail() {
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <h1 className="text-2xl font-bold text-white">{userData.profile?.username || 'No Username'}</h1>
+                    <h1 className="text-2xl font-bold text-white">{userData.profile?.full_name || userData.profile?.username || 'No Username'}</h1>
                     {hasPermission('view_activity') && (
                       <div className="flex items-center gap-2">
                         <div className={`w-3 h-3 rounded-full ${isOnline ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`}></div>
@@ -301,7 +301,7 @@ export default function AdminUserDetail() {
                       </div>
                     )}
                   </div>
-                  <p className="text-gray-400">{userData.authUser?.email || 'Email not available'}</p>
+                  <p className="text-gray-400">{userData.userEmail || 'Email not available'}</p>
                   <div className="flex items-center gap-3 mt-1">
                     <p className="text-sm text-gray-500">User ID: {userId}</p>
                     {hasPermission('view_activity') && lastActivity && (

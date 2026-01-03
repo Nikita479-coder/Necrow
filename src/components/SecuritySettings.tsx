@@ -18,7 +18,7 @@ interface VerifiedIP {
 }
 
 export default function SecuritySettings() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const verificationInputRef = useRef<HTMLInputElement>(null);
 
@@ -33,6 +33,8 @@ export default function SecuritySettings() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [needsMfaForPassword, setNeedsMfaForPassword] = useState(false);
+  const [passwordMfaCode, setPasswordMfaCode] = useState('');
 
   const [mfaEnabled, setMfaEnabled] = useState(false);
   const [mfaEnrolling, setMfaEnrolling] = useState(false);
@@ -145,7 +147,8 @@ export default function SecuritySettings() {
       return;
     }
 
-    if (!user?.email) {
+    const userEmail = user?.email || profile?.email;
+    if (!userEmail) {
       setPasswordError('Unable to verify identity. Please try again.');
       return;
     }
@@ -153,7 +156,7 @@ export default function SecuritySettings() {
     setLoading(true);
     try {
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email,
+        email: userEmail,
         password: currentPassword
       });
 
@@ -161,6 +164,42 @@ export default function SecuritySettings() {
         setPasswordError('Current password is incorrect');
         setLoading(false);
         return;
+      }
+
+      if (mfaEnabled && !needsMfaForPassword) {
+        setNeedsMfaForPassword(true);
+        setLoading(false);
+        return;
+      }
+
+      if (mfaEnabled && needsMfaForPassword) {
+        if (!passwordMfaCode || passwordMfaCode.length !== 6) {
+          setPasswordError('Please enter a valid 6-digit 2FA code');
+          setLoading(false);
+          return;
+        }
+
+        const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+          factorId: mfaFactorId
+        });
+
+        if (challengeError) {
+          setPasswordError('Failed to initiate 2FA verification. Please try again.');
+          setLoading(false);
+          return;
+        }
+
+        const { error: verifyError } = await supabase.auth.mfa.verify({
+          factorId: mfaFactorId,
+          challengeId: challengeData.id,
+          code: passwordMfaCode
+        });
+
+        if (verifyError) {
+          setPasswordError('Invalid 2FA code. Please try again.');
+          setLoading(false);
+          return;
+        }
       }
 
       const { error } = await supabase.auth.updateUser({
@@ -173,6 +212,8 @@ export default function SecuritySettings() {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      setNeedsMfaForPassword(false);
+      setPasswordMfaCode('');
 
       setTimeout(() => setPasswordSuccess(''), 3000);
     } catch (error: any) {
@@ -358,6 +399,13 @@ export default function SecuritySettings() {
           </div>
         )}
 
+        {mfaEnabled && (
+          <div className="mb-4 p-4 bg-amber-500/20 border border-amber-500/50 rounded-lg flex items-center gap-2 text-amber-400">
+            <Shield className="w-5 h-5" />
+            <span>2FA verification is required to change your password.</span>
+          </div>
+        )}
+
         <form onSubmit={handlePasswordChange} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-2">
@@ -432,13 +480,50 @@ export default function SecuritySettings() {
             </div>
           </div>
 
+          {needsMfaForPassword && (
+            <div className="p-4 bg-[#0b0e11] border border-[#f0b90b]/50 rounded-lg">
+              <div className="flex items-center gap-2 mb-3">
+                <Smartphone className="w-5 h-5 text-[#f0b90b]" />
+                <label className="text-sm font-medium text-white">
+                  Enter 2FA Code from Authenticator App
+                </label>
+              </div>
+              <input
+                type="text"
+                value={passwordMfaCode}
+                onChange={(e) => setPasswordMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                className="w-full bg-[#181a20] border border-gray-700 rounded-lg px-4 py-3 text-white text-center text-xl tracking-widest outline-none focus:border-[#f0b90b] font-mono"
+                placeholder="000000"
+                maxLength={6}
+                autoComplete="off"
+              />
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                Open your authenticator app and enter the 6-digit code
+              </p>
+            </div>
+          )}
+
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (needsMfaForPassword && passwordMfaCode.length !== 6)}
             className="w-full bg-[#f0b90b] hover:bg-[#f8d12f] text-black font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Updating...' : 'Update Password'}
+            {loading ? 'Updating...' : needsMfaForPassword ? 'Verify & Update Password' : 'Update Password'}
           </button>
+
+          {needsMfaForPassword && (
+            <button
+              type="button"
+              onClick={() => {
+                setNeedsMfaForPassword(false);
+                setPasswordMfaCode('');
+                setPasswordError('');
+              }}
+              className="w-full bg-[#2b3139] hover:bg-[#3b4149] text-white font-semibold py-3 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+          )}
         </form>
       </div>
 

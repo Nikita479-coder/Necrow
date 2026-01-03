@@ -198,33 +198,11 @@ export default function AdminKYC() {
         return;
       }
 
-      if (verified) {
-        const { data: userDocs } = await supabase
-          .from('kyc_documents')
-          .select('id, document_type, verified')
-          .eq('user_id', doc.user_id);
+      // The database trigger will automatically upgrade KYC levels
+      // Level 2: ID document verified
+      // Level 3: ID document + selfie verified
 
-        const verifiedDocs = userDocs?.filter(d =>
-          d.verified && d.document_type !== 'face_verification'
-        ) || [];
-
-        if (verifiedDocs.length >= 2) {
-          const { error: profileError } = await supabase
-            .from('user_profiles')
-            .update({
-              kyc_level: 2,
-              kyc_status: 'verified',
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', doc.user_id);
-
-          if (profileError) {
-            console.error('Error updating user profile:', profileError);
-          } else {
-            console.log('User upgraded to KYC level 2');
-          }
-        }
-      } else {
+      if (!verified) {
         const { error: profileError } = await supabase
           .from('user_profiles')
           .update({
