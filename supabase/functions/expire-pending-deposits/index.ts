@@ -19,7 +19,7 @@ Deno.serve(async (req: Request) => {
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    const pendingStatuses = ['waiting', 'confirming', 'confirmed', 'sending', 'partially_paid'];
+    const pendingStatuses = ['waiting', 'confirming', 'confirmed', 'sending'];
     
     const { data: expiredDeposits, error: fetchError } = await supabase
       .from('crypto_deposits')

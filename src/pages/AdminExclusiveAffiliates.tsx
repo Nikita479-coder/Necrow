@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import {
   ArrowLeft,
   Users,
-  Plus,
   Crown,
   DollarSign,
   TrendingUp,
@@ -16,7 +15,11 @@ import {
   Clock,
   AlertCircle,
   Gift,
-  Percent
+  Percent,
+  Network,
+  X,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -73,6 +76,31 @@ interface Withdrawal {
   rejection_reason: string | null;
 }
 
+interface NetworkStats {
+  level_1_count: number;
+  level_2_count: number;
+  level_3_count: number;
+  level_4_count: number;
+  level_5_count: number;
+  level_1_earnings: number;
+  level_2_earnings: number;
+  level_3_earnings: number;
+  level_4_earnings: number;
+  level_5_earnings: number;
+}
+
+interface NetworkMember {
+  user_id: string;
+  email: string;
+  full_name: string | null;
+  username: string | null;
+  level: number;
+  registered_at: string;
+  total_deposits: number;
+  trading_volume: number;
+  eligible: boolean;
+}
+
 export default function AdminExclusiveAffiliates() {
   const { user, profile } = useAuth();
   const { navigateTo } = useNavigation();
@@ -95,6 +123,14 @@ export default function AdminExclusiveAffiliates() {
 
   const [depositRates, setDepositRates] = useState({ level_1: 5, level_2: 4, level_3: 3, level_4: 2, level_5: 1 });
   const [feeRates, setFeeRates] = useState({ level_1: 50, level_2: 40, level_3: 30, level_4: 20, level_5: 10 });
+
+  const [showNetworkModal, setShowNetworkModal] = useState(false);
+  const [selectedAffiliateForNetwork, setSelectedAffiliateForNetwork] = useState<ExclusiveAffiliate | null>(null);
+  const [networkStats, setNetworkStats] = useState<NetworkStats | null>(null);
+  const [networkMembers, setNetworkMembers] = useState<NetworkMember[]>([]);
+  const [loadingNetwork, setLoadingNetwork] = useState(false);
+  const [expandedLevels, setExpandedLevels] = useState<Set<number>>(new Set([1]));
+  const [showAllReferrals, setShowAllReferrals] = useState(false);
 
   useEffect(() => {
     if (!profile?.is_admin) {
@@ -201,6 +237,69 @@ export default function AdminExclusiveAffiliates() {
       setProcessingWithdrawal(false);
     }
   };
+
+  const handleViewNetwork = async (affiliate: ExclusiveAffiliate) => {
+    setSelectedAffiliateForNetwork(affiliate);
+    setShowNetworkModal(true);
+    setLoadingNetwork(true);
+    setExpandedLevels(new Set([1]));
+
+    try {
+      const [statsRes, membersRes] = await Promise.all([
+        supabase
+          .from('exclusive_affiliate_network_stats')
+          .select('*')
+          .eq('affiliate_id', affiliate.user_id)
+          .single(),
+        supabase.rpc('get_exclusive_affiliate_referrals', {
+          p_affiliate_id: affiliate.user_id
+        })
+      ]);
+
+      if (statsRes.error && statsRes.error.code !== 'PGRST116') throw statsRes.error;
+      setNetworkStats(statsRes.data || null);
+      setNetworkMembers(membersRes.data || []);
+    } catch (err) {
+      console.error('Error loading network:', err);
+      setNetworkStats(null);
+      setNetworkMembers([]);
+    } finally {
+      setLoadingNetwork(false);
+    }
+  };
+
+  const toggleLevel = (level: number) => {
+    setExpandedLevels(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(level)) {
+        newSet.delete(level);
+      } else {
+        newSet.add(level);
+      }
+      return newSet;
+    });
+  };
+
+  const getFilteredMembers = () => {
+    if (showAllReferrals) return networkMembers;
+    return networkMembers.filter(m => m.eligible);
+  };
+
+  const getLevelCount = (level: number) => {
+    return getFilteredMembers().filter(m => m.level === level).length;
+  };
+
+  const getLevelEarnings = (level: number) => {
+    if (!networkStats) return 0;
+    return Number(networkStats[`level_${level}_earnings` as keyof NetworkStats]) || 0;
+  };
+
+  const getMembersByLevel = (level: number) => {
+    return getFilteredMembers().filter(m => m.level === level);
+  };
+
+  const eligibleCount = networkMembers.filter(m => m.eligible).length;
+  const ineligibleCount = networkMembers.filter(m => !m.eligible).length;
 
   const filteredAffiliates = affiliates.filter(a =>
     a.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -410,6 +509,13 @@ export default function AdminExclusiveAffiliates() {
                         </div>
 
                         <div className="flex gap-2">
+                          <button
+                            onClick={() => handleViewNetwork(affiliate)}
+                            className="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 rounded-lg transition-all flex items-center gap-2"
+                          >
+                            <Network className="w-4 h-4" />
+                            View Network
+                          </button>
                           {affiliate.is_active && (
                             <button
                               onClick={() => handleRemove(affiliate.email)}
@@ -779,6 +885,204 @@ export default function AdminExclusiveAffiliates() {
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showNetworkModal && selectedAffiliateForNetwork && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1a1d24] rounded-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden border border-gray-800 flex flex-col">
+            <div className="p-6 border-b border-gray-800">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                    <Network className="w-6 h-6 text-cyan-400" />
+                    Referral Network
+                  </h2>
+                  <p className="text-gray-400 mt-1">
+                    {selectedAffiliateForNetwork.full_name || selectedAffiliateForNetwork.email}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowNetworkModal(false);
+                    setSelectedAffiliateForNetwork(null);
+                    setNetworkStats(null);
+                    setNetworkMembers([]);
+                    setShowAllReferrals(false);
+                  }}
+                  className="p-2 hover:bg-[#2b3139] rounded-lg transition-all"
+                >
+                  <X className="w-6 h-6 text-gray-400" />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex gap-4">
+                  <div className="px-3 py-1.5 bg-green-500/20 border border-green-500/30 rounded-lg">
+                    <span className="text-green-400 font-semibold">{eligibleCount}</span>
+                    <span className="text-gray-400 text-sm ml-2">Eligible (after enrollment)</span>
+                  </div>
+                  <div className="px-3 py-1.5 bg-gray-500/20 border border-gray-500/30 rounded-lg">
+                    <span className="text-gray-300 font-semibold">{ineligibleCount}</span>
+                    <span className="text-gray-400 text-sm ml-2">Before enrollment</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAllReferrals(!showAllReferrals)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    showAllReferrals
+                      ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+                      : 'bg-[#2b3139] text-gray-300 hover:bg-[#363d47]'
+                  }`}
+                >
+                  {showAllReferrals ? 'Showing All' : 'Show All Referrals'}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              {loadingNetwork ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="w-10 h-10 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : getFilteredMembers().length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <p>{showAllReferrals ? 'No referrals found' : 'No eligible referrals (signed up after enrollment)'}</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {[1, 2, 3, 4, 5].map((level) => {
+                    const count = getLevelCount(level);
+                    if (count === 0) return null;
+                    const isExpanded = expandedLevels.has(level);
+                    const members = getMembersByLevel(level);
+                    const levelColors = {
+                      1: { bg: 'bg-cyan-500/20', text: 'text-cyan-400', border: 'border-cyan-500/30' },
+                      2: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' },
+                      3: { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/30' },
+                      4: { bg: 'bg-amber-500/20', text: 'text-amber-400', border: 'border-amber-500/30' },
+                      5: { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30' }
+                    };
+                    const colors = levelColors[level as keyof typeof levelColors];
+
+                    return (
+                      <div key={level} className={`rounded-xl border ${colors.border} overflow-hidden`}>
+                        <button
+                          onClick={() => toggleLevel(level)}
+                          className={`w-full p-4 ${colors.bg} flex items-center justify-between hover:opacity-90 transition-all`}
+                        >
+                          <div className="flex items-center gap-3">
+                            {isExpanded ? (
+                              <ChevronDown className={`w-5 h-5 ${colors.text}`} />
+                            ) : (
+                              <ChevronRight className={`w-5 h-5 ${colors.text}`} />
+                            )}
+                            <span className={`font-bold ${colors.text}`}>Level {level}</span>
+                            <span className="text-gray-400 text-sm">
+                              {level === 1 ? '(Direct Referrals)' : `(Referrals of L${level - 1})`}
+                            </span>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-sm font-bold ${colors.bg} ${colors.text}`}>
+                            {count} users
+                          </span>
+                        </button>
+
+                        {isExpanded && (
+                          <div className="bg-[#0b0e11]">
+                            <div className="overflow-x-auto">
+                              <table className="w-full">
+                                <thead>
+                                  <tr className="border-b border-gray-800">
+                                    <th className="text-left p-3 text-xs font-semibold text-gray-400">User</th>
+                                    <th className="text-left p-3 text-xs font-semibold text-gray-400">Registered</th>
+                                    {showAllReferrals && (
+                                      <th className="text-center p-3 text-xs font-semibold text-gray-400">Status</th>
+                                    )}
+                                    <th className="text-right p-3 text-xs font-semibold text-gray-400">Volume</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {members.map((member) => (
+                                    <tr key={member.user_id} className={`border-b border-gray-800/50 hover:bg-[#1a1d24]/50 ${!member.eligible && showAllReferrals ? 'opacity-60' : ''}`}>
+                                      <td className="p-3">
+                                        <div>
+                                          <div className="font-semibold text-white text-sm">
+                                            {member.full_name || member.username || 'No Name'}
+                                          </div>
+                                          <div className="text-xs text-gray-400">{member.email}</div>
+                                        </div>
+                                      </td>
+                                      <td className="p-3 text-sm text-gray-400">
+                                        {new Date(member.registered_at).toLocaleDateString()}
+                                      </td>
+                                      {showAllReferrals && (
+                                        <td className="p-3 text-center">
+                                          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                                            member.eligible
+                                              ? 'bg-green-500/20 text-green-400'
+                                              : 'bg-gray-500/20 text-gray-400'
+                                          }`}>
+                                            {member.eligible ? 'Eligible' : 'Before'}
+                                          </span>
+                                        </td>
+                                      )}
+                                      <td className="p-3 text-right">
+                                        <span className="text-sm text-gray-300">
+                                          ${(member.trading_volume || 0).toLocaleString()}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  <div className="mt-6 p-4 bg-[#0b0e11] rounded-xl">
+                    <h4 className="font-semibold text-white mb-3">
+                      {showAllReferrals ? 'All Referrals Summary' : 'Eligible Referrals Summary'}
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                      {[1, 2, 3, 4, 5].map((level) => {
+                        const count = getLevelCount(level);
+                        const rate = selectedAffiliateForNetwork.deposit_commission_rates?.[`level_${level}` as keyof typeof selectedAffiliateForNetwork.deposit_commission_rates] || 0;
+                        const feeRate = selectedAffiliateForNetwork.fee_share_rates?.[`level_${level}` as keyof typeof selectedAffiliateForNetwork.fee_share_rates] || 0;
+                        return (
+                          <div key={level} className="text-center p-3 bg-[#1a1d24] rounded-lg">
+                            <div className="text-2xl font-bold text-white">{count}</div>
+                            <div className="text-xs text-gray-400 mb-1">Level {level}</div>
+                            <div className="text-xs text-green-400">{rate}% deposit</div>
+                            <div className="text-xs text-blue-400">{feeRate}% fees</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-gray-700 grid grid-cols-3 gap-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-white">{getFilteredMembers().length}</div>
+                        <div className="text-sm text-gray-400">{showAllReferrals ? 'Total' : 'Eligible'}</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-green-400">{eligibleCount}</div>
+                        <div className="text-sm text-gray-400">Commission Eligible</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-[#fcd535]">
+                          ${(getLevelEarnings(1) + getLevelEarnings(2) + getLevelEarnings(3) + getLevelEarnings(4) + getLevelEarnings(5)).toFixed(2)}
+                        </div>
+                        <div className="text-sm text-gray-400">Total Earnings</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

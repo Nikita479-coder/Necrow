@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { useNavigation } from '../App';
-import { ArrowLeft, TrendingUp, TrendingDown, X, Bell } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, X, Bell, ChevronRight, Wallet, Target, Percent, BarChart3, Clock, DollarSign, Activity, AlertTriangle, Info, Zap } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
@@ -102,7 +102,6 @@ function ActiveCopyTrading() {
       loadMyAllocations();
       loadPendingTrades();
 
-      // Regular data refresh
       const interval = setInterval(() => {
         loadTraderTrades();
         loadMyAllocations();
@@ -110,7 +109,6 @@ function ActiveCopyTrading() {
         updateBalance();
       }, 5000);
 
-      // Periodically expire old trades (every 30 seconds)
       const expireInterval = setInterval(async () => {
         try {
           await fetch(
@@ -236,8 +234,6 @@ function ActiveCopyTrading() {
 
       if (error) throw error;
 
-      // Calculate quantity for each allocation
-      // Quantity = (allocated_amount * leverage) / entry_price
       const allocationsWithQuantity = (data || []).map(allocation => {
         const quantity = allocation.entry_price > 0
           ? (allocation.allocated_amount * allocation.follower_leverage) / allocation.entry_price
@@ -275,7 +271,6 @@ function ActiveCopyTrading() {
         return;
       }
 
-      // Get user's responses to filter out already responded trades
       const { data: responses, error: responsesError } = await supabase
         .from('pending_trade_responses')
         .select('pending_trade_id')
@@ -391,7 +386,6 @@ function ActiveCopyTrading() {
     setWithdrawing(true);
 
     try {
-      // For mock copy trading, just stop without transferring funds
       if (selectedCopy.is_mock) {
         const { error: copyError } = await supabase
           .from('copy_relationships')
@@ -425,7 +419,6 @@ function ActiveCopyTrading() {
         withdrawAmount = currentBalance - platformFee;
       }
 
-      // Use the transfer_between_wallets function to properly handle both wallets
       const { data: transferData, error: transferError } = await supabase.rpc(
         'transfer_between_wallets',
         {
@@ -440,7 +433,6 @@ function ActiveCopyTrading() {
       if (transferError) throw transferError;
       if (!transferData?.success) throw new Error(transferData?.error || 'Transfer failed');
 
-      // Update copy relationship status
       const { error: copyError } = await supabase
         .from('copy_relationships')
         .update({
@@ -499,12 +491,20 @@ function ActiveCopyTrading() {
     };
   };
 
+  const getDaysSinceCopying = () => {
+    if (!selectedCopy) return 0;
+    const start = new Date(selectedCopy.created_at);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - start.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#181a20] text-white">
+      <div className="min-h-screen bg-[#0b0e11] text-white">
         <Navbar />
         <div className="flex items-center justify-center py-20">
-          <div className="animate-spin w-12 h-12 border-4 border-[#fcd535] border-t-transparent rounded-full"></div>
+          <div className="animate-spin w-12 h-12 border-4 border-[#f0b90b] border-t-transparent rounded-full"></div>
         </div>
       </div>
     );
@@ -517,113 +517,149 @@ function ActiveCopyTrading() {
   const roi = calculateROI();
   const profit = calculateProfit();
   const withdrawal = calculateWithdrawalAmount();
+  const daysCopying = getDaysSinceCopying();
 
   return (
-    <div className="min-h-screen bg-[#181a20] text-white relative overflow-hidden">
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#fcd535]/5 rounded-full blur-[120px] animate-pulse"></div>
-        <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-[#0ecb81]/5 rounded-full blur-[140px] animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute bottom-1/4 left-1/2 w-96 h-96 bg-blue-500/5 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }}></div>
-      </div>
-
+    <div className="min-h-screen bg-[#0b0e11] text-white">
       <Navbar />
       <ToastContainer toasts={toasts} removeToast={removeToast} />
 
-      <div className="max-w-[1400px] mx-auto px-6 py-6 relative z-10">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6">
         <button
           onClick={() => navigateTo('copytrading')}
-          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm mb-6"
+          className="inline-flex items-center gap-2 text-[#848e9c] hover:text-white transition-colors text-sm mb-6 group"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
           Back to Copy Trading
         </button>
 
-        <div className="relative bg-gradient-to-br from-[#2b3139]/80 to-[#252931]/80 backdrop-blur-xl rounded-xl p-6 mb-6 border border-[#3a4149]/50 shadow-lg">
-          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#0ecb81]/0 via-[#0ecb81]/0 to-[#0ecb81]/5 opacity-50"></div>
-          <div className="relative z-10">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <div
-                className="text-4xl cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => {
-                  window.history.pushState({}, '', `?page=traderprofile&id=${selectedCopy.trader_id}`);
-                  navigateTo('traderprofile');
-                }}
-              >
-                {selectedCopy.trader.avatar}
-              </div>
-              <div>
-                <h2
-                  className="text-2xl font-semibold mb-1 cursor-pointer hover:text-[#fcd535] transition-colors"
+        <div className="bg-gradient-to-r from-[#1e2329] to-[#252930] rounded-2xl border border-[#2b3139] overflow-hidden mb-6">
+          <div className="p-6 sm:p-8">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+              <div className="flex items-start gap-4">
+                <div
+                  className="text-5xl cursor-pointer hover:scale-110 transition-transform"
                   onClick={() => {
                     window.history.pushState({}, '', `?page=traderprofile&id=${selectedCopy.trader_id}`);
                     navigateTo('traderprofile');
                   }}
                 >
-                  {selectedCopy.trader.name}
-                </h2>
-                <p className="text-sm text-[#848e9c]">
-                  Copying since {new Date(selectedCopy.created_at).toLocaleDateString()}
-                </p>
+                  {selectedCopy.trader.avatar}
+                </div>
+                <div>
+                  <div className="flex items-center gap-3 mb-1">
+                    <h1
+                      className="text-2xl sm:text-3xl font-bold cursor-pointer hover:text-[#f0b90b] transition-colors"
+                      onClick={() => {
+                        window.history.pushState({}, '', `?page=traderprofile&id=${selectedCopy.trader_id}`);
+                        navigateTo('traderprofile');
+                      }}
+                    >
+                      {selectedCopy.trader.name}
+                    </h1>
+                    {selectedCopy.is_mock && (
+                      <span className="px-2.5 py-1 bg-blue-500/20 text-blue-400 text-xs font-medium rounded-full border border-blue-500/30">
+                        MOCK
+                      </span>
+                    )}
+                    {selectedCopy.is_active && (
+                      <span className="px-2.5 py-1 bg-[#0ecb81]/20 text-[#0ecb81] text-xs font-medium rounded-full border border-[#0ecb81]/30 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-[#0ecb81] rounded-full animate-pulse"></span>
+                        ACTIVE
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-[#848e9c] text-sm">
+                    <Clock className="w-4 h-4" />
+                    <span>Copying for {daysCopying} day{daysCopying !== 1 ? 's' : ''}</span>
+                    <span className="text-[#474d57]">|</span>
+                    <span>Since {new Date(selectedCopy.created_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {selectedCopy.is_active && (
-              <button
-                onClick={() => setShowWithdrawModal(true)}
-                className="bg-[#f6465d] hover:bg-[#ff4757] text-white px-6 py-2.5 rounded-lg font-medium transition-all"
-              >
-                {selectedCopy.is_mock ? 'Stop Mock Copy' : 'Withdraw & Stop'}
-              </button>
-            )}
+              {selectedCopy.is_active && (
+                <button
+                  onClick={() => setShowWithdrawModal(true)}
+                  className="flex items-center justify-center gap-2 bg-gradient-to-r from-[#f6465d] to-[#d93547] hover:from-[#ff4d63] hover:to-[#e03a4c] text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg shadow-[#f6465d]/20 hover:shadow-[#f6465d]/30"
+                >
+                  <Wallet className="w-5 h-5" />
+                  {selectedCopy.is_mock ? 'Stop Mock Copy' : 'Withdraw & Stop'}
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-            <div>
-              <div className="text-[#848e9c] text-xs mb-2">Initial Balance</div>
-              <div className="text-white text-lg font-semibold">
-                {parseFloat(selectedCopy.initial_balance).toFixed(2)} USDT
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-px bg-[#2b3139]">
+            <div className="bg-[#1e2329] p-4 sm:p-6">
+              <div className="flex items-center gap-2 text-[#848e9c] text-xs sm:text-sm mb-2">
+                <DollarSign className="w-4 h-4" />
+                Initial Balance
+              </div>
+              <div className="text-white text-lg sm:text-2xl font-bold">
+                {parseFloat(selectedCopy.initial_balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <span className="text-[#848e9c] text-sm ml-1">USDT</span>
               </div>
             </div>
 
-            <div>
-              <div className="text-[#848e9c] text-xs mb-2">Current Balance</div>
-              <div className="text-white text-lg font-semibold">
-                {parseFloat(selectedCopy.current_balance).toFixed(2)} USDT
+            <div className="bg-[#1e2329] p-4 sm:p-6">
+              <div className="flex items-center gap-2 text-[#848e9c] text-xs sm:text-sm mb-2">
+                <Wallet className="w-4 h-4" />
+                Current Balance
+              </div>
+              <div className="text-white text-lg sm:text-2xl font-bold">
+                {parseFloat(selectedCopy.current_balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <span className="text-[#848e9c] text-sm ml-1">USDT</span>
               </div>
             </div>
 
-            <div>
-              <div className="text-[#848e9c] text-xs mb-2">Total PNL</div>
-              <div className={`text-lg font-semibold ${profit >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
-                {profit >= 0 ? '+' : ''}{profit.toFixed(2)} USDT
+            <div className="bg-[#1e2329] p-4 sm:p-6">
+              <div className="flex items-center gap-2 text-[#848e9c] text-xs sm:text-sm mb-2">
+                <BarChart3 className="w-4 h-4" />
+                Total PNL
+              </div>
+              <div className={`text-lg sm:text-2xl font-bold ${profit >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                {profit >= 0 ? '+' : ''}{profit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <span className="text-sm ml-1">USDT</span>
               </div>
             </div>
 
-            <div>
-              <div className="text-[#848e9c] text-xs mb-2">ROI</div>
-              <div className={`text-lg font-semibold ${parseFloat(roi) >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+            <div className="bg-[#1e2329] p-4 sm:p-6">
+              <div className="flex items-center gap-2 text-[#848e9c] text-xs sm:text-sm mb-2">
+                <Percent className="w-4 h-4" />
+                ROI
+              </div>
+              <div className={`text-lg sm:text-2xl font-bold ${parseFloat(roi) >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
                 {parseFloat(roi) >= 0 ? '+' : ''}{roi}%
               </div>
             </div>
 
-            <div>
-              <div className="text-[#848e9c] text-xs mb-2">Leverage</div>
-              <div className="text-white text-lg font-semibold">{selectedCopy.leverage}x</div>
+            <div className="bg-[#1e2329] p-4 sm:p-6 col-span-2 lg:col-span-1">
+              <div className="flex items-center gap-2 text-[#848e9c] text-xs sm:text-sm mb-2">
+                <Target className="w-4 h-4" />
+                Leverage
+              </div>
+              <div className="text-white text-lg sm:text-2xl font-bold">
+                {selectedCopy.leverage}x
+              </div>
             </div>
-          </div>
           </div>
         </div>
 
         {pendingTrades.length > 0 && (
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-4">
-              <Bell className="w-5 h-5 text-[#fcd535]" />
-              <h3 className="text-xl font-bold text-white">Pending Trade Signals ({pendingTrades.length})</h3>
+              <div className="relative">
+                <Bell className="w-6 h-6 text-[#f0b90b]" />
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#f6465d] rounded-full text-[10px] font-bold flex items-center justify-center">
+                  {pendingTrades.length}
+                </span>
+              </div>
+              <h2 className="text-xl font-bold">Pending Trade Signals</h2>
+              <span className="text-[#848e9c] text-sm">Action required</span>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {pendingTrades.map((trade) => {
-                const walletType = selectedCopy.is_mock ? 'mock' : 'copy';
                 const allocatedAmount = (parseFloat(selectedCopy.current_balance) * trade.margin_percentage) / 100;
 
                 return (
@@ -656,364 +692,413 @@ function ActiveCopyTrading() {
           </div>
         )}
 
-        <div className="bg-[#fcd535]/10 border border-[#fcd535]/30 rounded-lg p-4 mb-6">
+        <div className="bg-[#1e2329]/50 border border-[#f0b90b]/20 rounded-xl p-4 mb-6">
           <div className="flex items-start gap-3">
-            <div className="text-[#fcd535] text-xl">ℹ️</div>
-            <div>
-              <h4 className="text-[#fcd535] font-semibold text-sm mb-1">Important Information</h4>
-              <ul className="text-[#848e9c] text-xs space-y-1">
-                <li>• When you withdraw, the platform charges a 20% fee on profits only (no fee on losses)</li>
-                <li>• Trades shown below are only from the moment you started copying ({new Date(selectedCopy.created_at).toLocaleDateString()})</li>
-                <li>• Past performance does not guarantee future results</li>
-              </ul>
+            <Info className="w-5 h-5 text-[#f0b90b] flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="text-[#f0b90b] font-semibold text-sm mb-2">Important Information</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-[#848e9c]">
+                <div className="flex items-start gap-2">
+                  <DollarSign className="w-4 h-4 text-[#474d57] flex-shrink-0" />
+                  <span>20% platform fee applies only to profits when withdrawing</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Clock className="w-4 h-4 text-[#474d57] flex-shrink-0" />
+                  <span>Trades shown are from {new Date(selectedCopy.created_at).toLocaleDateString()} onwards</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-[#474d57] flex-shrink-0" />
+                  <span>Past performance does not guarantee future results</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-[#2b3139] rounded-lg p-6">
-          <div className="flex gap-8 border-b border-[#1e2329] mb-6">
-            <button
-              onClick={() => setActiveTab('positions')}
-              className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-                activeTab === 'positions'
-                  ? 'text-white'
-                  : 'text-[#848e9c] hover:text-white'
-              }`}
-            >
-              Live Positions
-              {activeTab === 'positions' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#fcd535]" />
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('history')}
-              className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-                activeTab === 'history'
-                  ? 'text-white'
-                  : 'text-[#848e9c] hover:text-white'
-              }`}
-            >
-              Position History
-              {activeTab === 'history' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#fcd535]" />
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('allocations')}
-              className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-                activeTab === 'allocations'
-                  ? 'text-white'
-                  : 'text-[#848e9c] hover:text-white'
-              }`}
-            >
-              My Copy Trades
-              {activeTab === 'allocations' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#fcd535]" />
-              )}
-            </button>
+        <div className="bg-[#1e2329] rounded-2xl border border-[#2b3139] overflow-hidden">
+          <div className="flex border-b border-[#2b3139]">
+            {[
+              { key: 'positions', label: 'Live Positions', count: openTrades.length },
+              { key: 'history', label: 'Position History', count: closedTrades.length },
+              { key: 'allocations', label: 'My Copy Trades', count: myAllocations.length }
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key as typeof activeTab)}
+                className={`flex-1 sm:flex-none px-6 py-4 text-sm font-medium transition-all relative ${
+                  activeTab === tab.key
+                    ? 'text-white bg-[#252930]'
+                    : 'text-[#848e9c] hover:text-white hover:bg-[#252930]/50'
+                }`}
+              >
+                <span className="flex items-center justify-center gap-2">
+                  {tab.label}
+                  {tab.count > 0 && (
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${
+                      activeTab === tab.key
+                        ? 'bg-[#f0b90b]/20 text-[#f0b90b]'
+                        : 'bg-[#2b3139] text-[#848e9c]'
+                    }`}>
+                      {tab.count}
+                    </span>
+                  )}
+                </span>
+                {activeTab === tab.key && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#f0b90b]" />
+                )}
+              </button>
+            ))}
           </div>
 
-          {activeTab === 'positions' && (
-            <div className="space-y-4">
-              <p className="text-sm text-[#848e9c] mb-4">
-                Showing current open positions from {selectedCopy.trader.name} since you started copying.
-              </p>
-
-              {openTrades.length === 0 ? (
-                <div className="bg-[#0b0e11] rounded-lg p-8 mt-4">
-                  <div className="text-[#848e9c] text-sm text-center">
-                    No open positions. The trader will appear here when they open new positions.
+          <div className="p-6">
+            {activeTab === 'positions' && (
+              <div>
+                {openTrades.length === 0 ? (
+                  <div className="text-center py-16">
+                    <Activity className="w-16 h-16 text-[#2b3139] mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-white mb-2">No Open Positions</h3>
+                    <p className="text-[#848e9c] text-sm">
+                      Waiting for {selectedCopy.trader.name} to open new positions
+                    </p>
                   </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {openTrades.map((position) => (
-                    <div key={position.id} className="bg-[#1e2329] rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-white font-medium text-base">{position.symbol}</span>
-                        <span className="text-xs text-[#848e9c]">
-                          {new Date(position.opened_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-3 text-sm">
-                        <div>
-                          <div className="text-[#848e9c] text-xs mb-1">Leverage</div>
-                          <div className="text-white font-medium">{position.leverage}x</div>
-                        </div>
-                        <div>
-                          <div className="text-[#848e9c] text-xs mb-1">Entry</div>
-                          <div className="text-white font-medium">${position.entry_price.toLocaleString()}</div>
-                        </div>
-                        <div>
-                          <div className="text-[#848e9c] text-xs mb-1">Quantity</div>
-                          <div className="text-white font-medium truncate">{position.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'history' && (
-            <div className="space-y-4">
-              <p className="text-sm text-[#848e9c] mb-4">
-                Showing all closed positions from {selectedCopy.trader.name} since you started copying.
-              </p>
-
-              {closedTrades.length === 0 ? (
-                <div className="bg-[#0b0e11] rounded-lg p-8">
-                  <div className="text-[#848e9c] text-sm text-center">
-                    No closed positions yet
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {closedTrades.map((position) => (
-                    <div key={position.id} className="bg-[#1e2329] rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-white font-medium">{position.symbol}</span>
-                          <span className={`text-xs px-2 py-0.5 rounded ${
-                            position.side === 'long' ? 'bg-[#0ecb81]/10 text-[#0ecb81]' : 'bg-[#f6465d]/10 text-[#f6465d]'
-                          }`}>
-                            {position.side?.toUpperCase()}
-                          </span>
-                        </div>
-                        <span className="text-xs text-[#848e9c]">
-                          {position.closed_at ? new Date(position.closed_at).toLocaleDateString() : 'N/A'}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                        <div>
-                          <div className="text-[#848e9c] text-xs mb-1">Leverage</div>
-                          <div className="text-white font-medium">{position.leverage}x</div>
-                        </div>
-                        <div>
-                          <div className="text-[#848e9c] text-xs mb-1">Entry</div>
-                          <div className="text-white font-medium">${position.entry_price.toLocaleString()}</div>
-                        </div>
-                        <div>
-                          <div className="text-[#848e9c] text-xs mb-1">Exit</div>
-                          <div className="text-white font-medium">${position.exit_price?.toLocaleString() || 'N/A'}</div>
-                        </div>
-                        <div>
-                          <div className="text-[#848e9c] text-xs mb-1">PNL</div>
-                          {position.pnl ? (
-                            <div className={`font-medium ${position.pnl >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
-                              {position.pnl >= 0 ? '+' : ''}{position.pnl.toFixed(2)}
-                              {(position.pnl_percent || position.pnl_percentage) && (
-                                <span className="text-xs ml-1">
-                                  ({(position.pnl_percent || position.pnl_percentage || 0) >= 0 ? '+' : ''}{(position.pnl_percent || position.pnl_percentage || 0).toFixed(1)}%)
-                                </span>
-                              )}
+                ) : (
+                  <div className="space-y-3">
+                    {openTrades.map((position) => (
+                      <div
+                        key={position.id}
+                        className="bg-[#252930] hover:bg-[#2b3139] rounded-xl p-4 sm:p-5 transition-colors border border-[#2b3139] hover:border-[#474d57]"
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-[#f0b90b]/10 flex items-center justify-center">
+                              <Zap className="w-5 h-5 text-[#f0b90b]" />
                             </div>
-                          ) : (
-                            <div className="text-[#848e9c]">N/A</div>
-                          )}
+                            <div>
+                              <span className="text-white font-semibold text-lg">{position.symbol}</span>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className={`text-xs px-2 py-0.5 rounded font-medium ${
+                                  position.side === 'long'
+                                    ? 'bg-[#0ecb81]/10 text-[#0ecb81]'
+                                    : 'bg-[#f6465d]/10 text-[#f6465d]'
+                                }`}>
+                                  {position.side?.toUpperCase() || 'LONG'}
+                                </span>
+                                <span className="text-xs text-[#f0b90b] font-medium">{position.leverage}x</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xs text-[#848e9c]">Opened</div>
+                            <div className="text-sm text-white">
+                              {new Date(position.opened_at).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="bg-[#1e2329] rounded-lg p-3">
+                            <div className="text-[#848e9c] text-xs mb-1">Entry Price</div>
+                            <div className="text-white font-semibold">${position.entry_price.toLocaleString()}</div>
+                          </div>
+                          <div className="bg-[#1e2329] rounded-lg p-3">
+                            <div className="text-[#848e9c] text-xs mb-1">Quantity</div>
+                            <div className="text-white font-semibold">{position.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })}</div>
+                          </div>
+                          <div className="bg-[#1e2329] rounded-lg p-3">
+                            <div className="text-[#848e9c] text-xs mb-1">Position Size</div>
+                            <div className="text-white font-semibold">${(position.entry_price * position.quantity).toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
-          {activeTab === 'allocations' && (
-            <div>
-              <p className="text-sm text-[#848e9c] mb-6">
-                Your personal copy trading allocations and P&L. This shows the exact amounts you've invested in each trade and your actual profits/losses.
-              </p>
-
-              {myAllocations.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="text-gray-500">No allocations yet. Allocations will appear when the trader opens positions.</div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {myAllocations.map((allocation) => (
-                    <div key={allocation.id} className="bg-[#1e2329] rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-white font-medium">{allocation.symbol || 'N/A'}</span>
-                          {allocation.status === 'closed' && allocation.side && (
-                            <span className={`text-xs px-2 py-0.5 rounded ${
-                              allocation.side === 'long' ? 'bg-[#0ecb81]/10 text-[#0ecb81]' : 'bg-[#f6465d]/10 text-[#f6465d]'
+            {activeTab === 'history' && (
+              <div>
+                {closedTrades.length === 0 ? (
+                  <div className="text-center py-16">
+                    <BarChart3 className="w-16 h-16 text-[#2b3139] mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-white mb-2">No Closed Positions</h3>
+                    <p className="text-[#848e9c] text-sm">
+                      Closed positions will appear here
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {closedTrades.map((position) => (
+                      <div
+                        key={position.id}
+                        className="bg-[#252930] rounded-xl p-4 sm:p-5 border border-[#2b3139]"
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <span className="text-white font-semibold text-lg">{position.symbol}</span>
+                            <span className={`text-xs px-2 py-0.5 rounded font-medium ${
+                              position.side === 'long'
+                                ? 'bg-[#0ecb81]/10 text-[#0ecb81]'
+                                : 'bg-[#f6465d]/10 text-[#f6465d]'
                             }`}>
-                              {allocation.side.toUpperCase()}
+                              {position.side?.toUpperCase()}
                             </span>
-                          )}
-                          <span className={`px-2 py-0.5 rounded text-xs ${
-                            allocation.status === 'open'
-                              ? 'bg-blue-500/20 text-blue-400'
-                              : 'bg-gray-500/20 text-gray-400'
-                          }`}>
-                            {allocation.status.toUpperCase()}
+                            <span className="text-xs text-[#f0b90b] font-medium">{position.leverage}x</span>
+                          </div>
+                          <span className="text-xs text-[#848e9c]">
+                            {position.closed_at ? new Date(position.closed_at).toLocaleDateString() : 'N/A'}
                           </span>
                         </div>
-                        <span className="text-xs text-[#848e9c]">
-                          {allocation.status === 'closed' && allocation.closed_at
-                            ? new Date(allocation.closed_at).toLocaleDateString()
-                            : new Date(allocation.created_at).toLocaleDateString()
-                          }
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                        <div>
-                          <div className="text-[#848e9c] text-xs mb-1">Allocated</div>
-                          <div className="text-white font-medium">{allocation.allocated_amount.toFixed(2)} USDT</div>
-                        </div>
-                        <div>
-                          <div className="text-[#848e9c] text-xs mb-1">Entry</div>
-                          <div className="text-white font-medium">${allocation.entry_price.toLocaleString()}</div>
-                        </div>
-                        <div>
-                          <div className="text-[#848e9c] text-xs mb-1">Exit</div>
-                          <div className="text-white font-medium">{allocation.exit_price ? `$${allocation.exit_price.toLocaleString()}` : '-'}</div>
-                        </div>
-                        <div>
-                          <div className="text-[#848e9c] text-xs mb-1">PNL</div>
-                          {allocation.realized_pnl !== null && allocation.realized_pnl !== undefined && allocation.realized_pnl !== 0 ? (
-                            <div className={`font-medium ${allocation.realized_pnl >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
-                              {allocation.realized_pnl >= 0 ? '+' : ''}{allocation.realized_pnl.toFixed(2)}
-                              {allocation.pnl_percentage !== null && allocation.pnl_percentage !== undefined && (
-                                <span className="text-xs ml-1">
-                                  ({allocation.pnl_percentage >= 0 ? '+' : ''}{allocation.pnl_percentage.toFixed(1)}%)
-                                </span>
-                              )}
-                            </div>
-                          ) : allocation.pnl_percentage !== null && allocation.pnl_percentage !== undefined ? (
-                            <div className={`flex items-center gap-1 font-medium ${allocation.pnl_percentage >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
-                              {allocation.pnl_percentage >= 0 ? (
-                                <TrendingUp className="w-3 h-3" />
-                              ) : (
-                                <TrendingDown className="w-3 h-3" />
-                              )}
-                              {allocation.pnl_percentage >= 0 ? '+' : ''}{allocation.pnl_percentage.toFixed(2)}%
-                            </div>
-                          ) : (
-                            <div className="text-[#848e9c]">-</div>
-                          )}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          <div className="bg-[#1e2329] rounded-lg p-3">
+                            <div className="text-[#848e9c] text-xs mb-1">Entry</div>
+                            <div className="text-white font-medium">${position.entry_price.toLocaleString()}</div>
+                          </div>
+                          <div className="bg-[#1e2329] rounded-lg p-3">
+                            <div className="text-[#848e9c] text-xs mb-1">Exit</div>
+                            <div className="text-white font-medium">${position.exit_price?.toLocaleString() || 'N/A'}</div>
+                          </div>
+                          <div className="bg-[#1e2329] rounded-lg p-3">
+                            <div className="text-[#848e9c] text-xs mb-1">Quantity</div>
+                            <div className="text-white font-medium">{position.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })}</div>
+                          </div>
+                          <div className={`rounded-lg p-3 ${position.pnl && position.pnl >= 0 ? 'bg-[#0ecb81]/10' : 'bg-[#f6465d]/10'}`}>
+                            <div className="text-[#848e9c] text-xs mb-1">PNL</div>
+                            {position.pnl !== null && position.pnl !== undefined ? (
+                              <div className={`font-semibold flex items-center gap-1 ${position.pnl >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                                {position.pnl >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                                {position.pnl >= 0 ? '+' : ''}{position.pnl.toFixed(2)}
+                                {(position.pnl_percent || position.pnl_percentage) && (
+                                  <span className="text-xs opacity-75">
+                                    ({(position.pnl_percent || position.pnl_percentage || 0) >= 0 ? '+' : ''}{(position.pnl_percent || position.pnl_percentage || 0).toFixed(1)}%)
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="text-[#848e9c]">N/A</div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      {allocation.quantity && (
-                        <div className="mt-2 pt-2 border-t border-[#474d57]/30 text-xs text-[#848e9c]">
-                          Qty: {allocation.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })} | Leverage: {allocation.follower_leverage}x
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'allocations' && (
+              <div>
+                {myAllocations.length === 0 ? (
+                  <div className="text-center py-16">
+                    <Target className="w-16 h-16 text-[#2b3139] mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-white mb-2">No Allocations Yet</h3>
+                    <p className="text-[#848e9c] text-sm">
+                      Your copy trade allocations will appear when you accept trades
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {myAllocations.map((allocation) => (
+                      <div
+                        key={allocation.id}
+                        className="bg-[#252930] rounded-xl p-4 sm:p-5 border border-[#2b3139]"
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <span className="text-white font-semibold text-lg">{allocation.symbol || 'N/A'}</span>
+                            {allocation.side && (
+                              <span className={`text-xs px-2 py-0.5 rounded font-medium ${
+                                allocation.side === 'long'
+                                  ? 'bg-[#0ecb81]/10 text-[#0ecb81]'
+                                  : 'bg-[#f6465d]/10 text-[#f6465d]'
+                              }`}>
+                                {allocation.side.toUpperCase()}
+                              </span>
+                            )}
+                            <span className={`text-xs px-2 py-0.5 rounded font-medium ${
+                              allocation.status === 'open'
+                                ? 'bg-blue-500/10 text-blue-400'
+                                : 'bg-[#474d57]/20 text-[#848e9c]'
+                            }`}>
+                              {allocation.status.toUpperCase()}
+                            </span>
+                          </div>
+                          <span className="text-xs text-[#848e9c]">
+                            {allocation.status === 'closed' && allocation.closed_at
+                              ? new Date(allocation.closed_at).toLocaleDateString()
+                              : new Date(allocation.created_at).toLocaleDateString()
+                            }
+                          </span>
                         </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          <div className="bg-[#1e2329] rounded-lg p-3">
+                            <div className="text-[#848e9c] text-xs mb-1">Allocated</div>
+                            <div className="text-white font-medium">{allocation.allocated_amount.toFixed(2)} USDT</div>
+                          </div>
+                          <div className="bg-[#1e2329] rounded-lg p-3">
+                            <div className="text-[#848e9c] text-xs mb-1">Entry</div>
+                            <div className="text-white font-medium">${allocation.entry_price.toLocaleString()}</div>
+                          </div>
+                          <div className="bg-[#1e2329] rounded-lg p-3">
+                            <div className="text-[#848e9c] text-xs mb-1">Exit</div>
+                            <div className="text-white font-medium">{allocation.exit_price ? `$${allocation.exit_price.toLocaleString()}` : '-'}</div>
+                          </div>
+                          <div className={`rounded-lg p-3 ${
+                            allocation.realized_pnl !== null && allocation.realized_pnl >= 0
+                              ? 'bg-[#0ecb81]/10'
+                              : allocation.realized_pnl !== null
+                                ? 'bg-[#f6465d]/10'
+                                : 'bg-[#1e2329]'
+                          }`}>
+                            <div className="text-[#848e9c] text-xs mb-1">PNL</div>
+                            {allocation.realized_pnl !== null && allocation.realized_pnl !== undefined && allocation.realized_pnl !== 0 ? (
+                              <div className={`font-medium flex items-center gap-1 ${allocation.realized_pnl >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                                {allocation.realized_pnl >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                                {allocation.realized_pnl >= 0 ? '+' : ''}{allocation.realized_pnl.toFixed(2)}
+                                {allocation.pnl_percentage !== null && allocation.pnl_percentage !== undefined && (
+                                  <span className="text-xs opacity-75">
+                                    ({allocation.pnl_percentage >= 0 ? '+' : ''}{allocation.pnl_percentage.toFixed(1)}%)
+                                  </span>
+                                )}
+                              </div>
+                            ) : allocation.pnl_percentage !== null && allocation.pnl_percentage !== undefined ? (
+                              <div className={`flex items-center gap-1 font-medium ${allocation.pnl_percentage >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                                {allocation.pnl_percentage >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                                {allocation.pnl_percentage >= 0 ? '+' : ''}{allocation.pnl_percentage.toFixed(2)}%
+                              </div>
+                            ) : (
+                              <div className="text-[#848e9c]">-</div>
+                            )}
+                          </div>
+                        </div>
+                        {allocation.quantity && (
+                          <div className="mt-3 pt-3 border-t border-[#2b3139] flex items-center gap-4 text-xs text-[#848e9c]">
+                            <span>Qty: {allocation.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+                            <span>Leverage: {allocation.follower_leverage}x</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {showWithdrawModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#181a20] rounded-2xl p-6 max-w-md w-full border border-gray-800">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold">{selectedCopy.is_mock ? 'Stop Mock Copy Trading' : 'Withdraw Funds'}</h3>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1e2329] rounded-2xl max-w-md w-full border border-[#2b3139] shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-[#2b3139]">
+              <h3 className="text-xl font-bold">
+                {selectedCopy.is_mock ? 'Stop Mock Copy Trading' : 'Withdraw & Stop'}
+              </h3>
               <button
                 onClick={() => setShowWithdrawModal(false)}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-[#848e9c] hover:text-white transition-colors p-1 hover:bg-[#2b3139] rounded-lg"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {selectedCopy.is_mock ? (
-              <div className="space-y-4 mb-6">
-                <div className="bg-[#0b0e11] rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-gray-400 text-sm">Mock Balance</span>
-                    <span className="text-white text-lg font-bold">
-                      {parseFloat(selectedCopy.current_balance).toFixed(2)} USDT
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-gray-400 text-sm">Initial Balance</span>
-                    <span className="text-gray-400 text-sm">
-                      {parseFloat(selectedCopy.initial_balance).toFixed(2)} USDT
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-400 text-sm">Mock Profit/Loss</span>
-                    <span className={`text-sm font-semibold ${profit >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
-                      {profit >= 0 ? '+' : ''}{profit.toFixed(2)} USDT
-                    </span>
-                  </div>
-                </div>
-
-                <div className="bg-blue-900/20 border border-blue-700/30 rounded-xl p-4">
-                  <p className="text-xs text-blue-400">
-                    This is mock copy trading with virtual funds. No real money is involved.
-                    Stopping will end your mock copy trading session with {selectedCopy.trader.name}.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4 mb-6">
-                <div className="bg-[#0b0e11] rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-gray-400 text-sm">Current Balance</span>
-                    <span className="text-white text-lg font-bold">
-                      {withdrawal.total.toFixed(2)} USDT
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-gray-400 text-sm">Initial Balance</span>
-                    <span className="text-gray-400 text-sm">
-                      {parseFloat(selectedCopy.initial_balance).toFixed(2)} USDT
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-400 text-sm">Profit/Loss</span>
-                    <span className={`text-sm font-semibold ${profit >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
-                      {profit >= 0 ? '+' : ''}{profit.toFixed(2)} USDT
-                    </span>
-                  </div>
-                </div>
-
-                {withdrawal.fee > 0 && (
-                  <div className="bg-[#f6465d]/10 border border-[#f6465d]/30 rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-gray-400 text-sm">Platform Fee (20% of profit)</span>
-                      <span className="text-[#f6465d] text-sm font-semibold">
-                        -{withdrawal.fee.toFixed(2)} USDT
+            <div className="p-6">
+              {selectedCopy.is_mock ? (
+                <div className="space-y-4">
+                  <div className="bg-[#0b0e11] rounded-xl p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[#848e9c]">Mock Balance</span>
+                      <span className="text-white text-xl font-bold">
+                        {parseFloat(selectedCopy.current_balance).toFixed(2)} USDT
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500">
-                      We charge 20% commission on profits made through copy trading
+                    <div className="flex items-center justify-between mb-3 pb-3 border-b border-[#2b3139]">
+                      <span className="text-[#848e9c] text-sm">Initial Balance</span>
+                      <span className="text-[#848e9c] text-sm">
+                        {parseFloat(selectedCopy.initial_balance).toFixed(2)} USDT
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#848e9c] text-sm">Mock P&L</span>
+                      <span className={`font-semibold ${profit >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                        {profit >= 0 ? '+' : ''}{profit.toFixed(2)} USDT
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+                    <p className="text-sm text-blue-400">
+                      This is mock copy trading with virtual funds. Stopping will end your session with {selectedCopy.trader.name}.
                     </p>
                   </div>
-                )}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="bg-[#0b0e11] rounded-xl p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[#848e9c]">Current Balance</span>
+                      <span className="text-white text-xl font-bold">
+                        {withdrawal.total.toFixed(2)} USDT
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mb-3 pb-3 border-b border-[#2b3139]">
+                      <span className="text-[#848e9c] text-sm">Initial Balance</span>
+                      <span className="text-[#848e9c] text-sm">
+                        {parseFloat(selectedCopy.initial_balance).toFixed(2)} USDT
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#848e9c] text-sm">Total P&L</span>
+                      <span className={`font-semibold ${profit >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                        {profit >= 0 ? '+' : ''}{profit.toFixed(2)} USDT
+                      </span>
+                    </div>
+                  </div>
 
-                <div className="bg-[#0ecb81]/10 border border-[#0ecb81]/30 rounded-xl p-4">
-                  <div className="text-sm text-gray-400 mb-1">You will receive</div>
-                  <div className="text-[#0ecb81] text-2xl font-bold">
-                    {withdrawal.net.toFixed(2)} USDT
+                  {withdrawal.fee > 0 && (
+                    <div className="bg-[#f6465d]/10 border border-[#f6465d]/30 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[#848e9c] text-sm">Platform Fee (20% of profit)</span>
+                        <span className="text-[#f6465d] font-semibold">
+                          -{withdrawal.fee.toFixed(2)} USDT
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#848e9c]">
+                        We charge 20% on profits made through copy trading
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="bg-[#0ecb81]/10 border border-[#0ecb81]/30 rounded-xl p-5">
+                    <div className="text-sm text-[#848e9c] mb-1">You will receive</div>
+                    <div className="text-[#0ecb81] text-3xl font-bold">
+                      {withdrawal.net.toFixed(2)} USDT
+                    </div>
+                  </div>
+
+                  <div className="bg-[#f0b90b]/10 border border-[#f0b90b]/30 rounded-xl p-4 flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-[#f0b90b] flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-[#f0b90b]">
+                      This will stop copying {selectedCopy.trader.name} and withdraw all funds to your wallet. This action cannot be undone.
+                    </p>
                   </div>
                 </div>
+              )}
 
-                <div className="bg-yellow-900/20 border border-yellow-700/30 rounded-xl p-4">
-                  <p className="text-xs text-yellow-400">
-                    Warning: This will stop copying {selectedCopy.trader.name} and withdraw all funds to your wallet. This action cannot be undone.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <button
-              onClick={handleWithdraw}
-              disabled={withdrawing}
-              className="w-full bg-[#f6465d] hover:bg-[#ff4757] disabled:bg-gray-700 disabled:cursor-not-allowed text-white disabled:text-gray-500 font-bold py-3 rounded-xl transition-all"
-            >
-              {withdrawing ? 'Processing...' : (selectedCopy.is_mock ? 'Stop Mock Copy Trading' : 'Confirm Withdrawal')}
-            </button>
+              <button
+                onClick={handleWithdraw}
+                disabled={withdrawing}
+                className="w-full mt-6 bg-gradient-to-r from-[#f6465d] to-[#d93547] hover:from-[#ff4d63] hover:to-[#e03a4c] disabled:from-[#474d57] disabled:to-[#474d57] disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-all"
+              >
+                {withdrawing ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Processing...
+                  </span>
+                ) : (
+                  selectedCopy.is_mock ? 'Stop Mock Copy Trading' : 'Confirm Withdrawal'
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
