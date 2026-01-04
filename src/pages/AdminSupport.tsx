@@ -3,6 +3,7 @@ import { MessageSquare, Clock, CheckCircle, User, Search, Filter, Wifi, WifiOff,
 import Navbar from '../components/Navbar';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useNavigation } from '../App';
 import { loggingService } from '../services/loggingService';
 import { useNotificationSound, ConnectionStatus } from '../hooks/useNotificationSound';
 
@@ -54,6 +55,7 @@ interface Message {
 
 export default function AdminSupport() {
   const { user, profile, canAccessAdmin, hasPermission } = useAuth();
+  const { navigateTo } = useNavigation();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -924,7 +926,16 @@ export default function AdminSupport() {
                       <div className="flex-1">
                         <h3 className="text-white font-medium text-sm mb-1">{ticket.subject}</h3>
                         <p className="text-xs text-gray-400">{ticket.user_profile?.username}</p>
-                        <p className="text-xs text-gray-500">{ticket.user_profile?.email}</p>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            localStorage.setItem('adminSelectedUserId', ticket.user_id);
+                            navigateTo('adminuser');
+                          }}
+                          className="text-xs text-gray-500 hover:text-blue-400 transition-colors text-left"
+                        >
+                          {ticket.user_profile?.email}
+                        </button>
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         {ticket.unread_count && ticket.unread_count > 0 && (
@@ -1245,7 +1256,17 @@ export default function AdminSupport() {
                         {selectedTicketData.subject}
                       </h2>
                       <p className="text-sm text-gray-400">
-                        {selectedTicketData.user_profile?.username} ({selectedTicketData.user_profile?.email})
+                        {selectedTicketData.user_profile?.username} (
+                        <button
+                          onClick={() => {
+                            localStorage.setItem('adminSelectedUserId', selectedTicketData.user_id);
+                            navigateTo('adminuser');
+                          }}
+                          className="text-yellow-500 hover:text-yellow-400 transition-colors hover:underline"
+                        >
+                          {selectedTicketData.user_profile?.email}
+                        </button>
+                        )
                       </p>
                     </div>
                     <select

@@ -519,11 +519,17 @@ function ActiveCopyTrading() {
   const withdrawal = calculateWithdrawalAmount();
 
   return (
-    <div className="min-h-screen bg-[#181a20] text-white">
+    <div className="min-h-screen bg-[#181a20] text-white relative overflow-hidden">
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#fcd535]/5 rounded-full blur-[120px] animate-pulse"></div>
+        <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-[#0ecb81]/5 rounded-full blur-[140px] animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute bottom-1/4 left-1/2 w-96 h-96 bg-blue-500/5 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+      </div>
+
       <Navbar />
       <ToastContainer toasts={toasts} removeToast={removeToast} />
 
-      <div className="max-w-[1400px] mx-auto px-6 py-6">
+      <div className="max-w-[1400px] mx-auto px-6 py-6 relative z-10">
         <button
           onClick={() => navigateTo('copytrading')}
           className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm mb-6"
@@ -532,7 +538,9 @@ function ActiveCopyTrading() {
           Back to Copy Trading
         </button>
 
-        <div className="bg-[#2b3139] rounded-lg p-6 mb-6">
+        <div className="relative bg-gradient-to-br from-[#2b3139]/80 to-[#252931]/80 backdrop-blur-xl rounded-xl p-6 mb-6 border border-[#3a4149]/50 shadow-lg">
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#0ecb81]/0 via-[#0ecb81]/0 to-[#0ecb81]/5 opacity-50"></div>
+          <div className="relative z-10">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               <div
@@ -604,7 +612,7 @@ function ActiveCopyTrading() {
               <div className="text-white text-lg font-semibold">{selectedCopy.leverage}x</div>
             </div>
           </div>
-
+          </div>
         </div>
 
         {pendingTrades.length > 0 && (

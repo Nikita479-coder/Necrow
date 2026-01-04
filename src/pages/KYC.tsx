@@ -1374,7 +1374,7 @@ function KYC() {
                         </div>
                       )}
 
-                      {(existingKYC && existingKYC.kyc_level >= 3 && (existingKYC.kyc_status === 'verified' || existingKYC.kyc_status === 'pending')) && (
+                      {(existingKYC && existingKYC.kyc_level >= 3 && existingKYC.kyc_status === 'pending') && (
                         <div className="flex gap-4 mt-8">
                           <button
                             onClick={() => setCurrentStep(3)}

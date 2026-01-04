@@ -249,15 +249,15 @@ export default function TraderProfile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0b0e11] flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+      <div className="min-h-screen bg-[#181a20] flex items-center justify-center">
+        <div className="animate-spin w-12 h-12 border-4 border-[#fcd535] border-t-transparent rounded-full"></div>
       </div>
     );
   }
 
   if (!trader) {
     return (
-      <div className="min-h-screen bg-[#0b0e11] flex items-center justify-center">
+      <div className="min-h-screen bg-[#181a20] flex items-center justify-center">
         <div className="text-white">Trader not found</div>
       </div>
     );
@@ -268,9 +268,15 @@ export default function TraderProfile() {
   const winRate = getWinRateByPeriod();
 
   return (
-    <div className="min-h-screen bg-[#0b0e11] text-white">
+    <div className="min-h-screen bg-[#181a20] text-white relative overflow-hidden">
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#fcd535]/5 rounded-full blur-[120px] animate-pulse"></div>
+        <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-[#0ecb81]/5 rounded-full blur-[140px] animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute bottom-1/4 left-1/2 w-96 h-96 bg-blue-500/5 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+      </div>
+
       <Navbar />
-      <div className="p-3 sm:p-6">
+      <div className="p-3 sm:p-6 relative z-10">
       <button
         onClick={() => {
           window.history.back();
@@ -283,7 +289,9 @@ export default function TraderProfile() {
       </button>
 
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
-        <div className="bg-[#2b3139] rounded-lg p-4 sm:p-6">
+        <div className="relative bg-gradient-to-br from-[#2b3139]/80 to-[#252931]/80 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-[#3a4149]/50 shadow-lg">
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#fcd535]/0 via-[#fcd535]/0 to-[#fcd535]/3 opacity-50"></div>
+          <div className="relative z-10">
           <div className="flex items-start justify-between mb-4 sm:mb-6">
             <div className="flex items-start gap-3 sm:gap-4">
               <div className="text-4xl sm:text-5xl">{trader.avatar}</div>
@@ -326,10 +334,10 @@ export default function TraderProfile() {
               <button
                 key={period}
                 onClick={() => setSelectedPeriod(period)}
-                className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   selectedPeriod === period
-                    ? 'bg-[#fcd535] text-[#0b0e11]'
-                    : 'bg-[#1e2329] text-[#848e9c] hover:text-white'
+                    ? 'bg-gradient-to-r from-[#fcd535] to-[#f0b90b] text-[#0b0e11] shadow-lg shadow-[#fcd535]/20'
+                    : 'bg-[#1e2329]/80 backdrop-blur-sm text-[#848e9c] hover:text-white hover:bg-[#2b3139]/80 border border-[#3a4149]/50'
                 }`}
               >
                 {period === 'all' ? 'All Time' : period.toUpperCase()}
@@ -338,36 +346,39 @@ export default function TraderProfile() {
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            <div className="bg-[#1e2329] rounded-lg p-3 sm:p-4">
-              <div className="text-[#848e9c] text-xs mb-1">ROI</div>
+            <div className="bg-black/30 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-[#3a4149]/30 shadow-inner">
+              <div className="text-[#848e9c] text-xs mb-1 uppercase tracking-wider font-semibold">ROI</div>
               <div className={`text-xl sm:text-2xl font-bold ${roi >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
                 {roi >= 0 ? '+' : ''}{roi.toFixed(2)}%
               </div>
             </div>
 
-            <div className="bg-[#1e2329] rounded-lg p-3 sm:p-4">
-              <div className="text-[#848e9c] text-xs mb-1">PNL (USDT)</div>
+            <div className="bg-black/30 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-[#3a4149]/30 shadow-inner">
+              <div className="text-[#848e9c] text-xs mb-1 uppercase tracking-wider font-semibold">PNL (USDT)</div>
               <div className={`text-lg sm:text-2xl font-bold truncate ${pnl >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
                 {pnl >= 0 ? '+' : ''}{pnl >= 1000000 ? `${(pnl / 1000000).toFixed(2)}M` : pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </div>
 
-            <div className="bg-[#1e2329] rounded-lg p-3 sm:p-4">
-              <div className="text-[#848e9c] text-xs mb-1">Win Rate</div>
+            <div className="bg-black/30 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-[#3a4149]/30 shadow-inner">
+              <div className="text-[#848e9c] text-xs mb-1 uppercase tracking-wider font-semibold">Win Rate</div>
               <div className="text-xl sm:text-2xl font-bold text-white">{winRate.toFixed(1)}%</div>
             </div>
 
-            <div className="bg-[#1e2329] rounded-lg p-3 sm:p-4">
-              <div className="text-[#848e9c] text-xs mb-1">AUM (USDT)</div>
+            <div className="bg-black/30 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-[#3a4149]/30 shadow-inner">
+              <div className="text-[#848e9c] text-xs mb-1 uppercase tracking-wider font-semibold">AUM (USDT)</div>
               <div className="text-lg sm:text-2xl font-bold text-white truncate">
                 {trader.aum >= 1000000 ? `${(trader.aum / 1000000).toFixed(2)}M` : trader.aum.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </div>
             </div>
           </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-[#2b3139] rounded-lg p-6">
+          <div className="relative bg-gradient-to-br from-[#2b3139]/80 to-[#252931]/80 backdrop-blur-xl rounded-xl p-6 border border-[#3a4149]/50 shadow-lg">
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#0ecb81]/0 via-[#0ecb81]/0 to-[#0ecb81]/3 opacity-50"></div>
+            <div className="relative z-10">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <Activity className="w-5 h-5 text-[#fcd535]" />
               Trading Statistics
@@ -417,9 +428,12 @@ export default function TraderProfile() {
                 <span className="text-white font-medium">{trader.avg_leverage?.toFixed(1) || '0.0'}x</span>
               </div>
             </div>
+            </div>
           </div>
 
-          <div className="bg-[#2b3139] rounded-lg p-6">
+          <div className="relative bg-gradient-to-br from-[#2b3139]/80 to-[#252931]/80 backdrop-blur-xl rounded-xl p-6 border border-[#3a4149]/50 shadow-lg">
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#f6465d]/0 via-[#f6465d]/0 to-[#f6465d]/3 opacity-50"></div>
+            <div className="relative z-10">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <Shield className="w-5 h-5 text-[#fcd535]" />
               Risk Metrics
@@ -471,10 +485,13 @@ export default function TraderProfile() {
                 </div>
               </div>
             </div>
+            </div>
           </div>
         </div>
 
-        <div className="bg-[#2b3139] rounded-lg p-6">
+        <div className="relative bg-gradient-to-br from-[#2b3139]/80 to-[#252931]/80 backdrop-blur-xl rounded-xl p-6 border border-[#3a4149]/50 shadow-lg">
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#fcd535]/0 via-[#fcd535]/0 to-[#fcd535]/5 opacity-50"></div>
+          <div className="relative z-10">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold">Start Copying</h2>
           </div>
@@ -482,26 +499,29 @@ export default function TraderProfile() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <button
               onClick={() => setShowCopyModal(true)}
-              className="bg-[#fcd535] hover:bg-[#f0b90b] text-[#0b0e11] px-6 py-3 rounded-lg font-medium transition-all"
+              className="bg-gradient-to-r from-[#fcd535] to-[#f0b90b] hover:from-[#f0b90b] hover:to-[#fcd535] text-[#0b0e11] px-6 py-3 rounded-lg font-medium transition-all shadow-lg shadow-[#fcd535]/20 hover:shadow-[#fcd535]/30"
             >
               Copy Trade
             </button>
             <button
               onClick={() => setShowMockCopyModal(true)}
-              className="bg-[#1e2329] hover:bg-[#2b3139] text-white px-6 py-3 rounded-lg font-medium transition-all"
+              className="bg-[#1e2329]/80 backdrop-blur-sm hover:bg-[#2b3139]/90 text-white px-6 py-3 rounded-lg font-medium transition-all border border-[#3a4149]/50 hover:border-[#fcd535]/50"
             >
               Mock Copy
             </button>
             <button
               onClick={() => setActiveTab('history')}
-              className="bg-[#1e2329] hover:bg-[#2b3139] text-white px-6 py-3 rounded-lg font-medium transition-all"
+              className="bg-[#1e2329]/80 backdrop-blur-sm hover:bg-[#2b3139]/90 text-white px-6 py-3 rounded-lg font-medium transition-all border border-[#3a4149]/50 hover:border-[#0ecb81]/50"
             >
               View History
             </button>
           </div>
+          </div>
         </div>
 
-        <div className="bg-[#2b3139] rounded-lg p-4 sm:p-6">
+        <div className="relative bg-gradient-to-br from-[#2b3139]/80 to-[#252931]/80 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-[#3a4149]/50 shadow-lg">
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-500/0 via-blue-500/0 to-blue-500/3 opacity-50"></div>
+          <div className="relative z-10">
           <div className="relative mb-6">
             <div className="flex gap-4 sm:gap-8 border-b border-[#1e2329] overflow-x-auto pb-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
               <button
@@ -590,8 +610,8 @@ export default function TraderProfile() {
                     {copyTraders.map((copyTrader, index) => (
                       <tr
                         key={copyTrader.id}
-                        className={`border-t border-[#1e2329] ${
-                          index % 2 === 0 ? 'bg-[#1e2329]/30' : ''
+                        className={`border-t border-[#1e2329]/50 transition-colors hover:bg-[#0ecb81]/5 ${
+                          index % 2 === 0 ? 'bg-[#1e2329]/20' : ''
                         }`}
                       >
                         <td className="py-4 text-white">{copyTrader.userId}</td>
@@ -622,7 +642,8 @@ export default function TraderProfile() {
               </div>
               <div className="sm:hidden space-y-3">
                 {copyTraders.map((copyTrader) => (
-                  <div key={copyTrader.id} className="bg-[#1e2329] rounded-lg p-4">
+                  <div key={copyTrader.id} className="relative bg-gradient-to-br from-[#1e2329]/80 to-[#252931]/80 backdrop-blur-sm rounded-lg p-4 border border-[#3a4149]/30">
+                    <div className="relative z-10">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-white font-medium">{copyTrader.userId}</span>
                       <span className="text-xs text-[#848e9c]">{copyTrader.duration} Days</span>
@@ -641,6 +662,7 @@ export default function TraderProfile() {
                         <div className="text-[#0ecb81] font-medium">+{copyTrader.roi.toFixed(1)}%</div>
                       </div>
                     </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -650,7 +672,7 @@ export default function TraderProfile() {
           {activeTab === 'positions' && (
             <div className="space-y-4">
               {openPositions.length === 0 ? (
-                <div className="bg-[#1e2329] rounded-lg p-6 text-center">
+                <div className="bg-black/30 backdrop-blur-sm rounded-lg p-6 text-center border border-[#3a4149]/30">
                   <div className="text-[#848e9c] mb-2">
                     No open positions
                   </div>
@@ -661,7 +683,9 @@ export default function TraderProfile() {
               ) : (
                 <div className="space-y-3">
                   {openPositions.map((position) => (
-                    <div key={position.id} className="bg-[#1e2329] rounded-lg p-4">
+                    <div key={position.id} className="relative bg-gradient-to-br from-[#1e2329]/80 to-[#252931]/80 backdrop-blur-sm rounded-lg p-4 border border-[#3a4149]/30 hover:border-[#0ecb81]/40 transition-all group">
+                      <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent to-[#0ecb81]/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className="relative z-10">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <span className="text-white font-medium">{position.symbol}</span>
@@ -688,6 +712,7 @@ export default function TraderProfile() {
                           <div className="text-white font-medium truncate">{parseFloat(position.quantity.toString()).toLocaleString(undefined, { maximumFractionDigits: 4 })}</div>
                         </div>
                       </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -698,7 +723,7 @@ export default function TraderProfile() {
           {activeTab === 'history' && (
             <div className="space-y-4">
               {closedPositions.length === 0 ? (
-                <div className="bg-[#1e2329] rounded-lg p-6 text-center">
+                <div className="bg-black/30 backdrop-blur-sm rounded-lg p-6 text-center border border-[#3a4149]/30">
                   <div className="text-[#848e9c] mb-2">
                     No trading history
                   </div>
@@ -714,7 +739,9 @@ export default function TraderProfile() {
                     const isProfit = pnl >= 0;
 
                     return (
-                      <div key={position.id} className="bg-[#1e2329] rounded-lg p-4">
+                      <div key={position.id} className="relative bg-gradient-to-br from-[#1e2329]/80 to-[#252931]/80 backdrop-blur-sm rounded-lg p-4 border border-[#3a4149]/30 hover:border-[#fcd535]/40 transition-all group">
+                        <div className={`absolute inset-0 rounded-lg bg-gradient-to-r from-transparent ${isProfit ? 'to-[#0ecb81]/5' : 'to-[#f6465d]/5'} opacity-0 group-hover:opacity-100 transition-opacity`}></div>
+                        <div className="relative z-10">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
                             <span className="text-white font-medium">{position.symbol}</span>
@@ -741,6 +768,7 @@ export default function TraderProfile() {
                             <div className="text-white font-medium">${position.exit_price ? parseFloat(position.exit_price.toString()).toFixed(2) : 'N/A'}</div>
                           </div>
                         </div>
+                        </div>
                       </div>
                     );
                   })}
@@ -760,6 +788,7 @@ export default function TraderProfile() {
               No transfer history
             </div>
           )}
+          </div>
         </div>
       </div>
       </div>

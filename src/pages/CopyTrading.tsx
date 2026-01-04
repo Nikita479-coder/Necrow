@@ -636,11 +636,17 @@ function CopyTrading() {
   });
 
   return (
-    <div className="min-h-screen bg-[#181a20] text-white">
+    <div className="min-h-screen bg-[#181a20] text-white relative overflow-hidden">
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#fcd535]/5 rounded-full blur-[120px] animate-pulse"></div>
+        <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-[#0ecb81]/5 rounded-full blur-[140px] animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute bottom-1/4 left-1/2 w-96 h-96 bg-blue-500/5 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+      </div>
+
       <Navbar />
       <ToastContainer toasts={toasts} removeToast={removeToast} />
 
-      <div className="max-w-[1400px] mx-auto px-3 sm:px-6 py-4 sm:py-6">
+      <div className="max-w-[1400px] mx-auto px-3 sm:px-6 py-4 sm:py-6 relative z-10">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
           <div className="relative">
             <div className="flex items-center gap-4 sm:gap-8 overflow-x-auto pb-1 pr-4 -mr-3 sm:mr-0 sm:pr-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
@@ -750,7 +756,7 @@ function CopyTrading() {
                 placeholder="Trader's Name"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#2b3139] border-0 rounded pl-9 pr-3 py-2 text-[#eaecef] text-sm outline-none focus:bg-[#353c47] transition-all placeholder:text-[#848e9c]"
+                className="w-full bg-[#2b3139]/80 backdrop-blur-sm border border-[#3a4149]/50 rounded-lg pl-9 pr-3 py-2 text-[#eaecef] text-sm outline-none focus:bg-[#353c47]/90 focus:border-[#fcd535]/50 transition-all placeholder:text-[#848e9c] shadow-sm"
               />
             </div>
 
@@ -758,7 +764,7 @@ function CopyTrading() {
               <select
                 value={timePeriod}
                 onChange={(e) => setTimePeriod(e.target.value as TimePeriod)}
-                className="bg-[#2b3139] border-0 rounded px-3 py-2 text-[#eaecef] text-sm outline-none focus:bg-[#353c47] transition-all cursor-pointer flex-shrink-0"
+                className="bg-[#2b3139]/80 backdrop-blur-sm border border-[#3a4149]/50 rounded-lg px-3 py-2 text-[#eaecef] text-sm outline-none focus:bg-[#353c47]/90 focus:border-[#fcd535]/50 transition-all cursor-pointer flex-shrink-0 shadow-sm"
               >
                 <option value="7">7 Days</option>
                 <option value="30">30 Days</option>
@@ -768,7 +774,7 @@ function CopyTrading() {
               <select
                 value={sortStat}
                 onChange={(e) => setSortStat(e.target.value as SortStat)}
-                className="bg-[#2b3139] border-0 rounded px-3 py-2 text-[#eaecef] text-sm outline-none focus:bg-[#353c47] transition-all cursor-pointer flex-shrink-0"
+                className="bg-[#2b3139]/80 backdrop-blur-sm border border-[#3a4149]/50 rounded-lg px-3 py-2 text-[#eaecef] text-sm outline-none focus:bg-[#353c47]/90 focus:border-[#fcd535]/50 transition-all cursor-pointer flex-shrink-0 shadow-sm"
               >
                 <option value="pnl">PnL</option>
                 <option value="roi">ROI</option>
@@ -834,28 +840,40 @@ function CopyTrading() {
                 {activeCopies.map((copy) => (
                   <div
                     key={copy.id}
-                    className="bg-[#2b3139] rounded-lg p-4 sm:p-6 hover:bg-[#353c47] transition-all cursor-pointer"
+                    className="relative bg-gradient-to-br from-[#2b3139]/80 to-[#252931]/80 backdrop-blur-xl rounded-xl p-4 sm:p-6 hover:from-[#353c47]/90 hover:to-[#2d323b]/90 transition-all duration-300 cursor-pointer border border-[#3a4149]/50 hover:border-[#0ecb81]/60 group shadow-lg hover:shadow-2xl hover:shadow-[#0ecb81]/10"
                     onClick={() => {
                       window.history.pushState({}, '', `?page=activecopying&id=${copy.id}`);
                       navigateTo('activecopying');
                     }}
                   >
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#0ecb81]/0 via-[#0ecb81]/0 to-[#0ecb81]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-tr from-transparent via-white/0 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative z-10">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                      <div className="flex items-center gap-3 sm:gap-4">
-                        <div
-                          className="text-3xl sm:text-4xl cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.history.pushState({}, '', `?page=traderprofile&id=${copy.trader_id}`);
-                            navigateTo('traderprofile');
-                          }}
-                        >
-                          {copy.trader?.avatar}
+                      <div className="flex items-center gap-3 sm:gap-4 flex-1">
+                        <div className="relative">
+                          <div
+                            className="text-3xl sm:text-4xl cursor-pointer transform transition-transform group-hover:scale-110"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.history.pushState({}, '', `?page=traderprofile&id=${copy.trader_id}`);
+                              navigateTo('traderprofile');
+                            }}
+                          >
+                            {copy.trader?.avatar}
+                          </div>
+                          {copy.trader?.api_verified && (
+                            <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-0.5 ring-2 ring-[#2b3139]">
+                              <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+                              </svg>
+                            </div>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-2">
                             <span
-                              className="text-white text-base sm:text-lg font-semibold cursor-pointer hover:text-[#fcd535] transition-colors truncate"
+                              className="text-white text-base sm:text-lg font-bold cursor-pointer hover:text-[#fcd535] transition-colors truncate"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 window.history.pushState({}, '', `?page=traderprofile&id=${copy.trader_id}`);
@@ -864,28 +882,30 @@ function CopyTrading() {
                             >
                               {copy.trader?.name}
                             </span>
-                            {copy.trader?.api_verified && (
-                              <span className="bg-blue-500/20 text-blue-400 text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0">API</span>
-                            )}
+                            <span className="bg-[#0ecb81]/20 text-[#0ecb81] text-[10px] px-2 py-0.5 rounded-full font-bold flex-shrink-0 animate-pulse">
+                              LIVE
+                            </span>
                           </div>
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-[#848e9c]">
-                            <span>{parseFloat(copy.initial_balance).toFixed(2)} USDT</span>
-                            <span>{copy.leverage}x</span>
-                            <span className="hidden sm:inline">Started: {new Date(copy.created_at).toLocaleDateString()}</span>
+                            <span className="font-medium">{parseFloat(copy.initial_balance).toFixed(2)} USDT</span>
+                            <span className="text-[#5a6169]">•</span>
+                            <span className="font-medium">{copy.leverage}x Leverage</span>
+                            <span className="text-[#5a6169]">•</span>
+                            <span className="hidden sm:inline">{new Date(copy.created_at).toLocaleDateString()}</span>
                           </div>
                         </div>
-                        <div className="sm:hidden text-right">
-                          <div className={`text-base font-bold ${(copy.user_roi_30d || 0) >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                        <div className="sm:hidden text-right bg-black/30 backdrop-blur-sm rounded-lg px-3 py-2 border border-[#3a4149]/30 shadow-inner">
+                          <div className={`text-lg font-bold ${(copy.user_roi_30d || 0) >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
                             {(copy.user_roi_30d || 0) >= 0 ? '+' : ''}{(copy.user_roi_30d || 0).toFixed(2)}%
                           </div>
-                          <div className="text-[#848e9c] text-[10px]">Your ROI</div>
+                          <div className="text-[#848e9c] text-[10px] uppercase tracking-wider font-semibold">Your ROI</div>
                         </div>
                       </div>
 
                       <div className="flex items-center justify-between sm:justify-end gap-4">
-                        <div className="hidden sm:block text-right">
-                          <div className="text-[#848e9c] text-xs mb-1">Your ROI</div>
-                          <div className={`text-lg font-bold ${(copy.user_roi_30d || 0) >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                        <div className="hidden sm:block text-right bg-black/30 backdrop-blur-sm rounded-lg px-4 py-3 border border-[#3a4149]/30 shadow-inner">
+                          <div className="text-[#848e9c] text-[10px] uppercase tracking-wider font-semibold mb-1">Your ROI</div>
+                          <div className={`text-2xl font-bold ${(copy.user_roi_30d || 0) >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
                             {(copy.user_roi_30d || 0) >= 0 ? '+' : ''}{(copy.user_roi_30d || 0).toFixed(2)}%
                           </div>
                         </div>
@@ -895,11 +915,12 @@ function CopyTrading() {
                             window.history.pushState({}, '', `?page=activecopying&id=${copy.id}`);
                             navigateTo('activecopying');
                           }}
-                          className="bg-[#fcd535] hover:bg-[#f0b90b] text-[#0b0e11] px-4 sm:px-6 py-2 rounded text-sm font-medium transition-all flex-1 sm:flex-none"
+                          className="bg-gradient-to-r from-[#fcd535] to-[#f0b90b] hover:from-[#f0b90b] hover:to-[#fcd535] text-[#0b0e11] px-4 sm:px-6 py-2.5 rounded-lg text-sm font-bold transition-all flex-1 sm:flex-none hover:shadow-lg hover:shadow-[#fcd535]/20"
                         >
                           View Details
                         </button>
                       </div>
+                    </div>
                     </div>
                   </div>
                 ))}
@@ -928,40 +949,55 @@ function CopyTrading() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="bg-[#2b3139]/50 rounded-lg p-4 mb-4 border border-[#fcd535]/20">
-                  <div className="flex items-center gap-2 text-[#fcd535] text-sm">
-                    <TestTube2 className="w-4 h-4" />
-                    <span className="font-medium">Mock Copy Trading</span>
+                <div className="bg-gradient-to-r from-[#fcd535]/10 to-[#f0b90b]/5 rounded-xl p-4 mb-4 border border-[#fcd535]/30 shadow-lg">
+                  <div className="flex items-center gap-2 text-[#fcd535] text-sm mb-2">
+                    <TestTube2 className="w-5 h-5" />
+                    <span className="font-bold">Mock Copy Trading</span>
                   </div>
-                  <p className="text-[#848e9c] text-xs mt-1">
-                    These are simulated copy trading relationships. No real funds are used.
+                  <p className="text-[#848e9c] text-xs">
+                    These are simulated copy trading relationships. Practice risk-free with virtual funds.
                   </p>
                 </div>
                 {mockCopies.map((copy) => (
                   <div
                     key={copy.id}
-                    className="bg-[#2b3139] rounded-lg p-4 sm:p-6 hover:bg-[#353c47] transition-all cursor-pointer border border-[#fcd535]/20"
+                    className="relative bg-gradient-to-br from-[#2b3139]/80 to-[#252931]/80 backdrop-blur-xl rounded-xl p-4 sm:p-6 hover:from-[#353c47]/90 hover:to-[#2d323b]/90 transition-all duration-300 cursor-pointer border border-[#fcd535]/30 hover:border-[#fcd535]/60 group shadow-lg hover:shadow-2xl hover:shadow-[#fcd535]/10"
                     onClick={() => {
                       window.history.pushState({}, '', `?page=activecopying&id=${copy.id}`);
                       navigateTo('activecopying');
                     }}
                   >
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#fcd535]/0 via-[#fcd535]/0 to-[#fcd535]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-tr from-transparent via-white/0 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative z-10">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                      <div className="flex items-center gap-3 sm:gap-4">
-                        <div
-                          className="text-3xl sm:text-4xl cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.history.pushState({}, '', `?page=traderprofile&id=${copy.trader_id}`);
-                            navigateTo('traderprofile');
-                          }}
-                        >
-                          {copy.trader?.avatar}
+                      <div className="flex items-center gap-3 sm:gap-4 flex-1">
+                        <div className="relative">
+                          <div
+                            className="text-3xl sm:text-4xl cursor-pointer transform transition-transform group-hover:scale-110"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.history.pushState({}, '', `?page=traderprofile&id=${copy.trader_id}`);
+                              navigateTo('traderprofile');
+                            }}
+                          >
+                            {copy.trader?.avatar}
+                          </div>
+                          <div className="absolute -top-1 -right-1 bg-gradient-to-r from-[#fcd535] to-[#f0b90b] rounded-full p-1 ring-2 ring-[#2b3139]">
+                            <TestTube2 className="w-2.5 h-2.5 text-[#0b0e11]" />
+                          </div>
+                          {copy.trader?.api_verified && (
+                            <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-0.5 ring-2 ring-[#2b3139]">
+                              <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+                              </svg>
+                            </div>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-2">
                             <span
-                              className="text-white text-base sm:text-lg font-semibold cursor-pointer hover:text-[#fcd535] transition-colors truncate"
+                              className="text-white text-base sm:text-lg font-bold cursor-pointer hover:text-[#fcd535] transition-colors truncate"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 window.history.pushState({}, '', `?page=traderprofile&id=${copy.trader_id}`);
@@ -970,31 +1006,30 @@ function CopyTrading() {
                             >
                               {copy.trader?.name}
                             </span>
-                            <span className="bg-[#fcd535]/20 text-[#fcd535] text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0">
+                            <span className="bg-[#fcd535]/20 text-[#fcd535] text-[10px] px-2 py-0.5 rounded-full font-bold flex-shrink-0">
                               MOCK
                             </span>
-                            {copy.trader?.api_verified && (
-                              <span className="bg-blue-500/20 text-blue-400 text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0">API</span>
-                            )}
                           </div>
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-[#848e9c]">
-                            <span>{parseFloat(copy.initial_balance).toFixed(2)} USDT</span>
-                            <span>{copy.leverage}x</span>
-                            <span className="hidden sm:inline">Started: {new Date(copy.created_at).toLocaleDateString()}</span>
+                            <span className="font-medium">{parseFloat(copy.initial_balance).toFixed(2)} USDT</span>
+                            <span className="text-[#5a6169]">•</span>
+                            <span className="font-medium">{copy.leverage}x Leverage</span>
+                            <span className="text-[#5a6169]">•</span>
+                            <span className="hidden sm:inline">{new Date(copy.created_at).toLocaleDateString()}</span>
                           </div>
                         </div>
-                        <div className="sm:hidden text-right">
-                          <div className={`text-base font-bold ${(copy.user_roi_30d || 0) >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                        <div className="sm:hidden text-right bg-black/30 backdrop-blur-sm rounded-lg px-3 py-2 border border-[#3a4149]/30 shadow-inner">
+                          <div className={`text-lg font-bold ${(copy.user_roi_30d || 0) >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
                             {(copy.user_roi_30d || 0) >= 0 ? '+' : ''}{(copy.user_roi_30d || 0).toFixed(2)}%
                           </div>
-                          <div className="text-[#848e9c] text-[10px]">Your ROI</div>
+                          <div className="text-[#848e9c] text-[10px] uppercase tracking-wider font-semibold">Your ROI</div>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between sm:justify-end gap-4">
-                        <div className="hidden sm:block text-right">
-                          <div className="text-[#848e9c] text-xs mb-1">Your ROI</div>
-                          <div className={`text-lg font-bold ${(copy.user_roi_30d || 0) >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                      <div className="flex items-center justify-between sm:justify-end gap-3">
+                        <div className="hidden sm:block text-right bg-black/30 backdrop-blur-sm rounded-lg px-4 py-3 border border-[#3a4149]/30 shadow-inner">
+                          <div className="text-[#848e9c] text-[10px] uppercase tracking-wider font-semibold mb-1">Your ROI</div>
+                          <div className={`text-2xl font-bold ${(copy.user_roi_30d || 0) >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
                             {(copy.user_roi_30d || 0) >= 0 ? '+' : ''}{(copy.user_roi_30d || 0).toFixed(2)}%
                           </div>
                         </div>
@@ -1005,7 +1040,7 @@ function CopyTrading() {
                               window.history.pushState({}, '', `?page=activecopying&id=${copy.id}`);
                               navigateTo('activecopying');
                             }}
-                            className="bg-[#fcd535] hover:bg-[#f0b90b] text-[#0b0e11] px-4 sm:px-6 py-2 rounded text-sm font-medium transition-all"
+                            className="bg-gradient-to-r from-[#fcd535] to-[#f0b90b] hover:from-[#f0b90b] hover:to-[#fcd535] text-[#0b0e11] px-4 sm:px-6 py-2.5 rounded-lg text-sm font-bold transition-all hover:shadow-lg hover:shadow-[#fcd535]/20"
                           >
                             View Details
                           </button>
@@ -1016,12 +1051,13 @@ function CopyTrading() {
                                 handleStopMockCopy(copy.id, copy.trader?.name || 'trader');
                               }
                             }}
-                            className="bg-[#f6465d]/20 hover:bg-[#f6465d]/30 text-[#f6465d] px-4 py-2 rounded text-sm font-medium transition-all"
+                            className="bg-[#f6465d]/20 hover:bg-[#f6465d]/30 text-[#f6465d] px-4 py-2.5 rounded-lg text-sm font-bold transition-all border border-[#f6465d]/30"
                           >
                             Stop
                           </button>
                         </div>
                       </div>
+                    </div>
                     </div>
                   </div>
                 ))}
@@ -1030,32 +1066,40 @@ function CopyTrading() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
               {filteredTraders.map((trader) => (
                 <div
                   key={trader.id}
-                  className="bg-[#2b3139] rounded-lg p-3 sm:p-4 hover:bg-[#353c47] transition-all cursor-pointer"
+                  className="relative bg-gradient-to-br from-[#2b3139]/80 to-[#252931]/80 backdrop-blur-xl rounded-xl p-5 hover:from-[#353c47]/90 hover:to-[#2d323b]/90 transition-all duration-300 cursor-pointer border border-[#3a4149]/50 hover:border-[#fcd535]/50 group shadow-lg hover:shadow-2xl hover:shadow-[#fcd535]/10"
                   onClick={() => {
                     window.history.pushState({}, '', `?page=traderprofile&id=${trader.id}`);
                     navigateTo('traderprofile');
                   }}
                 >
-                  <div className="flex items-start justify-between mb-4">
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#fcd535]/0 via-[#fcd535]/0 to-[#fcd535]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-tr from-transparent via-white/0 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-5">
                     <div className="flex items-center gap-3">
-                      <div className="text-3xl">{trader.avatar}</div>
+                      <div className="relative">
+                        <div className="text-4xl transform transition-transform group-hover:scale-110">{trader.avatar}</div>
+                        {trader.api_verified && (
+                          <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-0.5 ring-2 ring-[#2b3139]">
+                            <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 16 16">
+                              <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+                            </svg>
+                          </div>
+                        )}
+                      </div>
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-white text-sm font-medium hover:text-[#fcd535] transition-colors">{trader.name}</span>
-                          {trader.api_verified && (
-                            <span className="bg-blue-500/20 text-blue-400 text-[10px] px-1.5 py-0.5 rounded font-medium">API</span>
-                          )}
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-white text-base font-bold group-hover:text-[#fcd535] transition-colors">{trader.name}</span>
                         </div>
-                        <div className="flex items-center gap-1 text-[10px] text-[#848e9c]">
-                          <UsersIcon className="w-3 h-3" />
-                          <span>{trader.followers_count} followers</span>
-                        </div>
-                        <div className="text-[10px] text-[#848e9c]">
-                          Rank: {trader.rank} / {trader.total_rank}
+                        <div className="flex items-center gap-1.5 text-xs text-[#848e9c]">
+                          <UsersIcon className="w-3.5 h-3.5" />
+                          <span className="font-medium">{trader.followers_count}</span>
+                          <span className="text-[#5a6169]">•</span>
+                          <span>#{trader.rank}/{trader.total_rank}</span>
                         </div>
                       </div>
                     </div>
@@ -1064,7 +1108,7 @@ function CopyTrading() {
                         e.stopPropagation();
                         toggleFavorite(trader.id);
                       }}
-                      className="text-gray-400 hover:text-[#fcd535] transition-colors"
+                      className="text-gray-500 hover:text-[#fcd535] transition-all hover:scale-110"
                     >
                       <Star
                         className={`w-5 h-5 ${
@@ -1074,54 +1118,63 @@ function CopyTrading() {
                     </button>
                   </div>
 
-                  <div className="mb-4">
-                    <div className="text-[#848e9c] text-[10px] mb-1">{timePeriod} Days PNL (USDT)</div>
-                    <div className="flex items-baseline gap-2">
-                      {(() => {
-                        const pnl = timePeriod === '7' ? trader.pnl_7d : timePeriod === '90' ? trader.pnl_90d : trader.pnl_30d;
-                        const isPositive = pnl >= 0;
-                        return (
-                          <div className={`text-lg font-medium ${isPositive ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
-                            {isPositive ? '+' : ''}{pnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </div>
-                        );
-                      })()}
-                      <div className="text-xs">📈</div>
+                  <div className="mb-5 bg-black/30 backdrop-blur-sm rounded-lg p-4 border border-[#3a4149]/30 shadow-inner">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-[#848e9c] text-[11px] uppercase tracking-wider font-semibold">ROI ({timePeriod}d)</div>
+                      <span className="text-[10px] text-[#848e9c]">{timePeriod}d</span>
                     </div>
                     {(() => {
                       const roi = timePeriod === '7' ? trader.roi_7d : timePeriod === '90' ? trader.roi_90d : trader.roi_30d;
                       const isPositive = roi >= 0;
                       return (
-                        <div className={`text-xs mt-0.5 ${isPositive ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
-                          {timePeriod} Days ROI {isPositive ? '+' : ''}{roi.toFixed(2)}%
+                        <div className={`text-3xl font-bold mb-1 ${isPositive ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                          {isPositive ? '+' : ''}{roi.toFixed(2)}%
+                        </div>
+                      );
+                    })()}
+                    {(() => {
+                      const pnl = timePeriod === '7' ? trader.pnl_7d : timePeriod === '90' ? trader.pnl_90d : trader.pnl_30d;
+                      const isPositive = pnl >= 0;
+                      return (
+                        <div className="flex items-center gap-2">
+                          {isPositive ? (
+                            <TrendingUp className="w-4 h-4 text-[#0ecb81]" />
+                          ) : (
+                            <TrendingDown className="w-4 h-4 text-[#f6465d]" />
+                          )}
+                          <span className={`text-sm font-medium ${isPositive ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                            {isPositive ? '+' : ''}{pnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                          </span>
                         </div>
                       );
                     })()}
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3 mb-4">
-                    <div>
-                      <div className="text-[#848e9c] text-[10px] mb-1">AUM</div>
-                      <div className="text-[#eaecef] text-xs font-medium">{trader.aum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                  <div className="grid grid-cols-3 gap-4 mb-5">
+                    <div className="text-center">
+                      <div className="text-[#848e9c] text-[10px] uppercase tracking-wider font-semibold mb-1.5">AUM</div>
+                      <div className="text-[#eaecef] text-sm font-bold">{(trader.aum / 1000).toFixed(1)}K</div>
                     </div>
-                    <div>
-                      <div className="text-[#848e9c] text-[10px] mb-1">30 Days MDD</div>
-                      <div className="text-[#eaecef] text-xs font-medium">{trader.mdd_30d.toFixed(2)}%</div>
+                    <div className="text-center border-x border-[#3a4149]/50">
+                      <div className="text-[#848e9c] text-[10px] uppercase tracking-wider font-semibold mb-1.5">Drawdown</div>
+                      <div className="text-[#eaecef] text-sm font-bold">{trader.mdd_30d.toFixed(2)}%</div>
+                      <div className="text-[9px] text-[#5a6169]">30d</div>
                     </div>
-                    <div>
-                      <div className="text-[#848e9c] text-[10px] mb-1">Sharpe Ratio</div>
-                      <div className="text-[#eaecef] text-xs font-medium">{trader.sharpe_ratio !== null ? trader.sharpe_ratio.toFixed(2) : '-'}</div>
+                    <div className="text-center">
+                      <div className="text-[#848e9c] text-[10px] uppercase tracking-wider font-semibold mb-1.5">Sharpe</div>
+                      <div className="text-[#eaecef] text-sm font-bold">{trader.sharpe_ratio !== null ? trader.sharpe_ratio.toFixed(2) : '-'}</div>
+                      <div className="text-[9px] text-[#5a6169]">30d</div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedTrader(trader);
                         setShowMockCopyModal(true);
                       }}
-                      className="flex-1 bg-[#2b3139] hover:bg-[#474d57] border border-[#474d57] text-[#eaecef] py-2 rounded text-sm font-medium transition-colors"
+                      className="flex-1 bg-[#2b3139] hover:bg-[#474d57] border border-[#474d57] hover:border-[#5a6169] text-[#eaecef] py-2.5 rounded-lg text-sm font-semibold transition-all hover:shadow-md"
                     >
                       Mock
                     </button>
@@ -1131,10 +1184,11 @@ function CopyTrading() {
                         setSelectedTrader(trader);
                         setShowCopyModal(true);
                       }}
-                      className="flex-1 bg-[#fcd535] hover:bg-[#f0b90b] text-[#0b0e11] py-2 rounded text-sm font-medium transition-colors"
+                      className="flex-1 bg-gradient-to-r from-[#fcd535] to-[#f0b90b] hover:from-[#f0b90b] hover:to-[#fcd535] text-[#0b0e11] py-2.5 rounded-lg text-sm font-bold transition-all hover:shadow-lg hover:shadow-[#fcd535]/20"
                     >
                       Copy
                     </button>
+                  </div>
                   </div>
                 </div>
               ))}
