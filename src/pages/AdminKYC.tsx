@@ -56,6 +56,7 @@ export default function AdminKYC() {
   const [activeTab, setActiveTab] = useState<'documents' | 'otto'>('documents');
   const [verificationNotes, setVerificationNotes] = useState('');
   const [processingAction, setProcessingAction] = useState(false);
+  const [bulkProcessing, setBulkProcessing] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -239,6 +240,58 @@ export default function AdminKYC() {
     }
   };
 
+  const bulkApprovePending = async () => {
+    const pendingDocs = documents.filter(doc => getDocStatus(doc) === 'pending');
+
+    if (pendingDocs.length === 0) {
+      alert('No pending documents to approve');
+      return;
+    }
+
+    const confirmed = confirm(
+      `Are you sure you want to approve all ${pendingDocs.length} pending KYC documents?\n\nThis action cannot be undone.`
+    );
+
+    if (!confirmed) return;
+
+    setBulkProcessing(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const doc of pendingDocs) {
+      try {
+        const { error } = await supabase
+          .from('kyc_documents')
+          .update({
+            verified: true,
+            verification_notes: 'Bulk approved by admin',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', doc.id);
+
+        if (error) {
+          console.error(`Error approving document ${doc.id}:`, error);
+          failCount++;
+        } else {
+          successCount++;
+        }
+      } catch (error) {
+        console.error(`Error approving document ${doc.id}:`, error);
+        failCount++;
+      }
+
+      // Small delay to avoid overwhelming the database
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    setBulkProcessing(false);
+    await loadData();
+
+    alert(
+      `Bulk approval completed!\n\nApproved: ${successCount}\nFailed: ${failCount}\n\nNote: KYC levels will be automatically upgraded based on verified documents.`
+    );
+  };
+
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
@@ -352,6 +405,26 @@ export default function AdminKYC() {
             <div className="text-3xl font-bold text-red-400">
               {documents.filter(d => getDocStatus(d) === 'rejected').length}
             </div>
+          </div>
+        </div>
+
+        {/* Bulk Actions */}
+        <div className="bg-gradient-to-r from-blue-600/10 to-blue-800/10 backdrop-blur-sm rounded-xl border border-blue-600/30 p-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-white font-semibold text-lg mb-1">Bulk Actions</h3>
+              <p className="text-slate-400 text-sm">
+                Approve all pending KYC documents at once (rejected documents are skipped)
+              </p>
+            </div>
+            <button
+              onClick={bulkApprovePending}
+              disabled={bulkProcessing || documents.filter(doc => getDocStatus(doc) === 'pending').length === 0}
+              className="px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-colors flex items-center gap-2 whitespace-nowrap"
+            >
+              <CheckCircle2 className="w-5 h-5" />
+              {bulkProcessing ? 'Processing...' : `Approve All Pending (${documents.filter(doc => getDocStatus(doc) === 'pending').length})`}
+            </button>
           </div>
         </div>
 

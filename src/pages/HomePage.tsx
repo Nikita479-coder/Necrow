@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import SharkCardApplicationModal from '../components/SharkCardApplicationModal';
 import CryptoIcon from '../components/CryptoIcon';
+import TelegramPromoSection from '../components/TelegramPromoSection';
 import { Shield, ChevronDown, ArrowRight, Gift, Check, ChevronLeft, ChevronRight, Zap, Lock, Globe, Users, TrendingUp, LineChart, Clock, Headphones, Loader2, Newspaper, ExternalLink, Smartphone, Bell } from 'lucide-react';
 import { usePrices } from '../hooks/usePrices';
 import { useNavigation } from '../App';
@@ -777,28 +778,8 @@ function HomePage() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-[#0088cc]/10 to-transparent border border-[#0088cc]/30 rounded-2xl p-4 sm:p-6 lg:p-8 mb-8 sm:mb-12">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-8">
-              <div className="text-center md:text-left flex-1">
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2">
-                  Join Our Growing <span className="text-[#0088cc]">Community</span>
-                </h2>
-                <p className="text-gray-300 text-sm sm:text-base lg:text-lg max-w-2xl">
-                  Stay updated with the latest signals, market insights, and connect with fellow traders in our official Telegram community.
-                </p>
-              </div>
-              <a
-                href="https://t.me/officialsharkexchange"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 bg-[#0088cc] hover:bg-[#0077b5] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg transition-all hover:scale-105 shadow-lg shadow-[#0088cc]/20"
-              >
-                <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
-                </svg>
-                Join Telegram
-              </a>
-            </div>
+          <div className="mb-8 sm:mb-12">
+            <TelegramPromoSection />
           </div>
 
           <div className="bg-gradient-to-br from-[#181a20] to-[#1a1d24] rounded-2xl p-6 sm:p-8 border border-gray-800 mb-12 overflow-hidden relative">
