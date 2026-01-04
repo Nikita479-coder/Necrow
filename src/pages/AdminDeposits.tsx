@@ -53,7 +53,6 @@ export default function AdminDeposits() {
   const [filterCurrency, setFilterCurrency] = useState<string>('all');
   const [filterWalletType, setFilterWalletType] = useState<string>('all');
   const [filterDateRange, setFilterDateRange] = useState<string>('all');
-  const [filterAmount, setFilterAmount] = useState<string>('all');
 
   useEffect(() => {
     if (authLoading) return;
@@ -106,8 +105,8 @@ export default function AdminDeposits() {
         const loadedDeposits = data.deposits || [];
         setDeposits(loadedDeposits);
 
-        const completedDeposits = loadedDeposits.filter((d: Deposit) => d.status === 'finished' || d.status === 'completed');
-        const completedAmount = completedDeposits.reduce((sum: number, d: Deposit) => sum + parseFloat(d.outcome_amount?.toString() || d.price_amount?.toString() || '0'), 0);
+        const completedDeposits = loadedDeposits.filter((d: Deposit) => d.status === 'finished' || d.status === 'completed' || d.status === 'partially_paid' || d.status === 'overpaid');
+        const completedAmount = completedDeposits.reduce((sum: number, d: Deposit) => sum + parseFloat(d.actually_paid?.toString() || d.outcome_amount?.toString() || '0'), 0);
         const pendingCount = loadedDeposits.filter((d: Deposit) => d.status === 'waiting' || d.status === 'confirming' || d.status === 'sending').length;
         const failedCount = loadedDeposits.filter((d: Deposit) => d.status === 'failed' || d.status === 'expired' || d.status === 'refunded').length;
 
@@ -127,6 +126,8 @@ export default function AdminDeposits() {
     const statusConfig: Record<string, { color: string; icon: any; label: string }> = {
       'finished': { color: 'bg-green-500/20 text-green-400 border-green-500/30', icon: CheckCircle, label: 'Completed' },
       'completed': { color: 'bg-green-500/20 text-green-400 border-green-500/30', icon: CheckCircle, label: 'Completed' },
+      'partially_paid': { color: 'bg-green-500/20 text-green-400 border-green-500/30', icon: CheckCircle, label: 'Completed' },
+      'overpaid': { color: 'bg-green-500/20 text-green-400 border-green-500/30', icon: CheckCircle, label: 'Completed' },
       'waiting': { color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', icon: Clock, label: 'Waiting' },
       'confirming': { color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', icon: RefreshCw, label: 'Confirming' },
       'sending': { color: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30', icon: TrendingUp, label: 'Sending' },
@@ -170,13 +171,6 @@ export default function AdminDeposits() {
       if (filterDateRange === '30d' && hoursDiff > 720) return false;
     }
 
-    if (filterAmount !== 'all') {
-      const amount = parseFloat(deposit.price_amount?.toString() || '0');
-      if (filterAmount === 'small' && amount >= 100) return false;
-      if (filterAmount === 'medium' && (amount < 100 || amount >= 1000)) return false;
-      if (filterAmount === 'large' && amount < 1000) return false;
-    }
-
     return true;
   });
 
@@ -185,7 +179,6 @@ export default function AdminDeposits() {
     setFilterCurrency('all');
     setFilterWalletType('all');
     setFilterDateRange('all');
-    setFilterAmount('all');
   };
 
   const activeFilterCount = [
@@ -193,16 +186,15 @@ export default function AdminDeposits() {
     filterCurrency !== 'all',
     filterWalletType !== 'all',
     filterDateRange !== 'all',
-    filterAmount !== 'all',
   ].filter(Boolean).length;
 
   const exportToCSV = () => {
-    const headers = ['Date', 'User', 'Email', 'Amount', 'Currency', 'Status', 'Payment ID', 'Wallet Type'];
+    const headers = ['Date', 'User', 'Email', 'Amount Paid', 'Currency', 'Status', 'Payment ID', 'Wallet Type'];
     const rows = filteredDeposits.map(d => [
       new Date(d.created_at).toLocaleString(),
       d.user_name,
       d.user_email,
-      d.price_amount,
+      d.actually_paid ? parseFloat(d.actually_paid.toString()).toFixed(8) : '0',
       d.pay_currency,
       d.status,
       d.payment_id,
@@ -350,7 +342,7 @@ export default function AdminDeposits() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-sm text-gray-400 mb-2">Status</label>
                     <select
@@ -360,6 +352,7 @@ export default function AdminDeposits() {
                     >
                       <option value="all">All Statuses</option>
                       <option value="finished">Completed</option>
+                      <option value="partially_paid">Partially Paid</option>
                       <option value="waiting">Waiting</option>
                       <option value="confirming">Confirming</option>
                       <option value="sending">Sending</option>
@@ -410,20 +403,6 @@ export default function AdminDeposits() {
                       <option value="30d">Last 30 Days</option>
                     </select>
                   </div>
-
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">Amount Range</label>
-                    <select
-                      value={filterAmount}
-                      onChange={(e) => setFilterAmount(e.target.value)}
-                      className="w-full bg-[#1a1d24] border border-gray-700 rounded-lg px-3 py-2 text-white outline-none focus:border-[#f0b90b] transition-colors"
-                    >
-                      <option value="all">All Amounts</option>
-                      <option value="small">Small (&lt; $100)</option>
-                      <option value="medium">Medium ($100 - $1,000)</option>
-                      <option value="large">Large (&gt; $1,000)</option>
-                    </select>
-                  </div>
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-gray-700 text-sm text-gray-400">
@@ -445,7 +424,7 @@ export default function AdminDeposits() {
                   <tr className="border-b border-gray-800">
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Date</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">User</th>
-                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">Amount</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">Amount Paid</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Currency</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Wallet</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Status</th>
@@ -468,11 +447,12 @@ export default function AdminDeposits() {
                         <div className="text-gray-400 text-sm">{deposit.user_email}</div>
                       </td>
                       <td className="py-4 px-4 text-right">
-                        <div className="text-white font-bold">${parseFloat(deposit.price_amount?.toString() || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                        {deposit.actually_paid && (
-                          <div className="text-gray-400 text-xs">
-                            Paid: {parseFloat(deposit.actually_paid.toString()).toFixed(8)}
+                        {deposit.actually_paid ? (
+                          <div className="text-white font-bold">
+                            {parseFloat(deposit.actually_paid.toString()).toFixed(8)}
                           </div>
+                        ) : (
+                          <div className="text-gray-500 text-sm">—</div>
                         )}
                       </td>
                       <td className="py-4 px-4">

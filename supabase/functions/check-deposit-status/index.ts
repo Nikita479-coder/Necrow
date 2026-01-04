@@ -29,7 +29,7 @@ Deno.serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const pendingStatuses = ['waiting', 'confirming', 'confirmed', 'sending', 'partially_paid'];
+    const pendingStatuses = ['waiting', 'confirming', 'confirmed', 'sending', 'partially_paid', 'overpaid'];
     
     const { data: pendingDeposits, error: fetchError } = await supabase
       .from('crypto_deposits')
@@ -68,16 +68,17 @@ Deno.serve(async (req: Request) => {
         const createdAt = new Date(deposit.created_at);
         const now = new Date();
         const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
-        
-        if (hoursSinceCreation > 24) {
+
+        // Don't expire deposits that are already partially paid or overpaid (they've been credited)
+        if (hoursSinceCreation > 24 && deposit.status !== 'partially_paid' && deposit.status !== 'overpaid') {
           await supabase
             .from('crypto_deposits')
-            .update({ 
-              status: 'expired', 
-              updated_at: now.toISOString() 
+            .update({
+              status: 'expired',
+              updated_at: now.toISOString()
             })
             .eq('payment_id', deposit.payment_id);
-          
+
           await supabase.from('notifications').insert({
             user_id: deposit.user_id,
             type: 'system',
@@ -85,9 +86,15 @@ Deno.serve(async (req: Request) => {
             message: `Your ${deposit.pay_currency.toUpperCase()} deposit address has expired. Please generate a new address to make a deposit.`,
             is_read: false
           });
-          
+
           results.expired++;
           console.log(`Deposit ${deposit.payment_id} marked as expired`);
+          continue;
+        }
+
+        // Skip checking NowPayments status for deposits that are already completed
+        if (deposit.status === 'partially_paid' || deposit.status === 'overpaid') {
+          console.log(`Skipping completed deposit ${deposit.payment_id} with status ${deposit.status}`);
           continue;
         }
 
@@ -132,7 +139,7 @@ Deno.serve(async (req: Request) => {
             });
           }
 
-          if (newStatus === 'finished' || newStatus === 'partially_paid') {
+          if (newStatus === 'finished' || newStatus === 'partially_paid' || newStatus === 'overpaid') {
             const actuallyPaid = parseFloat(paymentData.actually_paid || 0);
             const outcomeAmount = parseFloat(paymentData.outcome_amount || paymentData.actually_paid || 0);
 
