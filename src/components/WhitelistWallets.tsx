@@ -104,19 +104,19 @@ function WhitelistWallets({ mfaEnabled }: WhitelistWalletsProps) {
         throw new Error('No verified 2FA factor found');
       }
 
-      const { error: verifyError } = await supabase.auth.mfa.challenge({
+      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
         factorId: totpFactor.id
       });
 
-      if (verifyError) throw verifyError;
+      if (challengeError) throw challengeError;
 
-      const { error: challengeError } = await supabase.auth.mfa.verify({
+      const { error: verifyError } = await supabase.auth.mfa.verify({
         factorId: totpFactor.id,
-        challengeId: totpFactor.id,
+        challengeId: challengeData.id,
         code: verificationCode
       });
 
-      if (challengeError) {
+      if (verifyError) {
         showToast('Invalid verification code', 'error');
         return;
       }

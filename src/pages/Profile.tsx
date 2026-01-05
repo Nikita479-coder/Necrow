@@ -212,6 +212,7 @@ function Profile() {
   const [showAllCoinsModal, setShowAllCoinsModal] = useState(false);
   const [coinSearchQuery, setCoinSearchQuery] = useState('');
   const [selectedCoinCategory, setSelectedCoinCategory] = useState('All');
+  const [isExclusiveAffiliate, setIsExclusiveAffiliate] = useState(false);
 
   const availableCurrencies = ['BTC', 'ETH', 'USDT', 'BNB'];
 
@@ -299,6 +300,21 @@ function Profile() {
       setAccountSubSection('Notifications');
     }
   }, [navigationState]);
+
+  useEffect(() => {
+    const checkExclusiveAffiliate = async () => {
+      if (!user) return;
+      try {
+        const { data } = await supabase.rpc('get_exclusive_affiliate_stats', {
+          p_user_id: user.id
+        });
+        setIsExclusiveAffiliate(data?.enrolled === true);
+      } catch (error) {
+        setIsExclusiveAffiliate(false);
+      }
+    };
+    checkExclusiveAffiliate();
+  }, [user]);
 
   const loadAssets = async () => {
     if (!user) return;
@@ -1722,16 +1738,18 @@ function Profile() {
               <span>Referral</span>
             </button>
 
-            <button
-              onClick={() => {
-                navigateTo('affiliate');
-                setSidebarOpen(false);
-              }}
-              className="w-full flex items-center gap-3 px-6 py-3 text-sm text-gray-400 hover:bg-[#2b3139]/50 hover:text-gray-300 transition-colors"
-            >
-              <Network className="w-5 h-5" />
-              <span>Affiliate Program</span>
-            </button>
+            {isExclusiveAffiliate && (
+              <button
+                onClick={() => {
+                  navigateTo('affiliate');
+                  setSidebarOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-6 py-3 text-sm text-gray-400 hover:bg-[#2b3139]/50 hover:text-gray-300 transition-colors"
+              >
+                <Network className="w-5 h-5" />
+                <span>Affiliate Program</span>
+              </button>
+            )}
 
             <button
               onClick={() => {

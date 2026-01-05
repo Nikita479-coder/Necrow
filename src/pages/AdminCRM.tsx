@@ -126,6 +126,7 @@ export default function AdminCRM() {
     maxBalance: '',
     withdrawalBlocked: 'all',
     onlineStatus: 'all',
+    hasDeposits: 'all',
   });
 
   const [page, setPage] = useState(0);
@@ -391,6 +392,7 @@ export default function AdminCRM() {
       if (filters.minBalance) filterObj.minBalance = parseFloat(filters.minBalance);
       if (filters.maxBalance) filterObj.maxBalance = parseFloat(filters.maxBalance);
       if (filters.withdrawalBlocked !== 'all') filterObj.withdrawalBlocked = filters.withdrawalBlocked === 'true';
+      if (filters.hasDeposits !== 'all') filterObj.hasDeposits = filters.hasDeposits;
 
       const { data } = await supabase.rpc('get_filtered_users', {
         p_filters: filterObj,
@@ -1116,6 +1118,15 @@ export default function AdminCRM() {
                   <option value="Gold">Gold</option>
                   <option value="Platinum">Platinum</option>
                   <option value="Diamond">Diamond</option>
+                </select>
+                <select
+                  value={filters.hasDeposits}
+                  onChange={(e) => setFilters({ ...filters, hasDeposits: e.target.value })}
+                  className="bg-[#1a1d24] border border-gray-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-[#f0b90b]"
+                >
+                  <option value="all">All Deposit Status</option>
+                  <option value="true">Has Deposits</option>
+                  <option value="false">No Deposits</option>
                 </select>
                 <input
                   type="number"

@@ -21,6 +21,7 @@ interface UserSummary {
   last_activity?: string;
   has_referrer?: boolean;
   referral_count?: number;
+  total_deposits?: number;
 }
 
 export default function AdminDashboard() {
@@ -47,6 +48,7 @@ export default function AdminDashboard() {
   const [filterPositions, setFilterPositions] = useState<string>('all');
   const [filterOnlineStatus, setFilterOnlineStatus] = useState<string>('all');
   const [filterReferralStatus, setFilterReferralStatus] = useState<string>('all');
+  const [filterDepositStatus, setFilterDepositStatus] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('newest');
 
   const [loginAsModal, setLoginAsModal] = useState<{
@@ -446,6 +448,10 @@ export default function AdminDashboard() {
       if (filterReferralStatus === 'has_referrals' && (u.referral_count || 0) === 0) return false;
       if (filterReferralStatus === 'no_referrals' && (u.referral_count || 0) > 0) return false;
 
+      // Deposit status filter
+      if (filterDepositStatus === 'has_deposits' && (u.total_deposits || 0) <= 0) return false;
+      if (filterDepositStatus === 'no_deposits' && (u.total_deposits || 0) > 0) return false;
+
       return true;
     })
     .sort((a, b) => {
@@ -483,7 +489,7 @@ export default function AdminDashboard() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(0);
-  }, [searchTerm, filterVipTier, filterKycStatus, filterBalance, filterPositions, filterOnlineStatus, filterReferralStatus, sortBy]);
+  }, [searchTerm, filterVipTier, filterKycStatus, filterBalance, filterPositions, filterOnlineStatus, filterReferralStatus, filterDepositStatus, sortBy]);
 
   const clearFilters = () => {
     setFilterVipTier('all');
@@ -492,6 +498,7 @@ export default function AdminDashboard() {
     setFilterPositions('all');
     setFilterOnlineStatus('all');
     setFilterReferralStatus('all');
+    setFilterDepositStatus('all');
     setSortBy('newest');
   };
 
@@ -502,6 +509,7 @@ export default function AdminDashboard() {
     filterPositions !== 'all',
     filterOnlineStatus !== 'all',
     filterReferralStatus !== 'all',
+    filterDepositStatus !== 'all',
     sortBy !== 'newest'
   ].filter(Boolean).length;
 
@@ -1071,6 +1079,20 @@ export default function AdminDashboard() {
                         <option value="has_referrer">Has Referrer</option>
                         <option value="has_referrals">Has Referred Others</option>
                         <option value="no_referrals">Has Not Referred Anyone</option>
+                      </select>
+                    </div>
+
+                    {/* Deposit Status Filter */}
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-2">Deposit Status</label>
+                      <select
+                        value={filterDepositStatus}
+                        onChange={(e) => setFilterDepositStatus(e.target.value)}
+                        className="w-full bg-[#1a1d24] border border-gray-700 rounded-lg px-3 py-2 text-white outline-none focus:border-[#f0b90b] transition-colors"
+                      >
+                        <option value="all">All Users</option>
+                        <option value="has_deposits">Has Deposits</option>
+                        <option value="no_deposits">No Deposits</option>
                       </select>
                     </div>
 
