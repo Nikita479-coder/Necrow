@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import PopupBanner from './components/PopupBanner';
 import PageTracker from './components/PageTracker';
 import { initAcquisitionTracking } from './services/acquisitionService';
+import { priceSyncService } from './services/priceSyncService';
 import HomePage from './pages/HomePage';
 import Markets from './pages/Markets';
 import FuturesTrading from './pages/FuturesTrading';
@@ -84,6 +85,7 @@ function App() {
 
   useEffect(() => {
     initAcquisitionTracking();
+    priceSyncService.start();
 
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const type = hashParams.get('type');
@@ -109,6 +111,10 @@ function App() {
       setNavigationState({ referralCode: upperRefCode });
       window.history.replaceState({}, document.title, window.location.pathname);
     }
+
+    return () => {
+      priceSyncService.stop();
+    };
   }, []);
 
   useEffect(() => {

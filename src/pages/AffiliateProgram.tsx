@@ -1452,92 +1452,64 @@ function AffiliateProgram() {
   return (
     <div className="min-h-screen bg-[#0b0e11] text-white">
       <Navbar />
-
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Network className="w-10 h-10 text-blue-400" />
-              <div>
-                <h1 className="text-3xl font-bold">Affiliate Program</h1>
-                <p className="text-gray-400">Multi-tier affiliate system with lifetime commissions</p>
-              </div>
-            </div>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Affiliate Program</h1>
+            <p className="text-gray-400">Build your network and earn lifetime commissions</p>
+          </div>
+          <div className="flex items-center gap-2 bg-[#1a1d24] rounded-lg p-1">
             <button
-              onClick={loadAffiliateData}
-              className="p-2 bg-[#1a1d24] hover:bg-[#2b3139] rounded-lg transition-all"
-              title="Refresh data"
+              onClick={() => handleSwitchProgram('referral')}
+              disabled={switching}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                activeProgram === 'referral'
+                  ? 'bg-blue-500 text-white'
+                  : 'text-gray-400 hover:text-white'
+              }`}
             >
-              <RefreshCw className="w-5 h-5 text-gray-400" />
+              Referral
+            </button>
+            <button
+              onClick={() => handleSwitchProgram('affiliate')}
+              disabled={switching}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                activeProgram === 'affiliate'
+                  ? 'bg-blue-500 text-white'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Affiliate
             </button>
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-[#1a1d24] to-[#0b0e11] rounded-xl p-4 mb-6 border border-gray-800">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => {
-                  setActiveProgram('referral');
-                  handleSwitchProgram('referral');
-                }}
-                disabled={switching}
-                className={`px-5 py-2.5 rounded-lg font-medium transition-all flex items-center gap-2 text-sm ${
-                  activeProgram === 'referral'
-                    ? 'bg-[#fcd535] text-[#0b0e11]'
-                    : 'bg-[#2b3139] text-gray-400 hover:text-white hover:bg-[#3d4450]'
-                }`}
-              >
-                <Users className="w-4 h-4" />
-                Simple Referral
-                {activeProgram === 'referral' && <CheckCircle className="w-4 h-4" />}
-              </button>
-              <button
-                disabled={true}
-                className={`px-5 py-2.5 rounded-lg font-medium transition-all flex items-center gap-2 text-sm ${
-                  activeProgram === 'affiliate'
-                    ? 'bg-[#fcd535] text-[#0b0e11]'
-                    : 'bg-[#2b3139] text-gray-400 hover:text-white hover:bg-[#3d4450]'
-                }`}
-              >
-                <Zap className="w-4 h-4" />
-                Affiliate Program
-                {activeProgram === 'affiliate' && <CheckCircle className="w-4 h-4" />}
-              </button>
-            </div>
-            <div className="text-sm text-gray-400">
-              {activeProgram === 'affiliate' ? (
-                <span>5-tier network with {selectedPlan === 'revshare' ? 'Revenue Share' : selectedPlan === 'cpa' ? 'CPA Only' : selectedPlan === 'hybrid' ? 'Hybrid' : 'Auto-Optimize'}</span>
-              ) : (
-                <span>Single-tier direct commissions</span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+        <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-800 pb-4">
           {[
             { id: 'overview', label: 'Overview', icon: TrendingUp },
-            { id: 'network', label: 'Network', icon: Users },
+            { id: 'network', label: 'Network', icon: Network },
             { id: 'earnings', label: 'Earnings', icon: DollarSign },
             { id: 'cpa', label: 'CPA Progress', icon: Target },
             { id: 'calculator', label: 'Calculator', icon: Calculator },
             { id: 'settings', label: 'Settings', icon: Settings },
-            { id: 'terms', label: 'Guide', icon: Info }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-[#1a1d24] text-gray-400 hover:bg-[#2b3139] hover:text-white'
-              }`}
-            >
-              <tab.icon className="w-5 h-5" />
-              {tab.label}
-            </button>
-          ))}
+            { id: 'terms', label: 'Terms & Guide', icon: Info }
+          ].map((tab) => {
+            const IconComponent = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-[#1a1d24] text-gray-400 hover:text-white'
+                }`}
+              >
+                <IconComponent className="w-4 h-4" />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
 
         {activeTab === 'overview' && renderOverview()}

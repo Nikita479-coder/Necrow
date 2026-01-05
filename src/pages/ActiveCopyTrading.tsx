@@ -419,6 +419,15 @@ function ActiveCopyTrading() {
         withdrawAmount = currentBalance - platformFee;
       }
 
+      const { error: deactivateError } = await supabase
+        .from('copy_relationships')
+        .update({
+          is_active: false
+        })
+        .eq('id', selectedCopy.id);
+
+      if (deactivateError) throw deactivateError;
+
       const { data: transferData, error: transferError } = await supabase.rpc(
         'transfer_between_wallets',
         {
@@ -430,14 +439,27 @@ function ActiveCopyTrading() {
         }
       );
 
-      if (transferError) throw transferError;
-      if (!transferData?.success) throw new Error(transferData?.error || 'Transfer failed');
+      if (transferError) {
+        await supabase
+          .from('copy_relationships')
+          .update({ is_active: true })
+          .eq('id', selectedCopy.id);
+        throw transferError;
+      }
+      if (!transferData?.success) {
+        await supabase
+          .from('copy_relationships')
+          .update({ is_active: true })
+          .eq('id', selectedCopy.id);
+        throw new Error(transferData?.error || 'Transfer failed');
+      }
 
       const { error: copyError } = await supabase
         .from('copy_relationships')
         .update({
-          is_active: false,
-          current_balance: '0'
+          status: 'stopped',
+          current_balance: '0',
+          ended_at: new Date().toISOString()
         })
         .eq('id', selectedCopy.id);
 

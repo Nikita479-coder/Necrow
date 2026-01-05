@@ -14,12 +14,13 @@ class PriceSyncService {
     this.isRunning = true;
     this.consecutiveFailures = 0;
 
-    // Sync every 60 seconds instead of 5 to reduce load
+    setTimeout(() => this.syncPricesToDatabase(), 2000);
+
     this.syncInterval = setInterval(() => {
       this.syncPricesToDatabase();
-    }, 60000);
+    }, 15000);
 
-    console.log('Price sync service started (60s interval)');
+    console.log('Price sync service started (15s interval)');
   }
 
   stop() {
