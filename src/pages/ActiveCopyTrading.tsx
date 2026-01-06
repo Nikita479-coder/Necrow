@@ -772,7 +772,7 @@ function ActiveCopyTrading() {
             ))}
           </div>
 
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {activeTab === 'positions' && (
               <div>
                 {openTrades.length === 0 ? (
@@ -784,43 +784,43 @@ function ActiveCopyTrading() {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-2.5 sm:space-y-3">
                     {openTrades.map((position) => (
                       <div
                         key={position.id}
-                        className="bg-[#252930] hover:bg-[#2b3139] rounded-xl p-4 sm:p-5 transition-colors border border-[#2b3139] hover:border-[#474d57]"
+                        className="bg-[#252930] hover:bg-[#2b3139] rounded-lg sm:rounded-xl p-3 sm:p-5 transition-colors border border-[#2b3139] hover:border-[#474d57]"
                       >
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-[#f0b90b]/10 flex items-center justify-center">
-                              <Zap className="w-5 h-5 text-[#f0b90b]" />
+                        <div className="flex items-center justify-between mb-2.5 sm:mb-4 gap-2">
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-[#f0b90b]/10 flex items-center justify-center flex-shrink-0">
+                              <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-[#f0b90b]" />
                             </div>
                             <div>
-                              <span className="text-white font-semibold text-lg">{position.symbol}</span>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-xs text-[#f0b90b] font-medium">{position.leverage}x</span>
+                              <div className="text-white font-bold text-sm sm:text-lg">{position.symbol}</div>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-[10px] sm:text-xs text-[#f0b90b] font-bold bg-[#f0b90b]/10 px-1.5 py-0.5 rounded">{position.leverage}x</span>
                               </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-xs text-[#848e9c]">Opened</div>
-                            <div className="text-sm text-white">
-                              {new Date(position.opened_at).toLocaleDateString()}
+                          <div className="text-right flex-shrink-0">
+                            <div className="text-[9px] sm:text-xs text-[#848e9c]">Opened</div>
+                            <div className="text-[10px] sm:text-sm text-white font-medium whitespace-nowrap">
+                              {new Date(position.opened_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                             </div>
                           </div>
                         </div>
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="bg-[#1e2329] rounded-lg p-3">
-                            <div className="text-[#848e9c] text-xs mb-1">Entry Price</div>
-                            <div className="text-white font-semibold">${position.entry_price.toLocaleString()}</div>
+                        <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
+                          <div className="bg-[#1e2329] rounded-md sm:rounded-lg p-2 sm:p-3">
+                            <div className="text-[#848e9c] text-[9px] sm:text-xs mb-0.5 sm:mb-1 uppercase tracking-wide">Entry Price</div>
+                            <div className="text-white font-bold text-[11px] sm:text-base">${position.entry_price.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
                           </div>
-                          <div className="bg-[#1e2329] rounded-lg p-3">
-                            <div className="text-[#848e9c] text-xs mb-1">Quantity</div>
-                            <div className="text-white font-semibold">{position.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })}</div>
+                          <div className="bg-[#1e2329] rounded-md sm:rounded-lg p-2 sm:p-3">
+                            <div className="text-[#848e9c] text-[9px] sm:text-xs mb-0.5 sm:mb-1 uppercase tracking-wide">Quantity</div>
+                            <div className="text-white font-bold text-[11px] sm:text-base">{position.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
                           </div>
-                          <div className="bg-[#1e2329] rounded-lg p-3">
-                            <div className="text-[#848e9c] text-xs mb-1">Position Size</div>
-                            <div className="text-white font-semibold">${(position.entry_price * position.quantity).toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                          <div className="bg-[#1e2329] rounded-md sm:rounded-lg p-2 sm:p-3">
+                            <div className="text-[#848e9c] text-[9px] sm:text-xs mb-0.5 sm:mb-1 uppercase tracking-wide">Position Size</div>
+                            <div className="text-white font-bold text-[11px] sm:text-base">${(position.entry_price * position.quantity).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                           </div>
                         </div>
                       </div>
@@ -841,48 +841,50 @@ function ActiveCopyTrading() {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-2.5 sm:space-y-3">
                     {closedTrades.map((position) => (
                       <div
                         key={position.id}
-                        className="bg-[#252930] rounded-xl p-4 sm:p-5 border border-[#2b3139]"
+                        className="bg-[#252930] rounded-lg sm:rounded-xl p-3 sm:p-5 border border-[#2b3139]"
                       >
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <span className="text-white font-semibold text-lg">{position.symbol}</span>
-                            <span className="text-xs text-[#f0b90b] font-medium">{position.leverage}x</span>
+                        <div className="flex items-center justify-between mb-2.5 sm:mb-4 gap-2">
+                          <div className="flex items-center gap-1.5 sm:gap-3 flex-wrap">
+                            <span className="text-white font-bold text-sm sm:text-lg">{position.symbol}</span>
+                            <span className="text-[10px] sm:text-xs text-[#f0b90b] font-bold bg-[#f0b90b]/10 px-1.5 py-0.5 rounded">{position.leverage}x</span>
                           </div>
-                          <span className="text-xs text-[#848e9c]">
-                            {position.closed_at ? new Date(position.closed_at).toLocaleDateString() : 'N/A'}
+                          <span className="text-[10px] sm:text-xs text-[#848e9c] flex-shrink-0 whitespace-nowrap">
+                            {position.closed_at ? new Date(position.closed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}
                           </span>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                          <div className="bg-[#1e2329] rounded-lg p-3">
-                            <div className="text-[#848e9c] text-xs mb-1">Entry</div>
-                            <div className="text-white font-medium">${position.entry_price.toLocaleString()}</div>
+                        <div className="grid grid-cols-2 gap-1.5 sm:gap-3">
+                          <div className="bg-[#1e2329] rounded-md sm:rounded-lg p-2 sm:p-3">
+                            <div className="text-[#848e9c] text-[9px] sm:text-xs mb-0.5 sm:mb-1 uppercase tracking-wide">Entry</div>
+                            <div className="text-white font-bold text-[11px] sm:text-base">${position.entry_price.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
                           </div>
-                          <div className="bg-[#1e2329] rounded-lg p-3">
-                            <div className="text-[#848e9c] text-xs mb-1">Exit</div>
-                            <div className="text-white font-medium">${position.exit_price?.toLocaleString() || 'N/A'}</div>
+                          <div className="bg-[#1e2329] rounded-md sm:rounded-lg p-2 sm:p-3">
+                            <div className="text-[#848e9c] text-[9px] sm:text-xs mb-0.5 sm:mb-1 uppercase tracking-wide">Exit</div>
+                            <div className="text-white font-bold text-[11px] sm:text-base">${position.exit_price?.toLocaleString(undefined, { maximumFractionDigits: 2 }) || 'N/A'}</div>
                           </div>
-                          <div className="bg-[#1e2329] rounded-lg p-3">
-                            <div className="text-[#848e9c] text-xs mb-1">Quantity</div>
-                            <div className="text-white font-medium">{position.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })}</div>
+                          <div className="bg-[#1e2329] rounded-md sm:rounded-lg p-2 sm:p-3">
+                            <div className="text-[#848e9c] text-[9px] sm:text-xs mb-0.5 sm:mb-1 uppercase tracking-wide">Quantity</div>
+                            <div className="text-white font-bold text-[11px] sm:text-base">{position.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
                           </div>
-                          <div className={`rounded-lg p-3 ${position.pnl && position.pnl >= 0 ? 'bg-[#0ecb81]/10' : 'bg-[#f6465d]/10'}`}>
-                            <div className="text-[#848e9c] text-xs mb-1">PNL</div>
+                          <div className={`rounded-md sm:rounded-lg p-2 sm:p-3 ${position.pnl && position.pnl >= 0 ? 'bg-[#0ecb81]/10' : 'bg-[#f6465d]/10'}`}>
+                            <div className="text-[#848e9c] text-[9px] sm:text-xs mb-0.5 sm:mb-1 uppercase tracking-wide">PNL</div>
                             {position.pnl !== null && position.pnl !== undefined ? (
-                              <div className={`font-semibold flex items-center gap-1 ${position.pnl >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
-                                {position.pnl >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                                {position.pnl >= 0 ? '+' : ''}{position.pnl.toFixed(2)}
+                              <div className={`font-bold flex flex-col sm:flex-row sm:items-center gap-0.5 ${position.pnl >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                                <span className="flex items-center gap-0.5 sm:gap-1 text-[11px] sm:text-base">
+                                  {position.pnl >= 0 ? <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" /> : <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4" />}
+                                  {position.pnl >= 0 ? '+' : ''}{position.pnl.toFixed(2)}
+                                </span>
                                 {(position.pnl_percent || position.pnl_percentage) && (
-                                  <span className="text-xs opacity-75">
+                                  <span className="text-[9px] sm:text-xs opacity-75">
                                     ({(position.pnl_percent || position.pnl_percentage || 0) >= 0 ? '+' : ''}{(position.pnl_percent || position.pnl_percentage || 0).toFixed(1)}%)
                                   </span>
                                 )}
                               </div>
                             ) : (
-                              <div className="text-[#848e9c]">N/A</div>
+                              <div className="text-[#848e9c] text-[11px] sm:text-base">N/A</div>
                             )}
                           </div>
                         </div>
@@ -904,16 +906,16 @@ function ActiveCopyTrading() {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-2.5 sm:space-y-3">
                     {myAllocations.map((allocation) => (
                       <div
                         key={allocation.id}
-                        className="bg-[#252930] rounded-xl p-4 sm:p-5 border border-[#2b3139]"
+                        className="bg-[#252930] rounded-lg sm:rounded-xl p-3 sm:p-5 border border-[#2b3139]"
                       >
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <span className="text-white font-semibold text-lg">{allocation.symbol || 'N/A'}</span>
-                            <span className={`text-xs px-2 py-0.5 rounded font-medium ${
+                        <div className="flex items-center justify-between mb-2.5 sm:mb-4 gap-2">
+                          <div className="flex items-center gap-1.5 sm:gap-3 flex-wrap">
+                            <span className="text-white font-bold text-sm sm:text-lg">{allocation.symbol || 'N/A'}</span>
+                            <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded font-bold ${
                               allocation.status === 'open'
                                 ? 'bg-blue-500/10 text-blue-400'
                                 : 'bg-[#474d57]/20 text-[#848e9c]'
@@ -921,57 +923,59 @@ function ActiveCopyTrading() {
                               {allocation.status.toUpperCase()}
                             </span>
                           </div>
-                          <span className="text-xs text-[#848e9c]">
+                          <span className="text-[10px] sm:text-xs text-[#848e9c] flex-shrink-0 whitespace-nowrap">
                             {allocation.status === 'closed' && allocation.closed_at
-                              ? new Date(allocation.closed_at).toLocaleDateString()
-                              : new Date(allocation.created_at).toLocaleDateString()
+                              ? new Date(allocation.closed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                              : new Date(allocation.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                             }
                           </span>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                          <div className="bg-[#1e2329] rounded-lg p-3">
-                            <div className="text-[#848e9c] text-xs mb-1">Allocated</div>
-                            <div className="text-white font-medium">{allocation.allocated_amount.toFixed(2)} USDT</div>
+                        <div className="grid grid-cols-2 gap-1.5 sm:gap-3">
+                          <div className="bg-[#1e2329] rounded-md sm:rounded-lg p-2 sm:p-3">
+                            <div className="text-[#848e9c] text-[9px] sm:text-xs mb-0.5 sm:mb-1 uppercase tracking-wide">Allocated</div>
+                            <div className="text-white font-bold text-[11px] sm:text-base">{allocation.allocated_amount.toFixed(2)}</div>
                           </div>
-                          <div className="bg-[#1e2329] rounded-lg p-3">
-                            <div className="text-[#848e9c] text-xs mb-1">Entry</div>
-                            <div className="text-white font-medium">${allocation.entry_price.toLocaleString()}</div>
+                          <div className="bg-[#1e2329] rounded-md sm:rounded-lg p-2 sm:p-3">
+                            <div className="text-[#848e9c] text-[9px] sm:text-xs mb-0.5 sm:mb-1 uppercase tracking-wide">Entry</div>
+                            <div className="text-white font-bold text-[11px] sm:text-base">${allocation.entry_price.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
                           </div>
-                          <div className="bg-[#1e2329] rounded-lg p-3">
-                            <div className="text-[#848e9c] text-xs mb-1">Exit</div>
-                            <div className="text-white font-medium">{allocation.exit_price ? `$${allocation.exit_price.toLocaleString()}` : '-'}</div>
+                          <div className="bg-[#1e2329] rounded-md sm:rounded-lg p-2 sm:p-3">
+                            <div className="text-[#848e9c] text-[9px] sm:text-xs mb-0.5 sm:mb-1 uppercase tracking-wide">Exit</div>
+                            <div className="text-white font-bold text-[11px] sm:text-base">{allocation.exit_price ? `$${allocation.exit_price.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '-'}</div>
                           </div>
-                          <div className={`rounded-lg p-3 ${
+                          <div className={`rounded-md sm:rounded-lg p-2 sm:p-3 ${
                             allocation.realized_pnl !== null && allocation.realized_pnl >= 0
                               ? 'bg-[#0ecb81]/10'
                               : allocation.realized_pnl !== null
                                 ? 'bg-[#f6465d]/10'
                                 : 'bg-[#1e2329]'
                           }`}>
-                            <div className="text-[#848e9c] text-xs mb-1">PNL</div>
+                            <div className="text-[#848e9c] text-[9px] sm:text-xs mb-0.5 sm:mb-1 uppercase tracking-wide">PNL</div>
                             {allocation.realized_pnl !== null && allocation.realized_pnl !== undefined && allocation.realized_pnl !== 0 ? (
-                              <div className={`font-medium flex items-center gap-1 ${allocation.realized_pnl >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
-                                {allocation.realized_pnl >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                                {allocation.realized_pnl >= 0 ? '+' : ''}{allocation.realized_pnl.toFixed(2)}
+                              <div className={`font-bold flex flex-col sm:flex-row sm:items-center gap-0.5 ${allocation.realized_pnl >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                                <span className="flex items-center gap-0.5 sm:gap-1 text-[11px] sm:text-base">
+                                  {allocation.realized_pnl >= 0 ? <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" /> : <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4" />}
+                                  {allocation.realized_pnl >= 0 ? '+' : ''}{allocation.realized_pnl.toFixed(2)}
+                                </span>
                                 {allocation.pnl_percentage !== null && allocation.pnl_percentage !== undefined && (
-                                  <span className="text-xs opacity-75">
+                                  <span className="text-[9px] sm:text-xs opacity-75">
                                     ({allocation.pnl_percentage >= 0 ? '+' : ''}{allocation.pnl_percentage.toFixed(1)}%)
                                   </span>
                                 )}
                               </div>
                             ) : allocation.pnl_percentage !== null && allocation.pnl_percentage !== undefined ? (
-                              <div className={`flex items-center gap-1 font-medium ${allocation.pnl_percentage >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
+                              <div className={`flex items-center gap-0.5 sm:gap-1 font-bold text-[11px] sm:text-base ${allocation.pnl_percentage >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>
                                 {allocation.pnl_percentage >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                                 {allocation.pnl_percentage >= 0 ? '+' : ''}{allocation.pnl_percentage.toFixed(2)}%
                               </div>
                             ) : (
-                              <div className="text-[#848e9c]">-</div>
+                              <div className="text-[#848e9c] text-[11px] sm:text-base">-</div>
                             )}
                           </div>
                         </div>
                         {allocation.quantity && (
-                          <div className="mt-3 pt-3 border-t border-[#2b3139] flex items-center gap-4 text-xs text-[#848e9c]">
-                            <span>Qty: {allocation.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+                          <div className="mt-2 pt-2 sm:mt-3 sm:pt-3 border-t border-[#2b3139] flex flex-wrap items-center gap-3 sm:gap-4 text-[10px] sm:text-xs text-[#848e9c]">
+                            <span>Qty: {allocation.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                             <span>Leverage: {allocation.follower_leverage}x</span>
                           </div>
                         )}

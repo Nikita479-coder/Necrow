@@ -116,6 +116,8 @@ function Wallet() {
 
   const [copyTradingAssets, setCopyTradingAssets] = useState<Asset[]>([]);
   const [copyTradingTotal, setCopyTradingTotal] = useState(0);
+  const [copyRelationshipsTotal, setCopyRelationshipsTotal] = useState(0);
+  const [activeCopyCount, setActiveCopyCount] = useState(0);
 
 
   const [futuresPositions, setFuturesPositions] = useState<Position[]>([]);
@@ -185,6 +187,7 @@ function Wallet() {
       loadStakes();
       loadLockedBonuses();
       loadPendingDeposits();
+      loadCopyRelationshipsTotal();
     }
   }, [user]);
 
@@ -322,6 +325,32 @@ function Wallet() {
       }
     } catch (error) {
       console.error('Error loading pending deposits:', error);
+    }
+  };
+
+  const loadCopyRelationshipsTotal = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('copy_relationships')
+        .select('current_balance')
+        .eq('follower_id', user.id)
+        .eq('is_active', true)
+        .eq('is_mock', false);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const total = data.reduce((sum, rel) => sum + parseFloat(rel.current_balance || '0'), 0);
+        setCopyRelationshipsTotal(total);
+        setActiveCopyCount(data.length);
+      } else {
+        setCopyRelationshipsTotal(0);
+        setActiveCopyCount(0);
+      }
+    } catch (error) {
+      console.error('Error loading copy relationships total:', error);
     }
   };
 
@@ -565,7 +594,8 @@ function Wallet() {
   };
 
   const earnWalletTotal = totalStaked + totalRewards + assetsWalletTotal;
-  const totalBalance = mainWalletTotal + earnWalletTotal + copyTradingTotal + futuresWalletBalance + (hasCard ? cardWalletBalance : 0);
+  const copyWalletDisplayTotal = copyRelationshipsTotal > 0 ? copyRelationshipsTotal : copyTradingTotal;
+  const totalBalance = mainWalletTotal + earnWalletTotal + copyWalletDisplayTotal + futuresWalletBalance + (hasCard ? cardWalletBalance : 0);
 
   return (
     <div className="min-h-screen bg-[#0b0e11] text-white">
@@ -685,9 +715,9 @@ function Wallet() {
                 <Copy className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
               </div>
               <div className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-1 truncate">
-                ${copyTradingTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ${copyWalletDisplayTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
-              <div className="text-xs sm:text-sm text-gray-400">{copyTradingAssets.length} assets</div>
+              <div className="text-xs sm:text-sm text-gray-400">{activeCopyCount > 0 ? `${activeCopyCount} active` : `${copyTradingAssets.length} assets`}</div>
             </button>
 
             <button
@@ -971,9 +1001,44 @@ function Wallet() {
           {selectedTab === 'copy' && (
             <div>
               <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4">Copy Trading Wallet</h3>
-              {copyTradingAssets.length === 0 ? (
-                <div className="text-center py-8 text-gray-400">No assets in copy trading wallet</div>
-              ) : (
+              {activeCopyCount > 0 ? (
+                <div className="space-y-4">
+                  <div className="bg-[#0b0e11] border border-purple-500/30 rounded-xl p-4 sm:p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <div className="text-gray-400 text-sm mb-1">Total Copy Trading Balance</div>
+                        <div className="text-2xl sm:text-3xl font-bold text-white">
+                          ${copyRelationshipsTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-gray-400 text-sm mb-1">Active Traders</div>
+                        <div className="text-xl font-bold text-purple-400">{activeCopyCount}</div>
+                      </div>
+                    </div>
+                    <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
+                      <div className="flex items-start gap-2">
+                        <Lock className="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm text-purple-200">
+                            Funds allocated to copy trading cannot be transferred directly.
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            To withdraw funds, use the "Withdraw & Stop" button on the Copy Trading page.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigateTo('active-copy-trading')}
+                    className="w-full bg-purple-600 hover:bg-purple-500 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
+                  >
+                    <Copy className="w-5 h-5" />
+                    Manage Copy Trading
+                  </button>
+                </div>
+              ) : copyTradingAssets.length > 0 ? (
                 <div className="space-y-3">
                   {copyTradingAssets.map((asset) => (
                     <div key={asset.symbol} className="bg-[#0b0e11] border border-gray-800 rounded-xl p-3 sm:p-4">
@@ -997,6 +1062,8 @@ function Wallet() {
                     </div>
                   ))}
                 </div>
+              ) : (
+                <div className="text-center py-8 text-gray-400">No copy trading activity</div>
               )}
             </div>
           )}
@@ -1073,13 +1140,33 @@ function Wallet() {
                             </div>
                           </div>
                         </div>
-                        <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
                           <div>
-                            <div className="text-xs text-gray-400 mb-1">Balance</div>
+                            <div className="text-xs text-gray-400 mb-1">Current Balance</div>
                             <div className="text-sm sm:text-lg font-bold text-[#f0b90b]">
                               ${bonus.current_amount.toFixed(2)}
                             </div>
                           </div>
+                          <div>
+                            <div className="text-xs text-gray-400 mb-1">Original</div>
+                            <div className="text-sm sm:text-lg font-bold text-gray-300">
+                              ${bonus.original_amount.toFixed(2)}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-gray-400 mb-1">Profits Earned</div>
+                            <div className="text-sm sm:text-lg font-bold text-emerald-400">
+                              +${(bonus.realized_profits || 0).toFixed(2)}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-gray-400 mb-1">Losses</div>
+                            <div className="text-sm sm:text-lg font-bold text-red-400">
+                              -${Math.max(0, bonus.original_amount + (bonus.realized_profits || 0) - bonus.current_amount).toFixed(2)}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 sm:gap-4 mt-2">
                           <div>
                             <div className="text-xs text-gray-400 mb-1">Net P&L</div>
                             <div className={`text-sm sm:text-lg font-bold ${
