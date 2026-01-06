@@ -9,7 +9,7 @@ interface Task {
   title: string;
   description: string;
   reward: number;
-  rewardType: 'fee_rebate' | 'balance';
+  rewardType: 'fee_rebate' | 'balance' | 'locked_bonus';
   target: number;
   icon: string;
   type: 'volume' | 'referral' | 'trade';
@@ -68,7 +68,7 @@ function RewardsHub() {
       title: 'First Referral Bonus',
       description: 'Invite your first active trader',
       reward: 5,
-      rewardType: 'balance',
+      rewardType: 'locked_bonus',
       target: 1,
       icon: '🎁',
       type: 'referral'
@@ -78,7 +78,7 @@ function RewardsHub() {
       title: 'Growing Network',
       description: 'Invite 5 friends who deposit at least $100 USD',
       reward: 100,
-      rewardType: 'balance',
+      rewardType: 'locked_bonus',
       target: 5,
       icon: '👥',
       type: 'referral'
@@ -98,7 +98,7 @@ function RewardsHub() {
       title: 'First Trade Welcome',
       description: 'Complete your first futures trade',
       reward: 3,
-      rewardType: 'balance',
+      rewardType: 'locked_bonus',
       target: 1,
       icon: '🎯',
       type: 'trade'
@@ -108,7 +108,7 @@ function RewardsHub() {
       title: 'Copy Trading Wallet Bonus',
       description: 'Allocate 200 USDT to Copy Trading wallet',
       reward: 50,
-      rewardType: 'balance',
+      rewardType: 'locked_bonus',
       target: 200,
       icon: '👥',
       type: 'volume'
@@ -118,7 +118,7 @@ function RewardsHub() {
       title: 'Million Dollar Club',
       description: 'Trade $10,000,000 in volume within 30 days',
       reward: 500,
-      rewardType: 'balance',
+      rewardType: 'locked_bonus',
       target: 10000000,
       icon: '🏆',
       type: 'volume'
@@ -128,7 +128,7 @@ function RewardsHub() {
       title: 'Trustpilot Review Bonus',
       description: 'Leave a review on Trustpilot and get rewarded',
       reward: 5,
-      rewardType: 'balance',
+      rewardType: 'locked_bonus',
       target: 1,
       icon: '⭐',
       type: 'trade'
@@ -336,16 +336,36 @@ function RewardsHub() {
             throw insertError;
           }
         }
-      } else {
-        // Determine wallet type based on task
-        const walletType = task.id === 'copy_trading_allocation' ? 'copy' : 'main';
+      } else if (task.rewardType === 'locked_bonus') {
+        const { data: bonusType } = await supabase
+          .from('bonus_types')
+          .select('id')
+          .eq('name', 'Reward Task Bonus')
+          .maybeSingle();
 
+        if (!bonusType) {
+          throw new Error('Bonus type not found');
+        }
+
+        const { error: bonusError } = await supabase.rpc('award_locked_bonus', {
+          p_user_id: user.id,
+          p_bonus_type_id: bonusType.id,
+          p_amount: task.reward,
+          p_awarded_by: null,
+          p_notes: task.title
+        });
+
+        if (bonusError) {
+          console.error('Locked bonus error:', bonusError);
+          throw bonusError;
+        }
+      } else {
         const { data: wallet, error: walletFetchError } = await supabase
           .from('wallets')
           .select('*')
           .eq('user_id', user.id)
           .eq('currency', 'USDT')
-          .eq('wallet_type', walletType)
+          .eq('wallet_type', 'main')
           .maybeSingle();
 
         if (walletFetchError) {
@@ -362,7 +382,7 @@ function RewardsHub() {
             })
             .eq('user_id', user.id)
             .eq('currency', 'USDT')
-            .eq('wallet_type', walletType);
+            .eq('wallet_type', 'main');
 
           if (walletError) {
             console.error('Wallet update error:', walletError);
@@ -374,7 +394,7 @@ function RewardsHub() {
             .insert({
               user_id: user.id,
               currency: 'USDT',
-              wallet_type: walletType,
+              wallet_type: 'main',
               balance: task.reward.toString(),
               locked_balance: '0',
               total_deposited: '0',
@@ -426,8 +446,11 @@ function RewardsHub() {
         console.error('Transaction record error:', txError);
       }
 
-      // Send notification to user
-      const rewardTypeLabel = task.rewardType === 'fee_rebate' ? 'Fee Rebate' : 'Balance Reward';
+      const rewardTypeLabel = task.rewardType === 'fee_rebate'
+        ? 'Fee Rebate'
+        : task.rewardType === 'locked_bonus'
+        ? 'Locked Trading Bonus'
+        : 'Balance Reward';
       await supabase
         .from('notifications')
         .insert({
@@ -438,7 +461,11 @@ function RewardsHub() {
           read: false
         });
 
-      const rewardTypeText = task.rewardType === 'fee_rebate' ? 'fee rebate' : 'balance reward';
+      const rewardTypeText = task.rewardType === 'fee_rebate'
+        ? 'fee rebate'
+        : task.rewardType === 'locked_bonus'
+        ? 'locked trading bonus'
+        : 'balance reward';
       setNotification({type: 'success', message: `Successfully claimed $${task.reward} USDT ${rewardTypeText}!`});
       setTimeout(() => setNotification(null), 3000);
       setClaimedTaskIds(prev => new Set([...prev, task.id]));
@@ -618,7 +645,7 @@ function RewardsHub() {
                         {isClaimed ? 'Claimed' : `+$${task.reward} USDT`}
                       </div>
                       <div className="text-[10px] text-[#848e9c]">
-                        {task.rewardType === 'fee_rebate' ? 'Fee Rebate' : 'Balance'}
+                        {task.rewardType === 'fee_rebate' ? 'Fee Rebate' : task.rewardType === 'locked_bonus' ? 'Locked Bonus' : 'Balance'}
                       </div>
                     </div>
                   </div>

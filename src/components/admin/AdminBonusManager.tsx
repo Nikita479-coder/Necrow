@@ -327,7 +327,7 @@ export default function AdminBonusManager({ userId, userData, onRefresh }: Props
                           {bonus.status.toUpperCase()}
                         </span>
                       </div>
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-4 flex-wrap">
                         <div>
                           <p className="text-xs text-gray-500">Current Balance</p>
                           <p className="text-xl font-bold text-[#f0b90b]">
@@ -335,9 +335,21 @@ export default function AdminBonusManager({ userId, userData, onRefresh }: Props
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500">Original Amount</p>
+                          <p className="text-xs text-gray-500">Original</p>
                           <p className="text-lg font-medium text-gray-400">
                             ${bonus.original_amount.toFixed(2)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Profits</p>
+                          <p className="text-lg font-medium text-green-400">
+                            +${(bonus.realized_profits || 0).toFixed(2)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Losses</p>
+                          <p className="text-lg font-medium text-red-400">
+                            -${Math.max(0, bonus.original_amount + (bonus.realized_profits || 0) - bonus.current_amount).toFixed(2)}
                           </p>
                         </div>
                         <div>

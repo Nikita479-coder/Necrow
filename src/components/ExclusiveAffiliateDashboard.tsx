@@ -40,6 +40,14 @@ interface ExclusiveStats {
     total_withdrawn: number;
     deposit_commissions: number;
     fee_share: number;
+    copy_profit: number;
+  };
+  copy_profit_rates?: {
+    level_1: number;
+    level_2: number;
+    level_3: number;
+    level_4: number;
+    level_5: number;
   };
   network?: {
     level_1_count: number;
@@ -220,7 +228,8 @@ function ExclusiveAffiliateDashboard() {
 
   const depositRates = stats.deposit_rates || { level_1: 5, level_2: 4, level_3: 3, level_4: 2, level_5: 1 };
   const feeRates = stats.fee_rates || { level_1: 50, level_2: 40, level_3: 30, level_4: 20, level_5: 10 };
-  const balance = stats.balance || { available: 0, pending: 0, total_earned: 0, total_withdrawn: 0, deposit_commissions: 0, fee_share: 0 };
+  const copyProfitRates = stats.copy_profit_rates || { level_1: 0, level_2: 0, level_3: 0, level_4: 0, level_5: 0 };
+  const balance = stats.balance || { available: 0, pending: 0, total_earned: 0, total_withdrawn: 0, deposit_commissions: 0, fee_share: 0, copy_profit: 0 };
   const network = stats.network || { level_1_count: 0, level_2_count: 0, level_3_count: 0, level_4_count: 0, level_5_count: 0, level_1_earnings: 0, level_2_earnings: 0, level_3_earnings: 0, level_4_earnings: 0, level_5_earnings: 0, this_month: 0 };
   const totalNetwork = network.level_1_count + network.level_2_count + network.level_3_count + network.level_4_count + network.level_5_count;
 
@@ -299,6 +308,14 @@ function ExclusiveAffiliateDashboard() {
           <div className="flex items-center justify-between mb-3">
             <TrendingUp className="w-8 h-8 text-cyan-400" />
           </div>
+          <div className="text-3xl font-bold mb-1">${(balance.copy_profit || 0).toFixed(2)}</div>
+          <div className="text-sm text-gray-400">Copy Trading Profits</div>
+        </div>
+
+        <div className="bg-[#1a1d24] rounded-xl p-6 border border-gray-800">
+          <div className="flex items-center justify-between mb-3">
+            <ArrowUpRight className="w-8 h-8 text-emerald-400" />
+          </div>
           <div className="text-3xl font-bold mb-1">${network.this_month.toFixed(2)}</div>
           <div className="text-sm text-gray-400">This Month</div>
         </div>
@@ -360,28 +377,67 @@ function ExclusiveAffiliateDashboard() {
         </div>
       </div>
 
+      {(copyProfitRates.level_1 > 0 || copyProfitRates.level_2 > 0) && (
+        <div className="bg-[#1a1d24] rounded-xl p-6 border border-gray-800">
+          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-cyan-400" />
+            Copy Trading Profit Commissions
+          </h3>
+          <p className="text-sm text-gray-400 mb-4">
+            Earn commission when your referred users make profits from copy trading.
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {[1, 2, 3, 4, 5].map((level) => {
+              const rate = copyProfitRates[`level_${level}` as keyof typeof copyProfitRates];
+              return (
+                <div key={level} className="p-3 bg-[#0b0e11] rounded-lg text-center">
+                  <div className="text-xs text-gray-400 mb-1">Level {level}</div>
+                  <div className="text-xl font-bold text-cyan-400">{rate}%</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {stats.recent_commissions && stats.recent_commissions.length > 0 && (
         <div className="bg-[#1a1d24] rounded-xl p-6 border border-gray-800">
           <h3 className="text-xl font-bold mb-4">Recent Commissions</h3>
           <div className="space-y-3">
-            {stats.recent_commissions.slice(0, 5).map((commission: any) => (
-              <div key={commission.id} className="flex justify-between items-center p-3 bg-[#0b0e11] rounded-lg">
-                <div>
-                  <div className="font-semibold text-sm">
-                    {commission.commission_type === 'deposit' ? 'Deposit Commission' : 'Trading Fee Share'} - Level {commission.tier_level}
+            {stats.recent_commissions.slice(0, 5).map((commission: any) => {
+              const getTypeLabel = () => {
+                switch (commission.commission_type) {
+                  case 'deposit': return 'Deposit Commission';
+                  case 'copy_profit': return 'Copy Trading Profit';
+                  default: return 'Trading Fee Share';
+                }
+              };
+              const getTypeColor = () => {
+                switch (commission.commission_type) {
+                  case 'deposit': return 'text-green-400';
+                  case 'copy_profit': return 'text-cyan-400';
+                  default: return 'text-blue-400';
+                }
+              };
+              return (
+                <div key={commission.id} className="flex justify-between items-center p-3 bg-[#0b0e11] rounded-lg">
+                  <div>
+                    <div className="font-semibold text-sm">
+                      {getTypeLabel()} - Level {commission.tier_level}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {new Date(commission.created_at).toLocaleString()}
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-400">
-                    {new Date(commission.created_at).toLocaleString()}
+                  <div className="text-right">
+                    <div className={`font-bold ${getTypeColor()}`}>
+                      +${commission.commission_amount.toFixed(2)}
+                    </div>
+                    <div className="text-xs text-gray-400">{commission.commission_rate}%</div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className={`font-bold ${commission.commission_type === 'deposit' ? 'text-green-400' : 'text-blue-400'}`}>
-                    +${commission.commission_amount.toFixed(2)}
-                  </div>
-                  <div className="text-xs text-gray-400">{commission.commission_rate}%</div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

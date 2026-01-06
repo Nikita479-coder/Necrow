@@ -47,6 +47,13 @@ interface ExclusiveAffiliate {
     level_4: number;
     level_5: number;
   };
+  copy_profit_rates: {
+    level_1: number;
+    level_2: number;
+    level_3: number;
+    level_4: number;
+    level_5: number;
+  };
   is_active: boolean;
   enrolled_at: string;
   enrolled_by_email: string | null;
@@ -123,6 +130,7 @@ export default function AdminExclusiveAffiliates() {
 
   const [depositRates, setDepositRates] = useState({ level_1: 5, level_2: 4, level_3: 3, level_4: 2, level_5: 1 });
   const [feeRates, setFeeRates] = useState({ level_1: 50, level_2: 40, level_3: 30, level_4: 20, level_5: 10 });
+  const [copyProfitRates, setCopyProfitRates] = useState({ level_1: 10, level_2: 5, level_3: 4, level_4: 3, level_5: 2 });
 
   const [showNetworkModal, setShowNetworkModal] = useState(false);
   const [selectedAffiliateForNetwork, setSelectedAffiliateForNetwork] = useState<ExclusiveAffiliate | null>(null);
@@ -171,7 +179,8 @@ export default function AdminExclusiveAffiliates() {
         p_admin_id: user.id,
         p_user_email: enrollEmail.trim(),
         p_deposit_rates: depositRates,
-        p_fee_rates: feeRates
+        p_fee_rates: feeRates,
+        p_copy_profit_rates: copyProfitRates
       });
 
       if (error) throw error;
@@ -181,6 +190,7 @@ export default function AdminExclusiveAffiliates() {
         setEnrollEmail('');
         setDepositRates({ level_1: 5, level_2: 4, level_3: 3, level_4: 2, level_5: 1 });
         setFeeRates({ level_1: 50, level_2: 40, level_3: 30, level_4: 20, level_5: 10 });
+        setCopyProfitRates({ level_1: 10, level_2: 5, level_3: 4, level_4: 3, level_5: 2 });
         loadData();
       } else {
         setEnrollError(data?.error || 'Failed to enroll user');
@@ -528,31 +538,38 @@ export default function AdminExclusiveAffiliates() {
                         </div>
                       </div>
 
-                      <div className="mt-4 pt-4 border-t border-gray-700/50 grid grid-cols-2 lg:grid-cols-5 gap-4">
+                      <div className="mt-4 pt-4 border-t border-gray-700/50 grid grid-cols-2 lg:grid-cols-6 gap-4">
                         <div className="flex items-center gap-2">
                           <Gift className="w-4 h-4 text-green-400" />
-                          <span className="text-sm text-gray-400">Deposit Rates:</span>
+                          <span className="text-sm text-gray-400">Deposit:</span>
                           <span className="text-sm text-white">
-                            {affiliate.deposit_commission_rates?.level_1 || 5}% -&gt; {affiliate.deposit_commission_rates?.level_5 || 1}%
+                            {affiliate.deposit_commission_rates?.level_1 || 5}%-{affiliate.deposit_commission_rates?.level_5 || 1}%
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Percent className="w-4 h-4 text-blue-400" />
-                          <span className="text-sm text-gray-400">Fee Share:</span>
+                          <span className="text-sm text-gray-400">Fees:</span>
                           <span className="text-sm text-white">
-                            {affiliate.fee_share_rates?.level_1 || 50}% -&gt; {affiliate.fee_share_rates?.level_5 || 10}%
+                            {affiliate.fee_share_rates?.level_1 || 50}%-{affiliate.fee_share_rates?.level_5 || 10}%
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4 text-cyan-400" />
+                          <span className="text-sm text-gray-400">Copy:</span>
+                          <span className="text-sm text-white">
+                            {affiliate.copy_profit_rates?.level_1 || 10}%-{affiliate.copy_profit_rates?.level_5 || 2}%
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Gift className="w-4 h-4 text-green-400" />
-                          <span className="text-sm text-gray-400">Deposit Commissions:</span>
+                          <span className="text-sm text-gray-400">Deposits:</span>
                           <span className="text-sm text-green-400">
                             ${(affiliate.deposit_commissions_earned || 0).toFixed(2)}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Percent className="w-4 h-4 text-blue-400" />
-                          <span className="text-sm text-gray-400">Fee Revenue:</span>
+                          <span className="text-sm text-gray-400">Fees:</span>
                           <span className="text-sm text-blue-400">
                             ${(affiliate.fee_share_earned || 0).toFixed(2)}
                           </span>
@@ -763,14 +780,36 @@ export default function AdminExclusiveAffiliates() {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                  <TrendingUp className="inline w-4 h-4 mr-1 text-cyan-400" />
+                  Copy Trading Profit Share (%)
+                </label>
+                <div className="grid grid-cols-5 gap-2">
+                  {[1, 2, 3, 4, 5].map((level) => (
+                    <div key={level} className="text-center">
+                      <div className="text-xs text-gray-500 mb-1">L{level}</div>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={copyProfitRates[`level_${level}` as keyof typeof copyProfitRates]}
+                        onChange={(e) => setCopyProfitRates({ ...copyProfitRates, [`level_${level}`]: parseFloat(e.target.value) || 0 })}
+                        className="w-full bg-[#0b0e11] border border-gray-700 rounded px-2 py-1 text-white text-center text-sm focus:outline-none focus:border-[#fcd535]"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <div className="p-4 bg-[#fcd535]/10 border border-[#fcd535]/30 rounded-lg">
                 <h4 className="font-semibold text-[#fcd535] mb-2">Commission Structure</h4>
                 <ul className="text-sm text-gray-300 space-y-1">
-                  <li>Level 1 (Direct Referrals): {depositRates.level_1}% deposit, {feeRates.level_1}% fees</li>
-                  <li>Level 2: {depositRates.level_2}% deposit, {feeRates.level_2}% fees</li>
-                  <li>Level 3: {depositRates.level_3}% deposit, {feeRates.level_3}% fees</li>
-                  <li>Level 4: {depositRates.level_4}% deposit, {feeRates.level_4}% fees</li>
-                  <li>Level 5: {depositRates.level_5}% deposit, {feeRates.level_5}% fees</li>
+                  <li>Level 1 (Direct Referrals): {depositRates.level_1}% deposit, {feeRates.level_1}% fees, {copyProfitRates.level_1}% copy profit</li>
+                  <li>Level 2: {depositRates.level_2}% deposit, {feeRates.level_2}% fees, {copyProfitRates.level_2}% copy profit</li>
+                  <li>Level 3: {depositRates.level_3}% deposit, {feeRates.level_3}% fees, {copyProfitRates.level_3}% copy profit</li>
+                  <li>Level 4: {depositRates.level_4}% deposit, {feeRates.level_4}% fees, {copyProfitRates.level_4}% copy profit</li>
+                  <li>Level 5: {depositRates.level_5}% deposit, {feeRates.level_5}% fees, {copyProfitRates.level_5}% copy profit</li>
                 </ul>
               </div>
             </div>
