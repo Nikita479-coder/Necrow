@@ -689,13 +689,6 @@ export default function TraderProfile() {
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <span className="text-white font-medium">{position.symbol}</span>
-                          <span className={`px-2 py-0.5 rounded text-xs ${
-                            position.side === 'long'
-                              ? 'bg-[#0ecb81]/20 text-[#0ecb81]'
-                              : 'bg-[#f6465d]/20 text-[#f6465d]'
-                          }`}>
-                            {position.side.toUpperCase()}
-                          </span>
                           <span className="text-[#848e9c] text-xs">{position.leverage}x</span>
                         </div>
                         <span className="text-xs text-[#848e9c]">
