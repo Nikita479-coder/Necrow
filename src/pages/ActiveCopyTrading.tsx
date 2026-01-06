@@ -798,13 +798,6 @@ function ActiveCopyTrading() {
                             <div>
                               <span className="text-white font-semibold text-lg">{position.symbol}</span>
                               <div className="flex items-center gap-2 mt-0.5">
-                                <span className={`text-xs px-2 py-0.5 rounded font-medium ${
-                                  position.side === 'long'
-                                    ? 'bg-[#0ecb81]/10 text-[#0ecb81]'
-                                    : 'bg-[#f6465d]/10 text-[#f6465d]'
-                                }`}>
-                                  {position.side?.toUpperCase() || 'LONG'}
-                                </span>
                                 <span className="text-xs text-[#f0b90b] font-medium">{position.leverage}x</span>
                               </div>
                             </div>
@@ -857,13 +850,6 @@ function ActiveCopyTrading() {
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-3">
                             <span className="text-white font-semibold text-lg">{position.symbol}</span>
-                            <span className={`text-xs px-2 py-0.5 rounded font-medium ${
-                              position.side === 'long'
-                                ? 'bg-[#0ecb81]/10 text-[#0ecb81]'
-                                : 'bg-[#f6465d]/10 text-[#f6465d]'
-                            }`}>
-                              {position.side?.toUpperCase()}
-                            </span>
                             <span className="text-xs text-[#f0b90b] font-medium">{position.leverage}x</span>
                           </div>
                           <span className="text-xs text-[#848e9c]">
@@ -927,15 +913,6 @@ function ActiveCopyTrading() {
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-3">
                             <span className="text-white font-semibold text-lg">{allocation.symbol || 'N/A'}</span>
-                            {allocation.side && (
-                              <span className={`text-xs px-2 py-0.5 rounded font-medium ${
-                                allocation.side === 'long'
-                                  ? 'bg-[#0ecb81]/10 text-[#0ecb81]'
-                                  : 'bg-[#f6465d]/10 text-[#f6465d]'
-                              }`}>
-                                {allocation.side.toUpperCase()}
-                              </span>
-                            )}
                             <span className={`text-xs px-2 py-0.5 rounded font-medium ${
                               allocation.status === 'open'
                                 ? 'bg-blue-500/10 text-blue-400'
