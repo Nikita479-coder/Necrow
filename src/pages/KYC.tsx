@@ -249,6 +249,8 @@ function KYC() {
       if (profileError) throw profileError;
 
       await refreshProfile();
+      setUploadedDocuments(prev => ({ ...prev, selfie: true }));
+      setUploadedFiles(prev => ({ ...prev, selfie: null }));
       showSuccess('Selfie submitted! Your verification is pending admin review.');
       await loadKYCData();
     } catch (error) {
@@ -1416,30 +1418,44 @@ function KYC() {
                                 </ul>
 
                                 <div className="space-y-4">
-                                  <div className="border-2 border-dashed border-gray-700 rounded-xl p-8 hover:border-[#f0b90b] transition-colors bg-[#0b0e11]">
-                                    <input
-                                      type="file"
-                                      id="selfie-upload"
-                                      accept="image/*"
-                                      onChange={(e) => handleFileUpload('selfie', e)}
-                                      className="hidden"
-                                    />
-                                    <label htmlFor="selfie-upload" className="cursor-pointer flex flex-col items-center">
-                                      <Upload className="w-12 h-12 text-gray-400 mb-3" />
-                                      <span className="text-white font-semibold mb-1">
-                                        {uploadedFiles.selfie || uploadedDocuments.selfie ? 'Change Selfie' : 'Upload Selfie'}
-                                      </span>
-                                      <span className="text-gray-400 text-sm">Click to select file</span>
-                                      {(uploadedFiles.selfie || uploadedDocuments.selfie) && (
-                                        <div className="mt-3 flex items-center gap-2 text-emerald-400">
-                                          <CheckCircle2 className="w-5 h-5" />
-                                          <span className="text-sm font-semibold">
-                                            {uploadedFiles.selfie ? uploadedFiles.selfie.name : 'Selfie uploaded'}
-                                          </span>
+                                  {(uploadedFiles.selfie || uploadedDocuments.selfie) ? (
+                                    <div className="border-2 border-emerald-500/50 rounded-xl p-8 bg-emerald-500/10">
+                                      <div className="flex flex-col items-center">
+                                        <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mb-4">
+                                          <CheckCircle2 className="w-10 h-10 text-emerald-400" />
                                         </div>
-                                      )}
-                                    </label>
-                                  </div>
+                                        <span className="text-emerald-400 font-bold text-lg mb-1">Selfie Uploaded</span>
+                                        <span className="text-gray-400 text-sm mb-4">
+                                          {uploadedFiles.selfie ? uploadedFiles.selfie.name : 'Document ready for verification'}
+                                        </span>
+                                        <input
+                                          type="file"
+                                          id="selfie-upload"
+                                          accept="image/*"
+                                          onChange={(e) => handleFileUpload('selfie', e)}
+                                          className="hidden"
+                                        />
+                                        <label htmlFor="selfie-upload" className="cursor-pointer text-sm text-gray-500 hover:text-gray-300 transition-colors">
+                                          Click to change file
+                                        </label>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="border-2 border-dashed border-gray-700 rounded-xl p-8 hover:border-[#f0b90b] transition-colors bg-[#0b0e11]">
+                                      <input
+                                        type="file"
+                                        id="selfie-upload"
+                                        accept="image/*"
+                                        onChange={(e) => handleFileUpload('selfie', e)}
+                                        className="hidden"
+                                      />
+                                      <label htmlFor="selfie-upload" className="cursor-pointer flex flex-col items-center">
+                                        <Upload className="w-12 h-12 text-gray-400 mb-3" />
+                                        <span className="text-white font-semibold mb-1">Upload Selfie</span>
+                                        <span className="text-gray-400 text-sm">Click to select file</span>
+                                      </label>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -1469,13 +1485,20 @@ function KYC() {
                             >
                               Back
                             </button>
-                            <button
-                              onClick={submitSelfieVerification}
-                              disabled={submitting || (!uploadedFiles.selfie && !uploadedDocuments.selfie)}
-                              className="flex-1 px-8 py-3 bg-[#f0b90b] hover:bg-[#f8d12f] text-black font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {submitting ? 'Submitting...' : 'Submit for Verification'}
-                            </button>
+                            {uploadedDocuments.selfie && !uploadedFiles.selfie ? (
+                              <div className="flex-1 px-8 py-3 bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 font-bold rounded-xl text-center flex items-center justify-center gap-2">
+                                <CheckCircle2 className="w-5 h-5" />
+                                Submitted for Verification
+                              </div>
+                            ) : (
+                              <button
+                                onClick={submitSelfieVerification}
+                                disabled={submitting || (!uploadedFiles.selfie && !uploadedDocuments.selfie)}
+                                className="flex-1 px-8 py-3 bg-[#f0b90b] hover:bg-[#f8d12f] text-black font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {submitting ? 'Submitting...' : 'Submit for Verification'}
+                              </button>
+                            )}
                           </div>
                         </>
                       )}

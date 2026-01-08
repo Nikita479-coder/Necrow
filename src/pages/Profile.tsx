@@ -1442,7 +1442,7 @@ function Profile() {
       <div>
         <h2 className="text-lg sm:text-xl font-bold mb-4">Get Started</h2>
         <div className="space-y-3 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-4 sm:space-y-0">
-          {profile && (profile.kyc_level >= 1 || ['basic', 'intermediate', 'advanced'].includes(profile.kyc_status)) ? (
+          {profile && (profile.kyc_status === 'verified' || ['basic', 'intermediate', 'advanced'].includes(profile.kyc_status)) ? (
             <div className="bg-[#181a20] border-2 border-[#0ecb81] rounded-xl p-4 sm:p-6">
               <div className="flex items-start justify-between mb-3">
                 <div className="bg-[#0ecb81] text-white rounded-full w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center shadow-lg">
@@ -1458,6 +1458,24 @@ function Profile() {
                 className="w-full bg-[#0ecb81]/20 hover:bg-[#0ecb81]/30 text-[#0ecb81] font-bold py-3 sm:py-3.5 rounded-lg transition-all transform active:scale-[0.98] text-sm sm:text-base border border-[#0ecb81]/30"
               >
                 Completed
+              </button>
+            </div>
+          ) : profile && profile.kyc_status === 'pending' ? (
+            <div className="bg-[#181a20] border-2 border-yellow-500/50 rounded-xl p-4 sm:p-6">
+              <div className="flex items-start justify-between mb-3">
+                <div className="bg-yellow-500/20 text-yellow-400 rounded-full w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center shadow-lg">
+                  <Clock className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+              </div>
+              <h3 className="text-base sm:text-lg font-bold mb-2 text-yellow-400">Under Review</h3>
+              <p className="text-gray-400 text-xs sm:text-sm mb-4 leading-relaxed">
+                Your documents are being reviewed by our team
+              </p>
+              <button
+                onClick={() => navigateTo('kyc')}
+                className="w-full bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 font-bold py-3 sm:py-3.5 rounded-lg transition-all transform active:scale-[0.98] text-sm sm:text-base border border-yellow-500/30"
+              >
+                View Status
               </button>
             </div>
           ) : (
