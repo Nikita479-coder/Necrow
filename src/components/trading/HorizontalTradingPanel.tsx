@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Info, ChevronDown, ArrowRightLeft } from 'lucide-react';
+import { Info, ChevronDown } from 'lucide-react';
 import { usePrice } from '../../hooks/usePrices';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigation } from '../../App';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../hooks/useToast';
 import { ToastContainer } from '../Toast';
-import TransferModal from '../TransferModal';
 
 interface HorizontalTradingPanelProps {
   pair: string;
@@ -26,7 +25,6 @@ function HorizontalTradingPanel({ pair }: HorizontalTradingPanelProps) {
   const [tpMode, setTpMode] = useState<'price' | 'pnl' | 'percent'>('price');
   const [slMode, setSlMode] = useState<'price' | 'pnl' | 'percent'>('price');
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  const [showTransferModal, setShowTransferModal] = useState(false);
   const [futuresBalance, setFuturesBalance] = useState(0);
   const [availableMargin, setAvailableMargin] = useState(0);
   const [usedMargin, setUsedMargin] = useState(0);
@@ -290,13 +288,6 @@ function HorizontalTradingPanel({ pair }: HorizontalTradingPanelProps) {
               </button>
             </div>
 
-            <button
-              onClick={() => setShowTransferModal(true)}
-              className="flex items-center gap-2 bg-[#1e2329] hover:bg-[#2b3139] text-gray-300 hover:text-white font-medium px-4 py-2 rounded text-sm transition-colors"
-            >
-              <ArrowRightLeft className="w-4 h-4" />
-              Transfer
-            </button>
           </div>
         </div>
 
@@ -504,14 +495,6 @@ function HorizontalTradingPanel({ pair }: HorizontalTradingPanelProps) {
       </div>
 
       <ToastContainer toasts={toasts} removeToast={removeToast} />
-      <TransferModal
-        isOpen={showTransferModal}
-        onClose={() => setShowTransferModal(false)}
-        onSuccess={() => {
-          fetchFuturesBalance();
-          showSuccess('Transfer completed successfully');
-        }}
-      />
     </div>
   );
 }
