@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Info, ChevronDown, ArrowRightLeft } from 'lucide-react';
+import { Info, ChevronDown } from 'lucide-react';
 import { usePrice } from '../../hooks/usePrices';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigation } from '../../App';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../hooks/useToast';
 import { ToastContainer } from '../Toast';
-import TransferModal from '../TransferModal';
 
 interface TradingPanelProps {
   pair: string;
@@ -28,7 +27,6 @@ function TradingPanel({ pair }: TradingPanelProps) {
   const [tpMode, setTpMode] = useState<'price' | 'pnl' | 'percent'>('price');
   const [slMode, setSlMode] = useState<'price' | 'pnl' | 'percent'>('price');
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  const [showTransferModal, setShowTransferModal] = useState(false);
   const [futuresBalance, setFuturesBalance] = useState(0);
   const [availableMargin, setAvailableMargin] = useState(0);
   const [usedMargin, setUsedMargin] = useState(0);
@@ -292,17 +290,10 @@ function TradingPanel({ pair }: TradingPanelProps) {
   return (
     <div className="flex-1 flex flex-col bg-[#0b0e11] overflow-hidden">
       <div className="px-4 py-3 border-b border-gray-800">
-        <div className="flex items-center justify-between mb-2">
+        <div className="mb-2">
           <div className="text-sm text-gray-400">
-            Futures Wallet: <span className="text-white font-medium">{futuresBalance.toFixed(2)} USDT</span>
+            Avbl Margin: <span className="text-white font-medium">{availableMargin.toFixed(2)} USDT</span>
           </div>
-          <button
-            onClick={() => setShowTransferModal(true)}
-            className="flex items-center gap-1 px-3 py-1.5 bg-[#f0b90b]/10 hover:bg-[#f0b90b]/20 text-[#f0b90b] text-xs rounded transition-colors"
-          >
-            <ArrowRightLeft className="w-3 h-3" />
-            Transfer
-          </button>
         </div>
         <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
           <div>
@@ -704,14 +695,6 @@ function TradingPanel({ pair }: TradingPanelProps) {
         </div>
       </div>
       <ToastContainer toasts={toasts} removeToast={removeToast} />
-      <TransferModal
-        isOpen={showTransferModal}
-        onClose={() => setShowTransferModal(false)}
-        onSuccess={() => {
-          fetchFuturesBalance();
-          showSuccess('Transfer completed successfully');
-        }}
-      />
     </div>
   );
 }

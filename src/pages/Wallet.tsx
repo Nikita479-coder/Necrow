@@ -594,7 +594,7 @@ function Wallet() {
   };
 
   const earnWalletTotal = totalStaked + totalRewards + assetsWalletTotal;
-  const copyWalletDisplayTotal = copyRelationshipsTotal > 0 ? copyRelationshipsTotal : copyTradingTotal;
+  const copyWalletDisplayTotal = copyTradingTotal;
   const totalBalance = mainWalletTotal + earnWalletTotal + copyWalletDisplayTotal + futuresWalletBalance + (hasCard ? cardWalletBalance : 0);
 
   return (
@@ -1004,27 +1004,39 @@ function Wallet() {
               {activeCopyCount > 0 ? (
                 <div className="space-y-4">
                   <div className="bg-[#0b0e11] border border-purple-500/30 rounded-xl p-4 sm:p-6">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
                       <div>
-                        <div className="text-gray-400 text-sm mb-1">Total Copy Trading Balance</div>
+                        <div className="text-gray-400 text-sm mb-1">Total Balance</div>
                         <div className="text-2xl sm:text-3xl font-bold text-white">
+                          ${copyTradingTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-gray-400 text-sm mb-1">Allocated to Traders</div>
+                        <div className="text-xl sm:text-2xl font-bold text-purple-400">
                           ${copyRelationshipsTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-gray-400 text-sm mb-1">Active Traders</div>
-                        <div className="text-xl font-bold text-purple-400">{activeCopyCount}</div>
+                      <div className="col-span-2 sm:col-span-1">
+                        <div className="text-gray-400 text-sm mb-1">Available</div>
+                        <div className="text-xl sm:text-2xl font-bold text-emerald-400">
+                          ${Math.max(0, copyTradingTotal - copyRelationshipsTotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
                       </div>
+                    </div>
+                    <div className="flex items-center justify-between text-sm text-gray-400 mb-4">
+                      <span>Active Traders</span>
+                      <span className="font-bold text-purple-400">{activeCopyCount}</span>
                     </div>
                     <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
                       <div className="flex items-start gap-2">
                         <Lock className="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="text-sm text-purple-200">
-                            Funds allocated to copy trading cannot be transferred directly.
+                            Allocated funds cannot be transferred directly.
                           </p>
                           <p className="text-xs text-gray-400 mt-1">
-                            To withdraw funds, use the "Withdraw & Stop" button on the Copy Trading page.
+                            To withdraw allocated funds, use "Withdraw & Stop" on the Copy Trading page.
                           </p>
                         </div>
                       </div>

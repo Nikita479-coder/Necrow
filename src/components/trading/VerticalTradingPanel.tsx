@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Info, ChevronDown, ArrowRightLeft, Calculator } from 'lucide-react';
+import { Info, ChevronDown, Calculator } from 'lucide-react';
 import { usePrice } from '../../hooks/usePrices';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigation } from '../../App';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../hooks/useToast';
 import { ToastContainer } from '../Toast';
-import TransferModal from '../TransferModal';
 import TradingCalculator from './TradingCalculator';
 import TradeConfirmationModal from './TradeConfirmationModal';
 
@@ -24,7 +23,6 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
   const [leverage, setLeverage] = useState(20);
   const [showLeverageModal, setShowLeverageModal] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  const [showTransferModal, setShowTransferModal] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
   const [futuresBalance, setFuturesBalance] = useState(0);
   const [availableMargin, setAvailableMargin] = useState(0);
@@ -374,25 +372,11 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
           <div className="flex items-center gap-2">
             <h3 className="text-white font-semibold text-sm">Trade</h3>
           </div>
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={() => setShowTransferModal(true)}
-              className="flex items-center gap-1 px-2 py-1 bg-[#f0b90b]/10 hover:bg-[#f0b90b]/20 text-[#f0b90b] text-[10px] rounded transition-colors"
-            >
-              <ArrowRightLeft className="w-3 h-3" />
-              Transfer
-            </button>
-          </div>
         </div>
         <div className="flex items-center justify-between text-[10px]">
           <span className="text-gray-500">Avbl Margin</span>
           <span className="text-[#f0b90b] font-medium">{availableMargin.toFixed(2)} USDT</span>
         </div>
-        {availableMargin === 0 && (
-          <div className="mt-2 text-[10px] text-yellow-500 bg-yellow-500/10 border border-yellow-500/30 rounded px-2 py-1.5">
-            No funds in Futures Wallet. Click Transfer to add funds.
-          </div>
-        )}
       </div>
 
       <div className="px-4 py-3">
@@ -908,15 +892,6 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
           </button>
         </div>
       </div>
-
-      <TransferModal
-        isOpen={showTransferModal}
-        onClose={() => setShowTransferModal(false)}
-        onSuccess={() => {
-          fetchFuturesBalance();
-          showSuccess('Transfer completed successfully');
-        }}
-      />
 
       {showCalculator && (
         <TradingCalculator pair={pair} onClose={() => setShowCalculator(false)} />
