@@ -64,6 +64,7 @@ interface LockedBonus {
   expires_at: string;
   days_remaining: number;
   created_at: string;
+  margin_in_positions: number;
 }
 
 interface RawWallet {
@@ -450,7 +451,7 @@ function Wallet() {
         setLockedBonuses(data);
         const activeTotal = data
           .filter((b: LockedBonus) => b.status === 'active')
-          .reduce((sum: number, b: LockedBonus) => sum + b.current_amount, 0);
+          .reduce((sum: number, b: LockedBonus) => sum + b.current_amount + (b.margin_in_positions || 0), 0);
         setLockedBonusTotal(activeTotal);
       }
     } catch (error) {
@@ -1154,37 +1155,41 @@ function Wallet() {
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
                           <div>
-                            <div className="text-xs text-gray-400 mb-1">Current Balance</div>
+                            <div className="text-xs text-gray-400 mb-1">Available Balance</div>
                             <div className="text-sm sm:text-lg font-bold text-[#f0b90b]">
                               ${bonus.current_amount.toFixed(2)}
                             </div>
                           </div>
                           <div>
-                            <div className="text-xs text-gray-400 mb-1">Original</div>
-                            <div className="text-sm sm:text-lg font-bold text-gray-300">
-                              ${bonus.original_amount.toFixed(2)}
+                            <div className="text-xs text-gray-400 mb-1">In Positions</div>
+                            <div className="text-sm sm:text-lg font-bold text-blue-400">
+                              ${(bonus.margin_in_positions || 0).toFixed(2)}
                             </div>
                           </div>
                           <div>
-                            <div className="text-xs text-gray-400 mb-1">Profits Earned</div>
+                            <div className="text-xs text-gray-400 mb-1">Profits</div>
                             <div className="text-sm sm:text-lg font-bold text-emerald-400">
                               +${(bonus.realized_profits || 0).toFixed(2)}
                             </div>
                           </div>
                           <div>
-                            <div className="text-xs text-gray-400 mb-1">Losses</div>
+                            <div className="text-xs text-gray-400 mb-1">Realized Losses</div>
                             <div className="text-sm sm:text-lg font-bold text-red-400">
-                              -${Math.max(0, bonus.original_amount + (bonus.realized_profits || 0) - bonus.current_amount).toFixed(2)}
+                              -${Math.max(0, bonus.original_amount - bonus.current_amount - (bonus.margin_in_positions || 0)).toFixed(2)}
                             </div>
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 sm:gap-4 mt-2">
+                        <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-2">
                           <div>
-                            <div className="text-xs text-gray-400 mb-1">Net P&L</div>
-                            <div className={`text-sm sm:text-lg font-bold ${
-                              (bonus.current_amount - bonus.original_amount) >= 0 ? 'text-emerald-400' : 'text-red-400'
-                            }`}>
-                              {(bonus.current_amount - bonus.original_amount) >= 0 ? '+' : ''}${(bonus.current_amount - bonus.original_amount).toFixed(2)}
+                            <div className="text-xs text-gray-400 mb-1">Original</div>
+                            <div className="text-xs sm:text-sm font-medium text-gray-300">
+                              ${bonus.original_amount.toFixed(2)}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-gray-400 mb-1">Total Value</div>
+                            <div className="text-xs sm:text-sm font-medium text-white">
+                              ${(bonus.current_amount + (bonus.margin_in_positions || 0)).toFixed(2)}
                             </div>
                           </div>
                           <div>
