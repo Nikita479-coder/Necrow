@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { X, ArrowRight, Lock, AlertTriangle } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { X, ArrowRight, RefreshCw, AlertCircle, CheckCircle, Wallet, TrendingUp, Copy } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
@@ -7,85 +7,115 @@ interface WalletTransferModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  currency?: string;
-  fromWalletType?: 'main' | 'futures';
+  initialFromWallet?: 'main' | 'futures' | 'copy';
 }
+
+type WalletType = 'main' | 'futures' | 'copy';
+
+interface WalletBalances {
+  main_available: number;
+  copy_available: number;
+  copy_allocated: number;
+  copy_wallet: number;
+  futures_available: number;
+  futures_locked: number;
+}
+
+const WALLET_CONFIG: Record<WalletType, { label: string; icon: typeof Wallet; color: string }> = {
+  main: { label: 'Main Wallet', icon: Wallet, color: 'text-blue-400' },
+  futures: { label: 'Futures Wallet', icon: TrendingUp, color: 'text-orange-400' },
+  copy: { label: 'Copy Trading Wallet', icon: Copy, color: 'text-purple-400' }
+};
 
 export default function WalletTransferModal({
   isOpen,
   onClose,
   onSuccess,
-  currency: initialCurrency = 'USDT',
-  fromWalletType: initialFromWallet = 'main'
+  initialFromWallet = 'main'
 }: WalletTransferModalProps) {
   const { user } = useAuth();
-  const [currency, setCurrency] = useState(initialCurrency);
+  const [fromWallet, setFromWallet] = useState<WalletType>(initialFromWallet);
+  const [toWallet, setToWallet] = useState<WalletType>('futures');
   const [amount, setAmount] = useState('');
-  const [fromWallet, setFromWallet] = useState<'main' | 'futures'>(initialFromWallet);
-  const [toWallet, setToWallet] = useState<'main' | 'futures'>('futures');
+  const [balances, setBalances] = useState<WalletBalances | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingBalances, setLoadingBalances] = useState(true);
   const [error, setError] = useState('');
-  const [availableBalance, setAvailableBalance] = useState(0);
-  const [totalBalance, setTotalBalance] = useState(0);
-  const [allocatedBalance, setAllocatedBalance] = useState(0);
+  const [success, setSuccess] = useState('');
 
-  const walletTypes = [
-    { value: 'main', label: 'Main Wallet' },
-    { value: 'futures', label: 'Futures Wallet' }
-  ];
+  const loadBalances = useCallback(async () => {
+    if (!user) return;
 
-  const cryptoOptions = ['USDT', 'BTC', 'ETH', 'BNB', 'SOL', 'USDC', 'XRP', 'ADA', 'DOGE', 'DOT', 'MATIC', 'LTC'];
+    setLoadingBalances(true);
+    try {
+      const { data, error: rpcError } = await supabase.rpc('get_wallet_balances', {
+        p_user_id: user.id
+      });
+
+      if (rpcError) throw rpcError;
+
+      setBalances({
+        main_available: parseFloat(data?.main_available || '0'),
+        copy_available: parseFloat(data?.copy_available || '0'),
+        copy_allocated: parseFloat(data?.copy_allocated || '0'),
+        copy_wallet: parseFloat(data?.copy_wallet || '0'),
+        futures_available: parseFloat(data?.futures_available || '0'),
+        futures_locked: parseFloat(data?.futures_locked || '0')
+      });
+    } catch (err) {
+      console.error('Error loading balances:', err);
+      setBalances({
+        main_available: 0,
+        copy_available: 0,
+        copy_allocated: 0,
+        copy_wallet: 0,
+        futures_available: 0,
+        futures_locked: 0
+      });
+    } finally {
+      setLoadingBalances(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (isOpen && user) {
-      loadBalance();
+      loadBalances();
+      setError('');
+      setSuccess('');
+      setAmount('');
     }
-  }, [isOpen, user, currency, fromWallet]);
+  }, [isOpen, user, loadBalances]);
 
-  const loadBalance = async () => {
-    if (!user) return;
+  useEffect(() => {
+    if (fromWallet === toWallet) {
+      const options: WalletType[] = ['main', 'futures', 'copy'];
+      const newTo = options.find(w => w !== fromWallet) || 'futures';
+      setToWallet(newTo);
+    }
+  }, [fromWallet, toWallet]);
 
-    try {
-      setAllocatedBalance(0);
-      setTotalBalance(0);
-
-      if (fromWallet === 'futures') {
-        const { data, error } = await supabase.rpc('get_wallet_balances', {
-          p_user_id: user.id
-        });
-
-        if (error) throw error;
-
-        setAvailableBalance(parseFloat(data?.total_trading_available || '0'));
-        setTotalBalance(parseFloat(data?.total_trading_available || '0'));
-      } else {
-        const { data, error } = await supabase
-          .from('wallets')
-          .select('balance, locked_balance')
-          .eq('user_id', user.id)
-          .eq('currency', currency)
-          .eq('wallet_type', fromWallet)
-          .maybeSingle();
-
-        if (error) throw error;
-
-        const balance = parseFloat(data?.balance || '0');
-        const locked = parseFloat(data?.locked_balance || '0');
-        setAvailableBalance(balance - locked);
-        setTotalBalance(balance - locked);
-      }
-    } catch (err) {
-      console.error('Error loading balance:', err);
-      setAvailableBalance(0);
-      setTotalBalance(0);
-      setAllocatedBalance(0);
+  const getAvailableBalance = (walletType: WalletType): number => {
+    if (!balances) return 0;
+    switch (walletType) {
+      case 'main':
+        return balances.main_available;
+      case 'copy':
+        return balances.copy_available;
+      case 'futures':
+        return balances.futures_available;
+      default:
+        return 0;
     }
   };
+
+  const currentAvailable = getAvailableBalance(fromWallet);
 
   const handleTransfer = async () => {
     if (!user) return;
 
     setError('');
+    setSuccess('');
+
     const transferAmount = parseFloat(amount);
 
     if (isNaN(transferAmount) || transferAmount <= 0) {
@@ -93,13 +123,8 @@ export default function WalletTransferModal({
       return;
     }
 
-    if (transferAmount > availableBalance) {
+    if (transferAmount > currentAvailable) {
       setError('Insufficient balance');
-      return;
-    }
-
-    if (fromWallet === toWallet) {
-      setError('Source and destination wallets must be different');
       return;
     }
 
@@ -108,7 +133,7 @@ export default function WalletTransferModal({
     try {
       const { data, error: rpcError } = await supabase.rpc('transfer_between_wallets', {
         user_id_param: user.id,
-        currency_param: currency,
+        currency_param: 'USDT',
         amount_param: transferAmount,
         from_wallet_type_param: fromWallet,
         to_wallet_type_param: toWallet
@@ -121,9 +146,14 @@ export default function WalletTransferModal({
         return;
       }
 
-      onSuccess();
-      onClose();
+      setSuccess(data?.message || 'Transfer completed successfully');
       setAmount('');
+      await loadBalances();
+
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 1500);
     } catch (err: any) {
       console.error('Transfer error:', err);
       setError(err.message || 'Failed to transfer funds');
@@ -132,113 +162,201 @@ export default function WalletTransferModal({
     }
   };
 
+  const handleMaxClick = () => {
+    if (currentAvailable > 0) {
+      setAmount(currentAvailable.toFixed(8).replace(/\.?0+$/, ''));
+    }
+  };
+
+  const swapWallets = () => {
+    const temp = fromWallet;
+    setFromWallet(toWallet);
+    setToWallet(temp);
+    setAmount('');
+    setError('');
+  };
+
   if (!isOpen) return null;
 
+  const FromIcon = WALLET_CONFIG[fromWallet].icon;
+  const ToIcon = WALLET_CONFIG[toWallet].icon;
+
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#181a20] rounded-2xl p-6 max-w-md w-full border border-gray-800">
-        <div className="flex items-center justify-between mb-6">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-[#181a20] rounded-2xl w-full max-w-md border border-gray-800 shadow-2xl">
+        <div className="flex items-center justify-between p-6 border-b border-gray-800">
           <h3 className="text-xl font-bold text-white">Transfer Between Wallets</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-gray-400 hover:text-white transition-colors p-1"
           >
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        <div className="space-y-4">
-          <div>
-            <label className="text-gray-400 text-sm mb-2 block">Currency</label>
-            <select
-              value={currency}
-              onChange={(e) => {
-                setCurrency(e.target.value);
-                loadBalance();
-              }}
-              className="w-full bg-[#0b0e11] border border-gray-700 rounded-xl px-4 py-3 text-white outline-none focus:border-[#f0b90b] transition-colors"
-            >
-              {cryptoOptions.map(crypto => (
-                <option key={crypto} value={crypto}>{crypto}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center gap-4">
+        <div className="p-6 space-y-6">
+          <div className="flex items-center gap-3">
             <div className="flex-1">
               <label className="text-gray-400 text-sm mb-2 block">From</label>
               <select
                 value={fromWallet}
                 onChange={(e) => {
-                  const newFrom = e.target.value as 'main' | 'futures';
-                  setFromWallet(newFrom);
-                  if (newFrom === toWallet) {
-                    setToWallet(newFrom === 'main' ? 'futures' : 'main');
-                  }
+                  setFromWallet(e.target.value as WalletType);
+                  setAmount('');
+                  setError('');
                 }}
-                className="w-full bg-[#0b0e11] border border-gray-700 rounded-xl px-4 py-3 text-white outline-none focus:border-[#f0b90b] transition-colors"
+                className="w-full bg-[#0b0e11] border border-gray-700 rounded-xl px-4 py-3 text-white outline-none focus:border-[#f0b90b] transition-colors appearance-none cursor-pointer"
               >
-                {walletTypes.map(type => (
-                  <option key={type.value} value={type.value}>{type.label}</option>
+                {Object.entries(WALLET_CONFIG).map(([key, config]) => (
+                  <option key={key} value={key}>{config.label}</option>
                 ))}
               </select>
             </div>
 
-            <div className="pt-6">
-              <ArrowRight className="w-6 h-6 text-[#f0b90b]" />
-            </div>
+            <button
+              onClick={swapWallets}
+              className="mt-6 p-2 hover:bg-gray-800 rounded-lg transition-colors group"
+              title="Swap wallets"
+            >
+              <ArrowRight className="w-5 h-5 text-[#f0b90b] group-hover:scale-110 transition-transform" />
+            </button>
 
             <div className="flex-1">
               <label className="text-gray-400 text-sm mb-2 block">To</label>
               <select
                 value={toWallet}
-                onChange={(e) => setToWallet(e.target.value as 'main' | 'futures')}
-                className="w-full bg-[#0b0e11] border border-gray-700 rounded-xl px-4 py-3 text-white outline-none focus:border-[#f0b90b] transition-colors"
+                onChange={(e) => setToWallet(e.target.value as WalletType)}
+                className="w-full bg-[#0b0e11] border border-gray-700 rounded-xl px-4 py-3 text-white outline-none focus:border-[#f0b90b] transition-colors appearance-none cursor-pointer"
               >
-                {walletTypes.filter(t => t.value !== fromWallet).map(type => (
-                  <option key={type.value} value={type.value}>{type.label}</option>
-                ))}
+                {Object.entries(WALLET_CONFIG)
+                  .filter(([key]) => key !== fromWallet)
+                  .map(([key, config]) => (
+                    <option key={key} value={key}>{config.label}</option>
+                  ))}
               </select>
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-[#0b0e11] border border-gray-700 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <FromIcon className={`w-4 h-4 ${WALLET_CONFIG[fromWallet].color}`} />
+                <span className="text-gray-400 text-xs">From Balance</span>
+              </div>
+              {loadingBalances ? (
+                <div className="h-6 bg-gray-800 rounded animate-pulse"></div>
+              ) : (
+                <div className="text-white font-bold">
+                  {currentAvailable.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} USDT
+                </div>
+              )}
+              {fromWallet === 'copy' && balances && balances.copy_allocated > 0 && (
+                <div className="text-xs text-yellow-500 mt-1">
+                  {balances.copy_allocated.toLocaleString(undefined, { minimumFractionDigits: 2 })} USDT allocated to traders
+                </div>
+              )}
+            </div>
+
+            <div className="bg-[#0b0e11] border border-gray-700 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <ToIcon className={`w-4 h-4 ${WALLET_CONFIG[toWallet].color}`} />
+                <span className="text-gray-400 text-xs">To Balance</span>
+              </div>
+              {loadingBalances ? (
+                <div className="h-6 bg-gray-800 rounded animate-pulse"></div>
+              ) : (
+                <div className="text-white font-bold">
+                  {getAvailableBalance(toWallet).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} USDT
+                </div>
+              )}
+            </div>
+          </div>
+
           <div>
-            <label className="text-gray-400 text-sm mb-2 block">Amount</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-gray-400 text-sm">Amount</label>
+              <button
+                onClick={loadBalances}
+                disabled={loadingBalances}
+                className="text-xs text-gray-500 hover:text-gray-300 flex items-center gap-1 transition-colors"
+              >
+                <RefreshCw className={`w-3 h-3 ${loadingBalances ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            </div>
             <div className="relative">
               <input
                 type="number"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => {
+                  setAmount(e.target.value);
+                  setError('');
+                }}
                 placeholder="0.00"
-                className="w-full bg-[#0b0e11] border border-gray-700 rounded-xl px-4 py-3 text-white outline-none focus:border-[#f0b90b] transition-colors"
+                step="any"
+                min="0"
+                className="w-full bg-[#0b0e11] border border-gray-700 rounded-xl px-4 py-4 text-white text-lg outline-none focus:border-[#f0b90b] transition-colors pr-20"
               />
-              <button
-                onClick={() => setAmount(availableBalance.toString())}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#f0b90b] text-sm font-medium hover:text-[#f8d12f] transition-colors"
-              >
-                MAX
-              </button>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                <span className="text-gray-500 text-sm">USDT</span>
+                <button
+                  onClick={handleMaxClick}
+                  disabled={currentAvailable <= 0}
+                  className="text-[#f0b90b] text-sm font-semibold hover:text-[#f8d12f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed px-2 py-1 bg-[#f0b90b]/10 rounded"
+                >
+                  MAX
+                </button>
+              </div>
             </div>
-            <div className="mt-2">
-              <p className="text-xs text-gray-500">
-                Available: {availableBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })} {currency}
-              </p>
-            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Available: {currentAvailable.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })} USDT
+            </p>
           </div>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-red-400 text-sm">
-              {error}
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
+
+          {success && (
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+              <p className="text-emerald-400 text-sm">{success}</p>
             </div>
           )}
 
           <button
             onClick={handleTransfer}
-            disabled={loading || !amount || parseFloat(amount) <= 0}
-            className="w-full bg-[#f0b90b] hover:bg-[#f8d12f] disabled:bg-gray-700 disabled:cursor-not-allowed text-black disabled:text-gray-500 font-bold py-3 rounded-xl transition-all"
+            disabled={loading || !amount || parseFloat(amount) <= 0 || parseFloat(amount) > currentAvailable || success !== ''}
+            className="w-full bg-[#f0b90b] hover:bg-[#f8d12f] disabled:bg-gray-700 disabled:cursor-not-allowed text-black disabled:text-gray-500 font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2"
           >
-            {loading ? 'Transferring...' : 'Confirm Transfer'}
+            {loading ? (
+              <>
+                <RefreshCw className="w-5 h-5 animate-spin" />
+                Processing...
+              </>
+            ) : success ? (
+              <>
+                <CheckCircle className="w-5 h-5" />
+                Transfer Complete
+              </>
+            ) : (
+              'Confirm Transfer'
+            )}
           </button>
+
+          {fromWallet === 'copy' && balances && balances.copy_allocated > 0 && (
+            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
+              <p className="text-sm text-yellow-200">
+                <span className="font-semibold">{balances.copy_allocated.toLocaleString(undefined, { minimumFractionDigits: 2 })} USDT</span> is allocated to active traders and cannot be transferred.
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                Stop copying traders to withdraw these funds.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -37,6 +37,7 @@ interface CopyRelationship {
   trader_id: string;
   initial_balance: string;
   current_balance: string;
+  cumulative_pnl: string;
   leverage: number;
   is_active: boolean;
   is_mock: boolean;
@@ -279,18 +280,20 @@ function CopyTrading() {
       if (data) {
         const formattedCopiesPromises = data.map(async (copy) => {
           const initialBalance = parseFloat(copy.initial_balance || '0');
-          const currentBalance = parseFloat(copy.current_balance || '0');
+          const cumulativePnl = parseFloat(copy.cumulative_pnl || '0');
+          const actualCurrentBalance = initialBalance + cumulativePnl;
 
           let userRoi30d = 0;
           if (initialBalance > 0) {
-            userRoi30d = ((currentBalance - initialBalance) / initialBalance) * 100;
+            userRoi30d = (cumulativePnl / initialBalance) * 100;
           }
 
           return {
             id: copy.id,
             trader_id: copy.trader_id,
             initial_balance: copy.initial_balance || '0',
-            current_balance: copy.current_balance || '0',
+            current_balance: actualCurrentBalance.toString(),
+            cumulative_pnl: copy.cumulative_pnl || '0',
             leverage: copy.leverage,
             is_active: copy.is_active,
             is_mock: copy.is_mock,
@@ -346,18 +349,20 @@ function CopyTrading() {
       if (data) {
         const formattedCopiesPromises = data.map(async (copy) => {
           const initialBalance = parseFloat(copy.initial_balance || '0');
-          const currentBalance = parseFloat(copy.current_balance || '0');
+          const cumulativePnl = parseFloat(copy.cumulative_pnl || '0');
+          const actualCurrentBalance = initialBalance + cumulativePnl;
 
           let userRoi30d = 0;
           if (initialBalance > 0) {
-            userRoi30d = ((currentBalance - initialBalance) / initialBalance) * 100;
+            userRoi30d = (cumulativePnl / initialBalance) * 100;
           }
 
           return {
             id: copy.id,
             trader_id: copy.trader_id,
             initial_balance: copy.initial_balance || '0',
-            current_balance: copy.current_balance || '0',
+            current_balance: actualCurrentBalance.toString(),
+            cumulative_pnl: copy.cumulative_pnl || '0',
             leverage: copy.leverage,
             is_active: copy.is_active,
             is_mock: copy.is_mock,

@@ -64,6 +64,7 @@ interface CopyRelationship {
   leverage: number;
   initial_balance: string;
   current_balance: string;
+  cumulative_pnl: string;
   total_pnl: string;
   is_active: boolean;
   is_mock: boolean;
@@ -143,7 +144,8 @@ function ActiveCopyTrading() {
       const { data, error } = await supabase
         .from('copy_relationships')
         .select(`
-          *,
+          id, trader_id, allocation_percentage, leverage, initial_balance,
+          current_balance, cumulative_pnl, total_pnl, is_active, is_mock, created_at,
           traders:trader_id (id, name, avatar, roi_30d)
         `)
         .eq('id', copyId)
@@ -158,13 +160,18 @@ function ActiveCopyTrading() {
         return;
       }
 
+      const initialBalance = parseFloat(data.initial_balance || '0');
+      const cumulativePnl = parseFloat(data.cumulative_pnl || '0');
+      const actualCurrentBalance = initialBalance + cumulativePnl;
+
       const copyData: CopyRelationship = {
         id: data.id,
         trader_id: data.trader_id,
         allocation_percentage: data.allocation_percentage,
         leverage: data.leverage,
         initial_balance: data.initial_balance || '0',
-        current_balance: data.current_balance || '0',
+        current_balance: actualCurrentBalance.toString(),
+        cumulative_pnl: data.cumulative_pnl || '0',
         total_pnl: data.total_pnl || '0',
         is_active: data.is_active,
         is_mock: data.is_mock || false,
@@ -361,17 +368,22 @@ function ActiveCopyTrading() {
     try {
       const { data: relationshipData, error: relationshipError } = await supabase
         .from('copy_relationships')
-        .select('initial_balance, current_balance, total_pnl')
+        .select('initial_balance, current_balance, cumulative_pnl, total_pnl')
         .eq('id', selectedCopy.id)
         .maybeSingle();
 
       if (relationshipError) throw relationshipError;
 
       if (relationshipData) {
+        const initialBalance = parseFloat(relationshipData.initial_balance || '0');
+        const cumulativePnl = parseFloat(relationshipData.cumulative_pnl || '0');
+        const actualCurrentBalance = initialBalance + cumulativePnl;
+
         setSelectedCopy(prev => prev ? {
           ...prev,
           initial_balance: relationshipData.initial_balance || '0',
-          current_balance: relationshipData.current_balance || '0',
+          current_balance: actualCurrentBalance.toString(),
+          cumulative_pnl: relationshipData.cumulative_pnl || '0',
           total_pnl: relationshipData.total_pnl || '0'
         } : null);
       }
