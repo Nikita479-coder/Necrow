@@ -398,86 +398,28 @@ function ActiveCopyTrading() {
     setWithdrawing(true);
 
     try {
-      if (selectedCopy.is_mock) {
-        const { error: copyError } = await supabase
-          .from('copy_relationships')
-          .update({
-            is_active: false,
-            status: 'stopped',
-            ended_at: new Date().toISOString()
-          })
-          .eq('id', selectedCopy.id);
+      const { data, error } = await supabase.rpc('stop_and_withdraw_copy_trading', {
+        p_relationship_id: selectedCopy.id
+      });
 
-        if (copyError) throw copyError;
+      if (error) throw error;
 
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to stop copy trading');
+      }
+
+      if (data.is_mock) {
         showSuccess(`Mock copy trading with ${selectedCopy.trader.name} has been stopped`);
-        setShowWithdrawModal(false);
-
-        setTimeout(() => {
-          navigateTo('copytrading');
-        }, 2000);
-        return;
+      } else {
+        const withdrawAmount = data.withdraw_amount || 0;
+        const platformFee = data.platform_fee || 0;
+        showSuccess(
+          `Successfully withdrawn ${withdrawAmount.toFixed(2)} USDT to your wallet${
+            platformFee > 0 ? `. Platform fee: ${platformFee.toFixed(2)} USDT (20% of profits)` : ''
+          }`
+        );
       }
 
-      const initialBalance = parseFloat(selectedCopy.initial_balance);
-      const currentBalance = parseFloat(selectedCopy.current_balance);
-      const profit = currentBalance - initialBalance;
-
-      let withdrawAmount = currentBalance;
-      let platformFee = 0;
-
-      if (profit > 0) {
-        platformFee = profit * 0.20;
-        withdrawAmount = currentBalance - platformFee;
-      }
-
-      const { error: deactivateError } = await supabase
-        .from('copy_relationships')
-        .update({
-          is_active: false
-        })
-        .eq('id', selectedCopy.id);
-
-      if (deactivateError) throw deactivateError;
-
-      const { data: transferData, error: transferError } = await supabase.rpc(
-        'transfer_between_wallets',
-        {
-          user_id_param: user.id,
-          currency_param: 'USDT',
-          amount_param: withdrawAmount,
-          from_wallet_type_param: 'copy',
-          to_wallet_type_param: 'main'
-        }
-      );
-
-      if (transferError) {
-        await supabase
-          .from('copy_relationships')
-          .update({ is_active: true })
-          .eq('id', selectedCopy.id);
-        throw transferError;
-      }
-      if (!transferData?.success) {
-        await supabase
-          .from('copy_relationships')
-          .update({ is_active: true })
-          .eq('id', selectedCopy.id);
-        throw new Error(transferData?.error || 'Transfer failed');
-      }
-
-      const { error: copyError } = await supabase
-        .from('copy_relationships')
-        .update({
-          status: 'stopped',
-          current_balance: '0',
-          ended_at: new Date().toISOString()
-        })
-        .eq('id', selectedCopy.id);
-
-      if (copyError) throw copyError;
-
-      showSuccess(`Successfully withdrawn ${withdrawAmount.toFixed(2)} USDT to your wallet${platformFee > 0 ? `. Platform fee: ${platformFee.toFixed(2)} USDT (20% of profits)` : ''}`);
       setShowWithdrawModal(false);
 
       setTimeout(() => {
