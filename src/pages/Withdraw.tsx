@@ -513,7 +513,7 @@ function Withdraw() {
                     <div className="text-gray-400 text-sm text-right">
                       <div>Available: <span className="text-white font-semibold">{(walletBalances[selectedCrypto] || 0).toFixed(6)} {selectedCrypto}</span></div>
                       {(lockedBalances[selectedCrypto] || 0) > 0 && (
-                        <div className="text-yellow-400 text-xs">Locked: {(lockedBalances[selectedCrypto] || 0).toFixed(6)} {selectedCrypto}</div>
+                        <div className="text-yellow-400 text-xs">Locked (pending withdrawal): {(lockedBalances[selectedCrypto] || 0).toFixed(2)} {selectedCrypto}</div>
                       )}
                     </div>
                   </div>
