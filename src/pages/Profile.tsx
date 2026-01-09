@@ -57,6 +57,7 @@ interface Asset {
   name: string;
   balance: number;
   mainWalletBalance: number;
+  availableBalance: number;
   usdValue: number;
   price: number;
 }
@@ -327,13 +328,24 @@ function Profile() {
 
       if (error) throw error;
 
+      // Get locked bonuses for all currencies (USDT only currently)
+      const { data: lockedBonusData } = await supabase
+        .from('locked_bonuses')
+        .select('current_amount')
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+
+      const totalLockedBonus = lockedBonusData?.reduce((sum, bonus) => sum + parseFloat(bonus.current_amount), 0) || 0;
+
       if (data) {
         // Group balances by currency (total) and track main wallet balance separately
         const currencyTotals = new Map<string, number>();
         const mainWalletBalances = new Map<string, number>();
+        const mainWalletLockedBalances = new Map<string, number>();
 
         data.forEach(wallet => {
           const balance = parseFloat(wallet.balance);
+          const lockedBalance = parseFloat(wallet.locked_balance || '0');
 
           // Add to total
           const current = currencyTotals.get(wallet.currency) || 0;
@@ -342,6 +354,7 @@ function Profile() {
           // Track main wallet balance separately
           if (wallet.wallet_type === 'main') {
             mainWalletBalances.set(wallet.currency, balance);
+            mainWalletLockedBalances.set(wallet.currency, lockedBalance);
           }
         });
 
@@ -351,6 +364,11 @@ function Profile() {
           const currentPrice = priceData?.price || 1;
           const usdValue = totalBalance * currentPrice;
           const mainBalance = mainWalletBalances.get(currency) || 0;
+          const mainLockedBalance = mainWalletLockedBalances.get(currency) || 0;
+
+          // Calculate available balance: main balance - locked balance - locked bonuses (for USDT only)
+          const lockedBonusAmount = currency === 'USDT' ? totalLockedBonus : 0;
+          const availableBalance = Math.max(mainBalance - mainLockedBalance - lockedBonusAmount, 0);
 
           return {
             symbol: currency,
@@ -365,6 +383,7 @@ function Profile() {
                   currency === 'DOGE' ? 'Dogecoin' : currency,
             balance: totalBalance,
             mainWalletBalance: mainBalance,
+            availableBalance: availableBalance,
             usdValue: usdValue,
             price: currentPrice
           };
@@ -739,7 +758,7 @@ function Profile() {
                       <span className="text-gray-700">|</span>
                       <button
                         onClick={() => {
-                          setSelectedWithdrawAsset(getCryptoData(asset.symbol, asset.mainWalletBalance));
+                          setSelectedWithdrawAsset(getCryptoData(asset.symbol, asset.availableBalance));
                           setShowWithdrawModal(true);
                         }}
                         className="text-blue-500 hover:text-blue-400 font-medium text-sm"
@@ -781,7 +800,7 @@ function Profile() {
                   </button>
                   <button
                     onClick={() => {
-                      setSelectedWithdrawAsset(getCryptoData(asset.symbol, asset.mainWalletBalance));
+                      setSelectedWithdrawAsset(getCryptoData(asset.symbol, asset.availableBalance));
                       setShowWithdrawModal(true);
                     }}
                     className="text-blue-500 hover:text-blue-400 font-medium text-xs"

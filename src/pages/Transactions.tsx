@@ -40,7 +40,7 @@ function Transactions() {
       setLoading(true);
       let query = supabase
         .from('transactions')
-        .select('id, transaction_type, currency, amount, status, created_at, tx_hash, address, fee, details')
+        .select('id, transaction_type, currency, amount, status, created_at, tx_hash, address, fee, details, network')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
