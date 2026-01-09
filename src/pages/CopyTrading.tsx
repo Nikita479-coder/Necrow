@@ -281,7 +281,6 @@ function CopyTrading() {
         const formattedCopiesPromises = data.map(async (copy) => {
           const initialBalance = parseFloat(copy.initial_balance || '0');
           const cumulativePnl = parseFloat(copy.cumulative_pnl || '0');
-          const actualCurrentBalance = initialBalance + cumulativePnl;
 
           let userRoi30d = 0;
           if (initialBalance > 0) {
@@ -292,7 +291,7 @@ function CopyTrading() {
             id: copy.id,
             trader_id: copy.trader_id,
             initial_balance: copy.initial_balance || '0',
-            current_balance: actualCurrentBalance.toString(),
+            current_balance: copy.current_balance || '0',
             cumulative_pnl: copy.cumulative_pnl || '0',
             leverage: copy.leverage,
             is_active: copy.is_active,
@@ -350,7 +349,6 @@ function CopyTrading() {
         const formattedCopiesPromises = data.map(async (copy) => {
           const initialBalance = parseFloat(copy.initial_balance || '0');
           const cumulativePnl = parseFloat(copy.cumulative_pnl || '0');
-          const actualCurrentBalance = initialBalance + cumulativePnl;
 
           let userRoi30d = 0;
           if (initialBalance > 0) {
@@ -361,7 +359,7 @@ function CopyTrading() {
             id: copy.id,
             trader_id: copy.trader_id,
             initial_balance: copy.initial_balance || '0',
-            current_balance: actualCurrentBalance.toString(),
+            current_balance: copy.current_balance || '0',
             cumulative_pnl: copy.cumulative_pnl || '0',
             leverage: copy.leverage,
             is_active: copy.is_active,

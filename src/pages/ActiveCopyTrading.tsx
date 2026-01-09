@@ -160,17 +160,13 @@ function ActiveCopyTrading() {
         return;
       }
 
-      const initialBalance = parseFloat(data.initial_balance || '0');
-      const cumulativePnl = parseFloat(data.cumulative_pnl || '0');
-      const actualCurrentBalance = initialBalance + cumulativePnl;
-
       const copyData: CopyRelationship = {
         id: data.id,
         trader_id: data.trader_id,
         allocation_percentage: data.allocation_percentage,
         leverage: data.leverage,
         initial_balance: data.initial_balance || '0',
-        current_balance: actualCurrentBalance.toString(),
+        current_balance: data.current_balance || '0',
         cumulative_pnl: data.cumulative_pnl || '0',
         total_pnl: data.total_pnl || '0',
         is_active: data.is_active,
@@ -375,14 +371,10 @@ function ActiveCopyTrading() {
       if (relationshipError) throw relationshipError;
 
       if (relationshipData) {
-        const initialBalance = parseFloat(relationshipData.initial_balance || '0');
-        const cumulativePnl = parseFloat(relationshipData.cumulative_pnl || '0');
-        const actualCurrentBalance = initialBalance + cumulativePnl;
-
         setSelectedCopy(prev => prev ? {
           ...prev,
           initial_balance: relationshipData.initial_balance || '0',
-          current_balance: actualCurrentBalance.toString(),
+          current_balance: relationshipData.current_balance || '0',
           cumulative_pnl: relationshipData.cumulative_pnl || '0',
           total_pnl: relationshipData.total_pnl || '0'
         } : null);
