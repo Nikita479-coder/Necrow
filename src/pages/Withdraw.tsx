@@ -526,7 +526,10 @@ function Withdraw() {
                       className="w-full bg-[#0b0e11] border border-gray-700 rounded-xl px-4 py-3 text-white outline-none focus:border-[#f0b90b] transition-colors pr-24 text-lg font-semibold"
                     />
                     <button
-                      onClick={() => setAmount((walletBalances[selectedCrypto] || 0).toString())}
+                      onClick={() => {
+                        const available = walletBalances[selectedCrypto] || 0;
+                        setAmount(available > 0 ? available.toFixed(6) : '0');
+                      }}
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-[#f0b90b] hover:bg-[#f8d12f] text-black font-bold px-4 py-1.5 rounded-lg text-sm transition-colors"
                     >
                       MAX
