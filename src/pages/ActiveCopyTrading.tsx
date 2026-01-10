@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { useNavigation } from '../App';
-import { ArrowLeft, TrendingUp, TrendingDown, X, Bell, ChevronRight, Wallet, Target, Percent, BarChart3, Clock, DollarSign, Activity, AlertTriangle, Info, Zap } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, X, Bell, ChevronRight, Wallet, Target, Percent, BarChart3, Clock, DollarSign, Activity, AlertTriangle, Info, Zap, Plus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { ToastContainer } from '../components/Toast';
 import PendingTradeCard from '../components/PendingTradeCard';
+import AddFundsToCopyModal from '../components/AddFundsToCopyModal';
 
 interface Trade {
   id: string;
@@ -89,6 +90,7 @@ function ActiveCopyTrading() {
   const [pendingTrades, setPendingTrades] = useState<PendingTrade[]>([]);
   const [loading, setLoading] = useState(true);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [showAddFundsModal, setShowAddFundsModal] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
   const [respondingToTrade, setRespondingToTrade] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'positions' | 'history' | 'allocations'>('positions');
@@ -547,13 +549,22 @@ function ActiveCopyTrading() {
               </div>
 
               {selectedCopy.is_active && (
-                <button
-                  onClick={() => setShowWithdrawModal(true)}
-                  className="flex items-center justify-center gap-2 bg-gradient-to-r from-[#f6465d] to-[#d93547] hover:from-[#ff4d63] hover:to-[#e03a4c] text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg shadow-[#f6465d]/20 hover:shadow-[#f6465d]/30"
-                >
-                  <Wallet className="w-5 h-5" />
-                  {selectedCopy.is_mock ? 'Stop Mock Copy' : 'Withdraw & Stop'}
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setShowAddFundsModal(true)}
+                    className="flex items-center justify-center gap-2 bg-gradient-to-r from-[#0ecb81] to-[#0db777] hover:from-[#10d889] hover:to-[#0fc982] text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg shadow-[#0ecb81]/20 hover:shadow-[#0ecb81]/30"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Add Funds
+                  </button>
+                  <button
+                    onClick={() => setShowWithdrawModal(true)}
+                    className="flex items-center justify-center gap-2 bg-gradient-to-r from-[#f6465d] to-[#d93547] hover:from-[#ff4d63] hover:to-[#e03a4c] text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg shadow-[#f6465d]/20 hover:shadow-[#f6465d]/30"
+                  >
+                    <Wallet className="w-5 h-5" />
+                    {selectedCopy.is_mock ? 'Stop Mock Copy' : 'Withdraw & Stop'}
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -1050,6 +1061,23 @@ function ActiveCopyTrading() {
             </div>
           </div>
         </div>
+      )}
+
+      {showAddFundsModal && selectedCopy && (
+        <AddFundsToCopyModal
+          isOpen={showAddFundsModal}
+          onClose={() => setShowAddFundsModal(false)}
+          relationshipId={selectedCopy.id}
+          traderName={selectedCopy.trader.name}
+          currentInitialBalance={parseFloat(selectedCopy.initial_balance)}
+          currentBalance={parseFloat(selectedCopy.current_balance)}
+          isMock={selectedCopy.is_mock}
+          onSuccess={() => {
+            showSuccess('Funds added successfully!');
+            loadCopyRelationship();
+            updateBalance();
+          }}
+        />
       )}
     </div>
   );
