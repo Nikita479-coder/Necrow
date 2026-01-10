@@ -26,6 +26,20 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '../App';
 import Navbar from '../components/Navbar';
 
+interface LevelRates {
+  level_1: number;
+  level_2: number;
+  level_3: number;
+  level_4: number;
+  level_5: number;
+  level_6?: number;
+  level_7?: number;
+  level_8?: number;
+  level_9?: number;
+  level_10?: number;
+  [key: string]: number | undefined;
+}
+
 interface ExclusiveAffiliate {
   affiliate_id: string;
   user_id: string;
@@ -33,27 +47,9 @@ interface ExclusiveAffiliate {
   full_name: string | null;
   username: string | null;
   referral_code: string | null;
-  deposit_commission_rates: {
-    level_1: number;
-    level_2: number;
-    level_3: number;
-    level_4: number;
-    level_5: number;
-  };
-  fee_share_rates: {
-    level_1: number;
-    level_2: number;
-    level_3: number;
-    level_4: number;
-    level_5: number;
-  };
-  copy_profit_rates: {
-    level_1: number;
-    level_2: number;
-    level_3: number;
-    level_4: number;
-    level_5: number;
-  };
+  deposit_commission_rates: LevelRates;
+  fee_share_rates: LevelRates;
+  copy_profit_rates: LevelRates;
   is_active: boolean;
   enrolled_at: string;
   enrolled_by_email: string | null;
@@ -89,11 +85,22 @@ interface NetworkStats {
   level_3_count: number;
   level_4_count: number;
   level_5_count: number;
+  level_6_count?: number;
+  level_7_count?: number;
+  level_8_count?: number;
+  level_9_count?: number;
+  level_10_count?: number;
   level_1_earnings: number;
   level_2_earnings: number;
   level_3_earnings: number;
   level_4_earnings: number;
   level_5_earnings: number;
+  level_6_earnings?: number;
+  level_7_earnings?: number;
+  level_8_earnings?: number;
+  level_9_earnings?: number;
+  level_10_earnings?: number;
+  [key: string]: number | undefined;
 }
 
 interface NetworkMember {
@@ -128,9 +135,9 @@ export default function AdminExclusiveAffiliates() {
   const [rejectionReason, setRejectionReason] = useState('');
   const [processingWithdrawal, setProcessingWithdrawal] = useState(false);
 
-  const [depositRates, setDepositRates] = useState({ level_1: 5, level_2: 4, level_3: 3, level_4: 2, level_5: 1 });
-  const [feeRates, setFeeRates] = useState({ level_1: 50, level_2: 40, level_3: 30, level_4: 20, level_5: 10 });
-  const [copyProfitRates, setCopyProfitRates] = useState({ level_1: 10, level_2: 5, level_3: 4, level_4: 3, level_5: 2 });
+  const [depositRates, setDepositRates] = useState<LevelRates>({ level_1: 5, level_2: 4, level_3: 3, level_4: 2, level_5: 1, level_6: 0, level_7: 0, level_8: 0, level_9: 0, level_10: 0 });
+  const [feeRates, setFeeRates] = useState<LevelRates>({ level_1: 50, level_2: 40, level_3: 30, level_4: 20, level_5: 10, level_6: 0, level_7: 0, level_8: 0, level_9: 0, level_10: 0 });
+  const [copyProfitRates, setCopyProfitRates] = useState<LevelRates>({ level_1: 10, level_2: 5, level_3: 4, level_4: 3, level_5: 2, level_6: 0, level_7: 0, level_8: 0, level_9: 0, level_10: 0 });
 
   const [showNetworkModal, setShowNetworkModal] = useState(false);
   const [selectedAffiliateForNetwork, setSelectedAffiliateForNetwork] = useState<ExclusiveAffiliate | null>(null);
@@ -188,9 +195,9 @@ export default function AdminExclusiveAffiliates() {
       if (data?.success) {
         setShowEnrollModal(false);
         setEnrollEmail('');
-        setDepositRates({ level_1: 5, level_2: 4, level_3: 3, level_4: 2, level_5: 1 });
-        setFeeRates({ level_1: 50, level_2: 40, level_3: 30, level_4: 20, level_5: 10 });
-        setCopyProfitRates({ level_1: 10, level_2: 5, level_3: 4, level_4: 3, level_5: 2 });
+        setDepositRates({ level_1: 5, level_2: 4, level_3: 3, level_4: 2, level_5: 1, level_6: 0, level_7: 0, level_8: 0, level_9: 0, level_10: 0 });
+        setFeeRates({ level_1: 50, level_2: 40, level_3: 30, level_4: 20, level_5: 10, level_6: 0, level_7: 0, level_8: 0, level_9: 0, level_10: 0 });
+        setCopyProfitRates({ level_1: 10, level_2: 5, level_3: 4, level_4: 3, level_5: 2, level_6: 0, level_7: 0, level_8: 0, level_9: 0, level_10: 0 });
         loadData();
       } else {
         setEnrollError(data?.error || 'Failed to enroll user');
@@ -543,21 +550,36 @@ export default function AdminExclusiveAffiliates() {
                           <Gift className="w-4 h-4 text-green-400" />
                           <span className="text-sm text-gray-400">Deposit:</span>
                           <span className="text-sm text-white">
-                            {affiliate.deposit_commission_rates?.level_1 || 5}%-{affiliate.deposit_commission_rates?.level_5 || 1}%
+                            {(() => {
+                              const rates = affiliate.deposit_commission_rates;
+                              const activeRates = [1,2,3,4,5,6,7,8,9,10].filter(l => (rates?.[`level_${l}`] || 0) > 0);
+                              if (activeRates.length === 0) return '0%';
+                              return `${rates?.[`level_${activeRates[0]}`] || 0}%-${rates?.[`level_${activeRates[activeRates.length - 1]}`] || 0}%`;
+                            })()}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Percent className="w-4 h-4 text-blue-400" />
                           <span className="text-sm text-gray-400">Fees:</span>
                           <span className="text-sm text-white">
-                            {affiliate.fee_share_rates?.level_1 || 50}%-{affiliate.fee_share_rates?.level_5 || 10}%
+                            {(() => {
+                              const rates = affiliate.fee_share_rates;
+                              const activeRates = [1,2,3,4,5,6,7,8,9,10].filter(l => (rates?.[`level_${l}`] || 0) > 0);
+                              if (activeRates.length === 0) return '0%';
+                              return `${rates?.[`level_${activeRates[0]}`] || 0}%-${rates?.[`level_${activeRates[activeRates.length - 1]}`] || 0}%`;
+                            })()}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <TrendingUp className="w-4 h-4 text-cyan-400" />
                           <span className="text-sm text-gray-400">Copy:</span>
                           <span className="text-sm text-white">
-                            {affiliate.copy_profit_rates?.level_1 || 10}%-{affiliate.copy_profit_rates?.level_5 || 2}%
+                            {(() => {
+                              const rates = affiliate.copy_profit_rates;
+                              const activeRates = [1,2,3,4,5,6,7,8,9,10].filter(l => (rates?.[`level_${l}`] || 0) > 0);
+                              if (activeRates.length === 0) return '0%';
+                              return `${rates?.[`level_${activeRates[0]}`] || 0}%-${rates?.[`level_${activeRates[activeRates.length - 1]}`] || 0}%`;
+                            })()}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -742,14 +764,14 @@ export default function AdminExclusiveAffiliates() {
                   Deposit Commission Rates (%)
                 </label>
                 <div className="grid grid-cols-5 gap-2">
-                  {[1, 2, 3, 4, 5].map((level) => (
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((level) => (
                     <div key={level} className="text-center">
                       <div className="text-xs text-gray-500 mb-1">L{level}</div>
                       <input
                         type="number"
                         min="0"
                         max="100"
-                        value={depositRates[`level_${level}` as keyof typeof depositRates]}
+                        value={depositRates[`level_${level}`] || 0}
                         onChange={(e) => setDepositRates({ ...depositRates, [`level_${level}`]: parseFloat(e.target.value) || 0 })}
                         className="w-full bg-[#0b0e11] border border-gray-700 rounded px-2 py-1 text-white text-center text-sm focus:outline-none focus:border-[#fcd535]"
                       />
@@ -764,14 +786,14 @@ export default function AdminExclusiveAffiliates() {
                   Trading Fee Revenue Share (%)
                 </label>
                 <div className="grid grid-cols-5 gap-2">
-                  {[1, 2, 3, 4, 5].map((level) => (
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((level) => (
                     <div key={level} className="text-center">
                       <div className="text-xs text-gray-500 mb-1">L{level}</div>
                       <input
                         type="number"
                         min="0"
                         max="100"
-                        value={feeRates[`level_${level}` as keyof typeof feeRates]}
+                        value={feeRates[`level_${level}`] || 0}
                         onChange={(e) => setFeeRates({ ...feeRates, [`level_${level}`]: parseFloat(e.target.value) || 0 })}
                         className="w-full bg-[#0b0e11] border border-gray-700 rounded px-2 py-1 text-white text-center text-sm focus:outline-none focus:border-[#fcd535]"
                       />
@@ -786,14 +808,14 @@ export default function AdminExclusiveAffiliates() {
                   Copy Trading Profit Share (%)
                 </label>
                 <div className="grid grid-cols-5 gap-2">
-                  {[1, 2, 3, 4, 5].map((level) => (
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((level) => (
                     <div key={level} className="text-center">
                       <div className="text-xs text-gray-500 mb-1">L{level}</div>
                       <input
                         type="number"
                         min="0"
                         max="100"
-                        value={copyProfitRates[`level_${level}` as keyof typeof copyProfitRates]}
+                        value={copyProfitRates[`level_${level}`] || 0}
                         onChange={(e) => setCopyProfitRates({ ...copyProfitRates, [`level_${level}`]: parseFloat(e.target.value) || 0 })}
                         className="w-full bg-[#0b0e11] border border-gray-700 rounded px-2 py-1 text-white text-center text-sm focus:outline-none focus:border-[#fcd535]"
                       />
@@ -802,14 +824,20 @@ export default function AdminExclusiveAffiliates() {
                 </div>
               </div>
 
-              <div className="p-4 bg-[#fcd535]/10 border border-[#fcd535]/30 rounded-lg">
+              <div className="p-4 bg-[#fcd535]/10 border border-[#fcd535]/30 rounded-lg max-h-48 overflow-y-auto">
                 <h4 className="font-semibold text-[#fcd535] mb-2">Commission Structure</h4>
                 <ul className="text-sm text-gray-300 space-y-1">
-                  <li>Level 1 (Direct Referrals): {depositRates.level_1}% deposit, {feeRates.level_1}% fees, {copyProfitRates.level_1}% copy profit</li>
-                  <li>Level 2: {depositRates.level_2}% deposit, {feeRates.level_2}% fees, {copyProfitRates.level_2}% copy profit</li>
-                  <li>Level 3: {depositRates.level_3}% deposit, {feeRates.level_3}% fees, {copyProfitRates.level_3}% copy profit</li>
-                  <li>Level 4: {depositRates.level_4}% deposit, {feeRates.level_4}% fees, {copyProfitRates.level_4}% copy profit</li>
-                  <li>Level 5: {depositRates.level_5}% deposit, {feeRates.level_5}% fees, {copyProfitRates.level_5}% copy profit</li>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((level) => {
+                    const depRate = depositRates[`level_${level}`] || 0;
+                    const feeRate = feeRates[`level_${level}`] || 0;
+                    const copyRate = copyProfitRates[`level_${level}`] || 0;
+                    if (depRate === 0 && feeRate === 0 && copyRate === 0) return null;
+                    return (
+                      <li key={level}>
+                        Level {level}{level === 1 ? ' (Direct Referrals)' : ''}: {depRate}% deposit, {feeRate}% fees, {copyRate}% copy profit
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             </div>
@@ -993,19 +1021,24 @@ export default function AdminExclusiveAffiliates() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {[1, 2, 3, 4, 5].map((level) => {
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((level) => {
                     const count = getLevelCount(level);
                     if (count === 0) return null;
                     const isExpanded = expandedLevels.has(level);
                     const members = getMembersByLevel(level);
-                    const levelColors = {
+                    const levelColors: Record<number, { bg: string; text: string; border: string }> = {
                       1: { bg: 'bg-cyan-500/20', text: 'text-cyan-400', border: 'border-cyan-500/30' },
                       2: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' },
                       3: { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/30' },
                       4: { bg: 'bg-amber-500/20', text: 'text-amber-400', border: 'border-amber-500/30' },
-                      5: { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30' }
+                      5: { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30' },
+                      6: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' },
+                      7: { bg: 'bg-pink-500/20', text: 'text-pink-400', border: 'border-pink-500/30' },
+                      8: { bg: 'bg-teal-500/20', text: 'text-teal-400', border: 'border-teal-500/30' },
+                      9: { bg: 'bg-lime-500/20', text: 'text-lime-400', border: 'border-lime-500/30' },
+                      10: { bg: 'bg-sky-500/20', text: 'text-sky-400', border: 'border-sky-500/30' }
                     };
-                    const colors = levelColors[level as keyof typeof levelColors];
+                    const colors = levelColors[level];
 
                     return (
                       <div key={level} className={`rounded-xl border ${colors.border} overflow-hidden`}>
@@ -1088,17 +1121,18 @@ export default function AdminExclusiveAffiliates() {
                     <h4 className="font-semibold text-white mb-3">
                       {showAllReferrals ? 'All Referrals Summary' : 'Eligible Referrals Summary'}
                     </h4>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                      {[1, 2, 3, 4, 5].map((level) => {
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((level) => {
                         const count = getLevelCount(level);
-                        const rate = selectedAffiliateForNetwork.deposit_commission_rates?.[`level_${level}` as keyof typeof selectedAffiliateForNetwork.deposit_commission_rates] || 0;
-                        const feeRate = selectedAffiliateForNetwork.fee_share_rates?.[`level_${level}` as keyof typeof selectedAffiliateForNetwork.fee_share_rates] || 0;
+                        const rate = selectedAffiliateForNetwork.deposit_commission_rates?.[`level_${level}`] || 0;
+                        const feeRate = selectedAffiliateForNetwork.fee_share_rates?.[`level_${level}`] || 0;
+                        if (rate === 0 && feeRate === 0 && count === 0) return null;
                         return (
-                          <div key={level} className="text-center p-3 bg-[#1a1d24] rounded-lg">
-                            <div className="text-2xl font-bold text-white">{count}</div>
-                            <div className="text-xs text-gray-400 mb-1">Level {level}</div>
-                            <div className="text-xs text-green-400">{rate}% deposit</div>
-                            <div className="text-xs text-blue-400">{feeRate}% fees</div>
+                          <div key={level} className="text-center p-2 bg-[#1a1d24] rounded-lg">
+                            <div className="text-xl font-bold text-white">{count}</div>
+                            <div className="text-xs text-gray-400 mb-1">L{level}</div>
+                            <div className="text-xs text-green-400">{rate}%</div>
+                            <div className="text-xs text-blue-400">{feeRate}%</div>
                           </div>
                         );
                       })}
@@ -1114,7 +1148,7 @@ export default function AdminExclusiveAffiliates() {
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-[#fcd535]">
-                          ${(getLevelEarnings(1) + getLevelEarnings(2) + getLevelEarnings(3) + getLevelEarnings(4) + getLevelEarnings(5)).toFixed(2)}
+                          ${[1,2,3,4,5,6,7,8,9,10].reduce((sum, l) => sum + getLevelEarnings(l), 0).toFixed(2)}
                         </div>
                         <div className="text-sm text-gray-400">Total Earnings</div>
                       </div>
