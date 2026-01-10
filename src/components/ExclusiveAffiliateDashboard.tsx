@@ -324,13 +324,15 @@ function ExclusiveAffiliateDashboard() {
           <div className="text-sm text-gray-400">Fee Revenue Share</div>
         </div>
 
-        <div className="bg-[#1a1d24] rounded-xl p-6 border border-gray-800">
-          <div className="flex items-center justify-between mb-3">
-            <TrendingUp className="w-8 h-8 text-cyan-400" />
+        {[1,2,3,4,5,6,7,8,9,10].some(level => (copyProfitRates[`level_${level}`] || 0) > 0) && (
+          <div className="bg-[#1a1d24] rounded-xl p-6 border border-gray-800">
+            <div className="flex items-center justify-between mb-3">
+              <TrendingUp className="w-8 h-8 text-cyan-400" />
+            </div>
+            <div className="text-3xl font-bold mb-1">${(balance.copy_profit || 0).toFixed(2)}</div>
+            <div className="text-sm text-gray-400">Copy Trading Profits</div>
           </div>
-          <div className="text-3xl font-bold mb-1">${(balance.copy_profit || 0).toFixed(2)}</div>
-          <div className="text-sm text-gray-400">Copy Trading Profits</div>
-        </div>
+        )}
 
         <div className="bg-[#1a1d24] rounded-xl p-6 border border-gray-800">
           <div className="flex items-center justify-between mb-3">
