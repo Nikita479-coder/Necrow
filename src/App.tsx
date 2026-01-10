@@ -57,8 +57,9 @@ import Support from './pages/Support';
 import LegalHub from './pages/LegalHub';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import CopyTradingLandingPage from './pages/CopyTradingLandingPage';
 
-type PageType = 'home' | 'markets' | 'futures' | 'profile' | 'swap' | 'swaphistory' | 'copytrading' | 'mocktrading' | 'activecopying' | 'traderprofile' | 'deposit' | 'withdraw' | 'kyc' | 'kycdocuments' | 'adminkyc' | 'wallet' | 'referral' | 'affiliate' | 'vip' | 'rewardshub' | 'earn' | 'signin' | 'signup' | 'forgotpassword' | 'resetpassword' | 'transactions' | 'admindashboard' | 'adminuser' | 'adminuserdetail' | 'admintrader' | 'adminlogs' | 'admincrm' | 'adminemails' | 'adminbonuses' | 'adminsupport' | 'adminviptracking' | 'adminsharkcards' | 'adminstaff' | 'admintelegram' | 'adminwithdrawals' | 'admindeposits' | 'adminreferrals' | 'adminpopups' | 'admingiveaway' | 'adminacquisition' | 'adminexclusiveaffiliates' | 'adminphonereveals' | 'adminstafflogs' | 'giveaway' | 'event' | 'terms' | 'bonusterms' | 'support' | 'legal';
+type PageType = 'home' | 'markets' | 'futures' | 'profile' | 'swap' | 'swaphistory' | 'copytrading' | 'mocktrading' | 'activecopying' | 'traderprofile' | 'deposit' | 'withdraw' | 'kyc' | 'kycdocuments' | 'adminkyc' | 'wallet' | 'referral' | 'affiliate' | 'vip' | 'rewardshub' | 'earn' | 'signin' | 'signup' | 'forgotpassword' | 'resetpassword' | 'transactions' | 'admindashboard' | 'adminuser' | 'adminuserdetail' | 'admintrader' | 'adminlogs' | 'admincrm' | 'adminemails' | 'adminbonuses' | 'adminsupport' | 'adminviptracking' | 'adminsharkcards' | 'adminstaff' | 'admintelegram' | 'adminwithdrawals' | 'admindeposits' | 'adminreferrals' | 'adminpopups' | 'admingiveaway' | 'adminacquisition' | 'adminexclusiveaffiliates' | 'adminphonereveals' | 'adminstafflogs' | 'giveaway' | 'event' | 'terms' | 'bonusterms' | 'support' | 'legal' | 'lp';
 
 interface NavigationContextType {
   currentPage: PageType;
@@ -87,6 +88,12 @@ function App() {
     initAcquisitionTracking();
     priceSyncService.start();
 
+    const pathname = window.location.pathname;
+    if (pathname === '/lp') {
+      setCurrentPage('lp');
+      return;
+    }
+
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const type = hashParams.get('type');
     const accessToken = hashParams.get('access_token');
@@ -97,6 +104,12 @@ function App() {
     }
 
     const urlParams = new URLSearchParams(window.location.search);
+
+    const pageParam = urlParams.get('page');
+    if (pageParam === 'signup') {
+      setCurrentPage('signup');
+      return;
+    }
 
     if (urlParams.get('reset') === 'true') {
       setCurrentPage('resetpassword');
@@ -181,7 +194,8 @@ function App() {
       terms: 'Terms & Conditions',
       bonusterms: 'Bonus Terms',
       support: 'Support',
-      legal: 'Legal Hub'
+      legal: 'Legal Hub',
+      lp: 'Copy Trading'
     };
     return titles[page] || page;
   };
@@ -302,6 +316,8 @@ function App() {
         return wrapWithTracker(<Support />);
       case 'legal':
         return wrapWithTracker(<LegalHub />);
+      case 'lp':
+        return wrapWithTracker(<CopyTradingLandingPage />);
       default:
         return wrapWithTracker(<HomePage />);
     }
@@ -310,7 +326,7 @@ function App() {
   return (
     <AuthProvider>
       <NavigationContext.Provider value={{ currentPage, navigateTo, navigationState }}>
-        <PopupBanner />
+        {currentPage !== 'lp' && <PopupBanner />}
         {renderPage()}
       </NavigationContext.Provider>
     </AuthProvider>
