@@ -16,23 +16,50 @@ import {
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
+interface LevelRates {
+  level_1: number;
+  level_2: number;
+  level_3: number;
+  level_4: number;
+  level_5: number;
+  level_6?: number;
+  level_7?: number;
+  level_8?: number;
+  level_9?: number;
+  level_10?: number;
+  [key: string]: number | undefined;
+}
+
+interface NetworkStats {
+  level_1_count: number;
+  level_2_count: number;
+  level_3_count: number;
+  level_4_count: number;
+  level_5_count: number;
+  level_6_count?: number;
+  level_7_count?: number;
+  level_8_count?: number;
+  level_9_count?: number;
+  level_10_count?: number;
+  level_1_earnings: number;
+  level_2_earnings: number;
+  level_3_earnings: number;
+  level_4_earnings: number;
+  level_5_earnings: number;
+  level_6_earnings?: number;
+  level_7_earnings?: number;
+  level_8_earnings?: number;
+  level_9_earnings?: number;
+  level_10_earnings?: number;
+  this_month: number;
+  [key: string]: number | undefined;
+}
+
 interface ExclusiveStats {
   enrolled: boolean;
   referral_code?: string;
-  deposit_rates?: {
-    level_1: number;
-    level_2: number;
-    level_3: number;
-    level_4: number;
-    level_5: number;
-  };
-  fee_rates?: {
-    level_1: number;
-    level_2: number;
-    level_3: number;
-    level_4: number;
-    level_5: number;
-  };
+  deposit_rates?: LevelRates;
+  fee_rates?: LevelRates;
   balance?: {
     available: number;
     pending: number;
@@ -42,26 +69,8 @@ interface ExclusiveStats {
     fee_share: number;
     copy_profit: number;
   };
-  copy_profit_rates?: {
-    level_1: number;
-    level_2: number;
-    level_3: number;
-    level_4: number;
-    level_5: number;
-  };
-  network?: {
-    level_1_count: number;
-    level_2_count: number;
-    level_3_count: number;
-    level_4_count: number;
-    level_5_count: number;
-    level_1_earnings: number;
-    level_2_earnings: number;
-    level_3_earnings: number;
-    level_4_earnings: number;
-    level_5_earnings: number;
-    this_month: number;
-  };
+  copy_profit_rates?: LevelRates;
+  network?: NetworkStats;
   recent_commissions?: any[];
 }
 
@@ -226,12 +235,23 @@ function ExclusiveAffiliateDashboard() {
     );
   }
 
-  const depositRates = stats.deposit_rates || { level_1: 5, level_2: 4, level_3: 3, level_4: 2, level_5: 1 };
-  const feeRates = stats.fee_rates || { level_1: 50, level_2: 40, level_3: 30, level_4: 20, level_5: 10 };
-  const copyProfitRates = stats.copy_profit_rates || { level_1: 0, level_2: 0, level_3: 0, level_4: 0, level_5: 0 };
+  const depositRates = stats.deposit_rates || { level_1: 5, level_2: 4, level_3: 3, level_4: 2, level_5: 1, level_6: 0, level_7: 0, level_8: 0, level_9: 0, level_10: 0 };
+  const feeRates = stats.fee_rates || { level_1: 50, level_2: 40, level_3: 30, level_4: 20, level_5: 10, level_6: 0, level_7: 0, level_8: 0, level_9: 0, level_10: 0 };
+  const copyProfitRates = stats.copy_profit_rates || { level_1: 0, level_2: 0, level_3: 0, level_4: 0, level_5: 0, level_6: 0, level_7: 0, level_8: 0, level_9: 0, level_10: 0 };
   const balance = stats.balance || { available: 0, pending: 0, total_earned: 0, total_withdrawn: 0, deposit_commissions: 0, fee_share: 0, copy_profit: 0 };
-  const network = stats.network || { level_1_count: 0, level_2_count: 0, level_3_count: 0, level_4_count: 0, level_5_count: 0, level_1_earnings: 0, level_2_earnings: 0, level_3_earnings: 0, level_4_earnings: 0, level_5_earnings: 0, this_month: 0 };
-  const totalNetwork = network.level_1_count + network.level_2_count + network.level_3_count + network.level_4_count + network.level_5_count;
+  const network = stats.network || { level_1_count: 0, level_2_count: 0, level_3_count: 0, level_4_count: 0, level_5_count: 0, level_6_count: 0, level_7_count: 0, level_8_count: 0, level_9_count: 0, level_10_count: 0, level_1_earnings: 0, level_2_earnings: 0, level_3_earnings: 0, level_4_earnings: 0, level_5_earnings: 0, level_6_earnings: 0, level_7_earnings: 0, level_8_earnings: 0, level_9_earnings: 0, level_10_earnings: 0, this_month: 0 };
+
+  const getActiveLevels = () => {
+    const levels: number[] = [];
+    for (let i = 1; i <= 10; i++) {
+      const rate = depositRates[`level_${i}`] || feeRates[`level_${i}`] || 0;
+      if (rate > 0) levels.push(i);
+    }
+    return levels.length > 0 ? levels : [1, 2, 3, 4, 5];
+  };
+  const activeLevels = getActiveLevels();
+
+  const totalNetwork = activeLevels.reduce((sum, level) => sum + (network[`level_${level}_count`] || 0), 0);
 
   const renderOverview = () => (
     <div className="space-y-6">
@@ -327,22 +347,22 @@ function ExclusiveAffiliateDashboard() {
             <Gift className="w-5 h-5 text-green-400" />
             Deposit Commission Rates
           </h3>
-          <div className="space-y-3">
-            {[1, 2, 3, 4, 5].map((level) => {
-              const rate = depositRates[`level_${level}` as keyof typeof depositRates];
-              const count = network[`level_${level}_count` as keyof typeof network] || 0;
+          <div className="space-y-2 max-h-[400px] overflow-y-auto">
+            {activeLevels.map((level) => {
+              const rate = depositRates[`level_${level}`] || 0;
+              const count = network[`level_${level}_count`] || 0;
               return (
                 <div key={level} className="flex items-center justify-between p-3 bg-[#0b0e11] rounded-lg">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 font-bold">
+                    <div className="w-9 h-9 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 font-bold text-sm">
                       L{level}
                     </div>
                     <div>
-                      <div className="font-semibold">Level {level}</div>
-                      <div className="text-sm text-gray-400">{count} members</div>
+                      <div className="font-semibold text-sm">Level {level}</div>
+                      <div className="text-xs text-gray-400">{count} members</div>
                     </div>
                   </div>
-                  <div className="text-2xl font-bold text-green-400">{rate}%</div>
+                  <div className="text-xl font-bold text-green-400">{rate}%</div>
                 </div>
               );
             })}
@@ -354,22 +374,22 @@ function ExclusiveAffiliateDashboard() {
             <Percent className="w-5 h-5 text-blue-400" />
             Trading Fee Revenue Share
           </h3>
-          <div className="space-y-3">
-            {[1, 2, 3, 4, 5].map((level) => {
-              const rate = feeRates[`level_${level}` as keyof typeof feeRates];
-              const earnings = network[`level_${level}_earnings` as keyof typeof network] || 0;
+          <div className="space-y-2 max-h-[400px] overflow-y-auto">
+            {activeLevels.map((level) => {
+              const rate = feeRates[`level_${level}`] || 0;
+              const earnings = network[`level_${level}_earnings`] || 0;
               return (
                 <div key={level} className="flex items-center justify-between p-3 bg-[#0b0e11] rounded-lg">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold">
+                    <div className="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-sm">
                       L{level}
                     </div>
                     <div>
-                      <div className="font-semibold">Level {level}</div>
-                      <div className="text-sm text-gray-400">${(earnings as number).toFixed(2)} earned</div>
+                      <div className="font-semibold text-sm">Level {level}</div>
+                      <div className="text-xs text-gray-400">${(earnings as number).toFixed(2)} earned</div>
                     </div>
                   </div>
-                  <div className="text-2xl font-bold text-blue-400">{rate}%</div>
+                  <div className="text-xl font-bold text-blue-400">{rate}%</div>
                 </div>
               );
             })}
@@ -377,7 +397,7 @@ function ExclusiveAffiliateDashboard() {
         </div>
       </div>
 
-      {(copyProfitRates.level_1 > 0 || copyProfitRates.level_2 > 0) && (
+      {activeLevels.some(level => (copyProfitRates[`level_${level}`] || 0) > 0) && (
         <div className="bg-[#1a1d24] rounded-xl p-6 border border-gray-800">
           <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-cyan-400" />
@@ -387,8 +407,8 @@ function ExclusiveAffiliateDashboard() {
             Earn commission when your referred users make profits from copy trading.
           </p>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            {[1, 2, 3, 4, 5].map((level) => {
-              const rate = copyProfitRates[`level_${level}` as keyof typeof copyProfitRates];
+            {activeLevels.map((level) => {
+              const rate = copyProfitRates[`level_${level}`] || 0;
               return (
                 <div key={level} className="p-3 bg-[#0b0e11] rounded-lg text-center">
                   <div className="text-xs text-gray-400 mb-1">Level {level}</div>

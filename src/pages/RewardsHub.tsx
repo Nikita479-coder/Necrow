@@ -21,7 +21,6 @@ function RewardsHub() {
   const [totalReferrals, setTotalReferrals] = useState(0);
   const [qualifiedReferrals, setQualifiedReferrals] = useState(0);
   const [totalTrades, setTotalTrades] = useState(0);
-  const [consecutiveDays, setConsecutiveDays] = useState(0);
   const [totalEarned, setTotalEarned] = useState(0);
   const [pendingRewards, setPendingRewards] = useState<any[]>([]);
   const [claimedTaskIds, setClaimedTaskIds] = useState<Set<string>>(new Set());
@@ -31,38 +30,7 @@ function RewardsHub() {
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
   const [copyTradingBalance, setCopyTradingBalance] = useState(0);
-  const [userCountry, setUserCountry] = useState<string | null>(null);
   const [allTasks] = useState<Task[]>([
-    {
-      id: 'volume_25k',
-      title: 'Trading Volume Milestone',
-      description: 'Complete $25,000 in trading volume',
-      reward: 10,
-      rewardType: 'fee_rebate',
-      target: 25000,
-      icon: '📊',
-      type: 'volume'
-    },
-    {
-      id: 'volume_100k',
-      title: 'High Volume Trader',
-      description: 'Achieve $100,000 trading volume in 30 days',
-      reward: 50,
-      rewardType: 'fee_rebate',
-      target: 100000,
-      icon: '🚀',
-      type: 'volume'
-    },
-    {
-      id: 'volume_500k',
-      title: 'Elite Trader Status',
-      description: 'Complete $500,000 in trading volume',
-      reward: 250,
-      rewardType: 'fee_rebate',
-      target: 500000,
-      icon: '💎',
-      type: 'volume'
-    },
     {
       id: 'first_referral',
       title: 'First Referral Bonus',
@@ -82,16 +50,6 @@ function RewardsHub() {
       target: 5,
       icon: '👥',
       type: 'referral'
-    },
-    {
-      id: 'daily_trade',
-      title: 'Daily Trader',
-      description: 'Complete at least 1 trade for 7 consecutive days',
-      reward: 15,
-      rewardType: 'fee_rebate',
-      target: 7,
-      icon: '⚡',
-      type: 'trade'
     },
     {
       id: 'first_trade',
@@ -122,16 +80,6 @@ function RewardsHub() {
       target: 10000000,
       icon: '🏆',
       type: 'volume'
-    },
-    {
-      id: 'trustpilot_review',
-      title: 'Trustpilot Review Bonus',
-      description: 'Leave a review on Trustpilot and get rewarded',
-      reward: 5,
-      rewardType: 'locked_bonus',
-      target: 1,
-      icon: '⭐',
-      type: 'trade'
     }
   ]);
 
@@ -145,17 +93,6 @@ function RewardsHub() {
     if (!user) return;
 
     try {
-      // Get user's country
-      const { data: profileData } = await supabase
-        .from('user_profiles')
-        .select('country')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (profileData) {
-        setUserCountry(profileData.country);
-      }
-
       const { data: statsData, error: statsError } = await supabase
         .from('referral_stats')
         .select('*')
@@ -232,7 +169,6 @@ function RewardsHub() {
         setFeeRebatesAvailable(parseFloat(feeRebatesData.available_rebates));
       }
 
-      // Get total number of trades
       const { count: tradesCount } = await supabase
         .from('futures_positions')
         .select('*', { count: 'exact', head: true })
@@ -241,38 +177,6 @@ function RewardsHub() {
 
       if (tradesCount !== null) {
         setTotalTrades(tradesCount);
-      }
-
-      // Calculate consecutive trading days (count any position opened)
-      const { data: tradeDays } = await supabase
-        .from('futures_positions')
-        .select('opened_at')
-        .eq('user_id', user.id)
-        .order('opened_at', { ascending: false });
-
-      if (tradeDays && tradeDays.length > 0) {
-        const uniqueDays = new Set<string>();
-        tradeDays.forEach(trade => {
-          const date = new Date(trade.opened_at).toISOString().split('T')[0];
-          uniqueDays.add(date);
-        });
-
-        const sortedDays = Array.from(uniqueDays).sort().reverse();
-        let consecutive = 0;
-
-        for (let i = 0; i < sortedDays.length; i++) {
-          const expectedDate = new Date();
-          expectedDate.setDate(expectedDate.getDate() - i);
-          const expectedDateStr = expectedDate.toISOString().split('T')[0];
-
-          if (sortedDays[i] === expectedDateStr) {
-            consecutive++;
-          } else {
-            break;
-          }
-        }
-
-        setConsecutiveDays(consecutive);
       }
     } catch (error) {
       console.error('Error loading user stats:', error);
@@ -481,15 +385,7 @@ function RewardsHub() {
     }
   };
 
-  // Filter tasks based on geographic restrictions
-  const allowedCountries = ['IN', 'PK', 'BD', 'ID', 'MY', 'TH', 'VN', 'PH', 'LK', 'NP'];
-  const tasks = allTasks.filter(task => {
-    // Filter out Trustpilot Review if user is not from allowed countries
-    if (task.id === 'trustpilot_review') {
-      return userCountry && allowedCountries.includes(userCountry);
-    }
-    return true;
-  });
+  const tasks = allTasks;
 
   const completedTasks = tasks.filter(task => {
     let progress = 0;
@@ -499,7 +395,6 @@ function RewardsHub() {
       progress = task.id === 'referral_5' ? qualifiedReferrals : totalReferrals;
     } else if (task.type === 'trade') {
       if (task.id === 'first_trade') progress = totalTrades;
-      else if (task.id === 'daily_trade') progress = consecutiveDays;
     }
     return progress >= task.target;
   });
@@ -622,8 +517,6 @@ function RewardsHub() {
               } else if (task.type === 'trade') {
                 if (task.id === 'first_trade') {
                   progress = totalTrades;
-                } else if (task.id === 'daily_trade') {
-                  progress = consecutiveDays;
                 }
               }
               const percentage = Math.min((progress / task.target) * 100, 100);
@@ -652,19 +545,6 @@ function RewardsHub() {
 
                   <h3 className="text-sm font-medium text-white mb-1">{task.title}</h3>
                   <p className="text-xs text-[#848e9c] mb-2">{task.description}</p>
-                  {task.id === 'trustpilot_review' && !isClaimed && (
-                    <a
-                      href="https://www.trustpilot.com/review/shark-trades.com"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-[#fcd535] hover:text-[#f0b90b] mb-2"
-                    >
-                      Leave a Review on Trustpilot
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                    </a>
-                  )}
 
                   {!isClaimed && (
                     <div className="mb-2">
