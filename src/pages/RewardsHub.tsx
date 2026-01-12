@@ -29,26 +29,26 @@ function RewardsHub() {
   const [feeRebatesAvailable, setFeeRebatesAvailable] = useState(0);
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
-  const [copyTradingBalance, setCopyTradingBalance] = useState(0);
+  const [copyTradingAllocated, setCopyTradingAllocated] = useState(0);
   const [allTasks] = useState<Task[]>([
     {
       id: 'first_referral',
       title: 'First Referral Bonus',
-      description: 'Invite your first active trader',
+      description: 'Bring your first active trader onboard - requires $100+ deposit',
       reward: 5,
       rewardType: 'locked_bonus',
       target: 1,
-      icon: '🎁',
+      icon: '✨',
       type: 'referral'
     },
     {
       id: 'referral_5',
-      title: 'Growing Network',
-      description: 'Invite 5 friends who deposit at least $100 USD',
-      reward: 100,
+      title: 'Growing Network Bonus',
+      description: 'Invite 5 friends who each deposit $100+ to qualify',
+      reward: 25,
       rewardType: 'locked_bonus',
       target: 5,
-      icon: '👥',
+      icon: '🌱',
       type: 'referral'
     },
     {
@@ -56,19 +56,19 @@ function RewardsHub() {
       title: 'First Trade Welcome',
       description: 'Complete your first futures trade',
       reward: 3,
-      rewardType: 'locked_bonus',
+      rewardType: 'fee_rebate',
       target: 1,
       icon: '🎯',
       type: 'trade'
     },
     {
-      id: 'copy_trading_allocation',
+      id: 'copy_trading_allocation_v2',
       title: 'Copy Trading Wallet Bonus',
-      description: 'Allocate 200 USDT to Copy Trading wallet',
-      reward: 50,
+      description: 'Move 500 USDT to Copy Trading wallet - locked 30 days, keep bonus + profits after',
+      reward: 100,
       rewardType: 'locked_bonus',
-      target: 200,
-      icon: '👥',
+      target: 500,
+      icon: '🚀',
       type: 'volume'
     },
     {
@@ -76,7 +76,7 @@ function RewardsHub() {
       title: 'Million Dollar Club',
       description: 'Trade $10,000,000 in volume within 30 days',
       reward: 500,
-      rewardType: 'locked_bonus',
+      rewardType: 'fee_rebate',
       target: 10000000,
       icon: '🏆',
       type: 'volume'
@@ -116,17 +116,17 @@ function RewardsHub() {
       }
 
 
-      // Get copy trading wallet balance
-      const { data: copyWalletData } = await supabase
-        .from('wallets')
-        .select('balance')
-        .eq('user_id', user.id)
-        .eq('currency', 'USDT')
-        .eq('wallet_type', 'copy')
-        .maybeSingle();
+      const { data: copyRelationshipsData } = await supabase
+        .from('copy_relationships')
+        .select('initial_balance')
+        .eq('follower_id', user.id)
+        .eq('is_mock', false)
+        .eq('is_active', true);
 
-      if (copyWalletData) {
-        setCopyTradingBalance(parseFloat(copyWalletData.balance));
+      if (copyRelationshipsData && copyRelationshipsData.length > 0) {
+        const totalAllocated = copyRelationshipsData.reduce((sum, rel) =>
+          sum + parseFloat(rel.initial_balance || '0'), 0);
+        setCopyTradingAllocated(totalAllocated);
       }
 
       const { data: rewardsData, error: rewardsError } = await supabase
@@ -241,10 +241,17 @@ function RewardsHub() {
           }
         }
       } else if (task.rewardType === 'locked_bonus') {
+        const bonusTypeMap: Record<string, string> = {
+          'copy_trading_allocation_v2': 'Copy Trading Wallet Bonus V2',
+          'first_referral': 'First Referral Bonus',
+          'referral_5': 'Growing Network Bonus'
+        };
+        const bonusTypeName = bonusTypeMap[task.id] || 'Reward Task Bonus';
+
         const { data: bonusType } = await supabase
           .from('bonus_types')
           .select('id')
-          .eq('name', 'Reward Task Bonus')
+          .eq('name', bonusTypeName)
           .maybeSingle();
 
         if (!bonusType) {
@@ -390,7 +397,7 @@ function RewardsHub() {
   const completedTasks = tasks.filter(task => {
     let progress = 0;
     if (task.type === 'volume') {
-      progress = task.id === 'copy_trading_allocation' ? copyTradingBalance : currentVolume;
+      progress = task.id === 'copy_trading_allocation_v2' ? copyTradingAllocated : currentVolume;
     } else if (task.type === 'referral') {
       progress = task.id === 'referral_5' ? qualifiedReferrals : totalReferrals;
     } else if (task.type === 'trade') {
@@ -503,8 +510,8 @@ function RewardsHub() {
             {tasks.map((task) => {
               let progress = 0;
               if (task.type === 'volume') {
-                if (task.id === 'copy_trading_allocation') {
-                  progress = copyTradingBalance;
+                if (task.id === 'copy_trading_allocation_v2') {
+                  progress = copyTradingAllocated;
                 } else {
                   progress = currentVolume;
                 }
@@ -587,14 +594,23 @@ function RewardsHub() {
         <div className="bg-[#2b3139] rounded-lg p-6">
           <h2 className="text-xl font-medium text-white mb-4">How Rewards Work</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-[#181a20] rounded-lg p-5">
               <div className="flex items-center gap-3 mb-3">
-                <div className="text-3xl">💰</div>
-                <h3 className="text-base font-medium text-[#eaecef]">Balance Rewards</h3>
+                <div className="text-3xl">🤝</div>
+                <h3 className="text-base font-medium text-[#eaecef]">Referral Bonuses</h3>
               </div>
-              <p className="text-sm text-[#848e9c] mb-3">Direct USDT added to your wallet balance that you can use for trading or withdraw immediately</p>
-              <div className="text-xs text-[#0ecb81]">Examples: Copy Trading Bonus, Referral bonuses, First trade welcome, Million Dollar Club</div>
+              <p className="text-sm text-[#848e9c] mb-3">$5 for your first referral, $25 for 5 referrals. Referrals must deposit $100+ to qualify.</p>
+              <div className="text-xs text-[#0ecb81]">Locked bonuses - use for trading</div>
+            </div>
+
+            <div className="bg-[#181a20] rounded-lg p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="text-3xl">🚀</div>
+                <h3 className="text-base font-medium text-[#eaecef]">Copy Trading Bonus</h3>
+              </div>
+              <p className="text-sm text-[#848e9c] mb-3">$100 locked bonus when you allocate 500 USDT. Keep bonus + profits after 30 days!</p>
+              <div className="text-xs text-[#f6465d]">Early withdrawal cancels the bonus</div>
             </div>
 
             <div className="bg-[#181a20] rounded-lg p-5">
@@ -602,8 +618,8 @@ function RewardsHub() {
                 <div className="text-3xl">🎟️</div>
                 <h3 className="text-base font-medium text-[#eaecef]">Fee Rebates</h3>
               </div>
-              <p className="text-sm text-[#848e9c] mb-3">Credits that reduce your future trading fees, helping you save on transaction costs</p>
-              <div className="text-xs text-[#fcd535]">Examples: Trading volume milestones, Daily trader streak</div>
+              <p className="text-sm text-[#848e9c] mb-3">Credits that automatically reduce your trading fees on every trade.</p>
+              <div className="text-xs text-[#fcd535]">Earned from: First Trade, Million Dollar Club</div>
             </div>
           </div>
 
@@ -613,10 +629,10 @@ function RewardsHub() {
               <div className="text-sm text-[#eaecef]">
                 <p className="font-medium mb-2">Quick Tips:</p>
                 <ul className="space-y-1 text-xs text-[#848e9c]">
-                  <li>• Complete tasks to unlock both types of rewards</li>
-                  <li>• Balance rewards can be withdrawn or traded immediately</li>
-                  <li>• Fee rebates automatically reduce your trading costs</li>
-                  <li>• Track your progress in real-time on this page</li>
+                  <li>• Referral bonuses require friends to deposit $100+ to qualify</li>
+                  <li>• Locked bonuses can be used for trading immediately</li>
+                  <li>• Copy Trading bonus locks for 30 days - keep bonus + profits after</li>
+                  <li>• Fee rebates automatically reduce your trading fees</li>
                 </ul>
               </div>
             </div>

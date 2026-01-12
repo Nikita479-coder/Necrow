@@ -58,8 +58,9 @@ import LegalHub from './pages/LegalHub';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import CopyTradingLandingPage from './pages/CopyTradingLandingPage';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
-type PageType = 'home' | 'markets' | 'futures' | 'profile' | 'swap' | 'swaphistory' | 'copytrading' | 'mocktrading' | 'activecopying' | 'traderprofile' | 'deposit' | 'withdraw' | 'kyc' | 'kycdocuments' | 'adminkyc' | 'wallet' | 'referral' | 'affiliate' | 'vip' | 'rewardshub' | 'earn' | 'signin' | 'signup' | 'forgotpassword' | 'resetpassword' | 'transactions' | 'admindashboard' | 'adminuser' | 'adminuserdetail' | 'admintrader' | 'adminlogs' | 'admincrm' | 'adminemails' | 'adminbonuses' | 'adminsupport' | 'adminviptracking' | 'adminsharkcards' | 'adminstaff' | 'admintelegram' | 'adminwithdrawals' | 'admindeposits' | 'adminreferrals' | 'adminpopups' | 'admingiveaway' | 'adminacquisition' | 'adminexclusiveaffiliates' | 'adminphonereveals' | 'adminstafflogs' | 'giveaway' | 'event' | 'terms' | 'bonusterms' | 'support' | 'legal' | 'lp';
+type PageType = 'home' | 'markets' | 'futures' | 'profile' | 'swap' | 'swaphistory' | 'copytrading' | 'mocktrading' | 'activecopying' | 'traderprofile' | 'deposit' | 'withdraw' | 'kyc' | 'kycdocuments' | 'adminkyc' | 'wallet' | 'referral' | 'affiliate' | 'vip' | 'rewardshub' | 'earn' | 'signin' | 'signup' | 'forgotpassword' | 'resetpassword' | 'transactions' | 'admindashboard' | 'adminuser' | 'adminuserdetail' | 'admintrader' | 'adminlogs' | 'admincrm' | 'adminemails' | 'adminbonuses' | 'adminsupport' | 'adminviptracking' | 'adminsharkcards' | 'adminstaff' | 'admintelegram' | 'adminwithdrawals' | 'admindeposits' | 'adminreferrals' | 'adminpopups' | 'admingiveaway' | 'adminacquisition' | 'adminexclusiveaffiliates' | 'adminphonereveals' | 'adminstafflogs' | 'giveaway' | 'event' | 'terms' | 'bonusterms' | 'support' | 'legal' | 'privacy' | 'lp';
 
 interface NavigationContextType {
   currentPage: PageType;
@@ -91,6 +92,10 @@ function App() {
     const pathname = window.location.pathname;
     if (pathname === '/lp') {
       setCurrentPage('lp');
+      return;
+    }
+    if (pathname === '/privacy') {
+      setCurrentPage('privacy');
       return;
     }
 
@@ -195,6 +200,7 @@ function App() {
       bonusterms: 'Bonus Terms',
       support: 'Support',
       legal: 'Legal Hub',
+      privacy: 'Privacy Policy',
       lp: 'Copy Trading'
     };
     return titles[page] || page;
@@ -316,6 +322,8 @@ function App() {
         return wrapWithTracker(<Support />);
       case 'legal':
         return wrapWithTracker(<LegalHub />);
+      case 'privacy':
+        return wrapWithTracker(<PrivacyPolicy />);
       case 'lp':
         return wrapWithTracker(<CopyTradingLandingPage />);
       default:

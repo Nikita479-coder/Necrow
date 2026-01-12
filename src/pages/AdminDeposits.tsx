@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '../App';
 import Navbar from '../components/Navbar';
+import DepositStatisticsChart from '../components/admin/DepositStatisticsChart';
 
 interface Deposit {
   payment_id: string;
@@ -290,6 +291,8 @@ export default function AdminDeposits() {
             <p className="text-sm text-gray-400">Failed/Expired</p>
           </div>
         </div>
+
+        <DepositStatisticsChart deposits={deposits} />
 
         <div className="bg-[#1a1d24] rounded-xl p-6 border border-gray-800">
           <div className="mb-6">

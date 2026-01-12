@@ -24,6 +24,8 @@ interface ManagedTrader {
   sharpe_ratio: number | null;
   is_featured: boolean;
   followers_count: number;
+  real_followers_count?: number;
+  mock_followers_count?: number;
 }
 
 interface Follower {
@@ -32,6 +34,7 @@ interface Follower {
   username: string;
   allocated_balance: number;
   is_active: boolean;
+  is_mock: boolean;
   created_at: string;
 }
 
@@ -224,10 +227,31 @@ export default function AdminManagedTrader() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setAllTraders(data || []);
 
-      if (data && data.length > 0 && !selectedTrader) {
-        setSelectedTrader(data[0]);
+      const { data: followerCounts, error: countError } = await supabase
+        .from('copy_relationships')
+        .select('trader_id, is_mock');
+
+      if (countError) {
+        console.error('Error loading follower counts:', countError);
+      }
+
+      const tradersWithCounts = (data || []).map(trader => {
+        const traderFollowers = (followerCounts || []).filter(f => f.trader_id === trader.id);
+        const realCount = traderFollowers.filter(f => !f.is_mock).length;
+        const mockCount = traderFollowers.filter(f => f.is_mock).length;
+
+        return {
+          ...trader,
+          real_followers_count: realCount,
+          mock_followers_count: mockCount
+        };
+      });
+
+      setAllTraders(tradersWithCounts);
+
+      if (tradersWithCounts && tradersWithCounts.length > 0 && !selectedTrader) {
+        setSelectedTrader(tradersWithCounts[0]);
       }
     } catch (error: any) {
       console.error('Error loading traders:', error);
@@ -246,6 +270,7 @@ export default function AdminManagedTrader() {
           follower_id,
           current_balance,
           is_active,
+          is_mock,
           created_at,
           user_profiles!follower_id(email, username)
         `)
@@ -255,10 +280,11 @@ export default function AdminManagedTrader() {
 
       const formattedFollowers = (data || []).map((rel: any) => ({
         user_id: rel.follower_id,
-        email: rel.user_profiles.email,
-        username: rel.user_profiles.username,
+        email: rel.user_profiles?.email || 'Unknown',
+        username: rel.user_profiles?.username || 'Unknown',
         allocated_balance: parseFloat(rel.current_balance || '0'),
         is_active: rel.is_active,
+        is_mock: rel.is_mock || false,
         created_at: rel.created_at
       }));
 
@@ -874,9 +900,14 @@ export default function AdminManagedTrader() {
             >
               <div className="text-3xl mb-2">{trader.avatar}</div>
               <div className="font-bold text-lg mb-1">{trader.name}</div>
-              <div className="text-sm text-gray-400 flex items-center gap-2">
+              <div className="text-sm text-gray-400 flex items-center gap-2 mb-1">
                 <Users className="w-4 h-4" />
-                {trader.followers_count} followers
+                <span className="text-[#0ecb81] font-semibold">{trader.real_followers_count || 0}</span> real
+                <span className="text-gray-500 mx-1">|</span>
+                <span className="text-gray-500">{trader.mock_followers_count || 0}</span> mock
+              </div>
+              <div className="text-xs text-gray-500">
+                Displayed: {trader.followers_count} (fake)
               </div>
             </button>
           ))}
@@ -899,7 +930,7 @@ export default function AdminManagedTrader() {
                     className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold transition-all"
                   >
                     <Users className="w-4 h-4" />
-                    View Followers ({followers.length})
+                    View Followers ({followers.filter(f => !f.is_mock).length} real, {followers.filter(f => f.is_mock).length} mock)
                   </button>
                   <button
                     onClick={() => setShowPercentageModal(true)}
@@ -920,8 +951,12 @@ export default function AdminManagedTrader() {
 
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 pt-6 border-t border-gray-700">
                 <div>
-                  <div className="text-gray-400 text-sm mb-1">Followers</div>
-                  <div className="text-white text-xl font-bold">{selectedTrader.followers_count}</div>
+                  <div className="text-gray-400 text-sm mb-1">Real Followers</div>
+                  <div className="text-[#0ecb81] text-xl font-bold">{selectedTrader.real_followers_count || 0}</div>
+                </div>
+                <div>
+                  <div className="text-gray-400 text-sm mb-1">Mock Followers</div>
+                  <div className="text-gray-500 text-xl font-bold">{selectedTrader.mock_followers_count || 0}</div>
                 </div>
                 <div>
                   <div className="text-gray-400 text-sm mb-1">Total AUM</div>
@@ -1167,11 +1202,20 @@ export default function AdminManagedTrader() {
       {showFollowersModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-[#2b3139] rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold">Followers ({followers.length})</h3>
               <button onClick={() => setShowFollowersModal(false)} className="text-gray-400 hover:text-white">
                 <X className="w-6 h-6" />
               </button>
+            </div>
+
+            <div className="flex gap-4 mb-6 text-sm">
+              <div className="bg-[#0ecb81]/10 text-[#0ecb81] px-4 py-2 rounded-lg font-semibold">
+                {followers.filter(f => !f.is_mock).length} Real Copy Traders
+              </div>
+              <div className="bg-gray-700/50 text-gray-400 px-4 py-2 rounded-lg font-semibold">
+                {followers.filter(f => f.is_mock).length} Mock Copy Traders
+              </div>
             </div>
 
             {followers.length === 0 ? (
@@ -1180,28 +1224,67 @@ export default function AdminManagedTrader() {
               </div>
             ) : (
               <div className="space-y-3">
-                {followers.map((follower) => (
-                  <div key={follower.user_id} className="bg-[#0b0e11] rounded-lg p-4 border border-gray-800">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-bold text-white">{follower.username || follower.email}</div>
-                        <div className="text-sm text-gray-400">{follower.email}</div>
+                {followers.filter(f => !f.is_mock).length > 0 && (
+                  <>
+                    <div className="text-sm font-semibold text-[#0ecb81] mb-2">Real Copy Traders</div>
+                    {followers.filter(f => !f.is_mock).map((follower) => (
+                      <div key={follower.user_id} className="bg-[#0b0e11] rounded-lg p-4 border border-[#0ecb81]/30">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-bold text-white flex items-center gap-2">
+                              {follower.username || follower.email}
+                              <span className="text-xs bg-[#0ecb81]/20 text-[#0ecb81] px-2 py-0.5 rounded font-semibold">REAL</span>
+                            </div>
+                            <div className="text-sm text-gray-400">{follower.email}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-white">${follower.allocated_balance.toFixed(2)}</div>
+                            <div className="text-xs text-gray-400">Allocated</div>
+                          </div>
+                        </div>
+                        <div className="mt-2 pt-2 border-t border-gray-800 flex items-center justify-between text-xs">
+                          <span className="text-gray-400">Joined {new Date(follower.created_at).toLocaleDateString()}</span>
+                          <span className={`px-2 py-1 rounded font-bold ${
+                            follower.is_active ? 'bg-[#0ecb81]/20 text-[#0ecb81]' : 'bg-gray-700 text-gray-400'
+                          }`}>
+                            {follower.is_active ? 'Active' : 'Paused'}
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-white">${follower.allocated_balance.toFixed(2)}</div>
-                        <div className="text-xs text-gray-400">Allocated</div>
+                    ))}
+                  </>
+                )}
+
+                {followers.filter(f => f.is_mock).length > 0 && (
+                  <>
+                    <div className="text-sm font-semibold text-gray-500 mb-2 mt-4">Mock Copy Traders</div>
+                    {followers.filter(f => f.is_mock).map((follower) => (
+                      <div key={follower.user_id} className="bg-[#0b0e11] rounded-lg p-4 border border-gray-800 opacity-60">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-bold text-white flex items-center gap-2">
+                              {follower.username || follower.email}
+                              <span className="text-xs bg-gray-700/50 text-gray-400 px-2 py-0.5 rounded font-semibold">MOCK</span>
+                            </div>
+                            <div className="text-sm text-gray-400">{follower.email}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-white">${follower.allocated_balance.toFixed(2)}</div>
+                            <div className="text-xs text-gray-400">Allocated (Mock)</div>
+                          </div>
+                        </div>
+                        <div className="mt-2 pt-2 border-t border-gray-800 flex items-center justify-between text-xs">
+                          <span className="text-gray-400">Joined {new Date(follower.created_at).toLocaleDateString()}</span>
+                          <span className={`px-2 py-1 rounded font-bold ${
+                            follower.is_active ? 'bg-[#0ecb81]/20 text-[#0ecb81]' : 'bg-gray-700 text-gray-400'
+                          }`}>
+                            {follower.is_active ? 'Active' : 'Paused'}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="mt-2 pt-2 border-t border-gray-800 flex items-center justify-between text-xs">
-                      <span className="text-gray-400">Joined {new Date(follower.created_at).toLocaleDateString()}</span>
-                      <span className={`px-2 py-1 rounded font-bold ${
-                        follower.is_active ? 'bg-[#0ecb81]/20 text-[#0ecb81]' : 'bg-gray-700 text-gray-400'
-                      }`}>
-                        {follower.is_active ? 'Active' : 'Paused'}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                    ))}
+                  </>
+                )}
               </div>
             )}
           </div>
