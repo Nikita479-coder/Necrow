@@ -328,15 +328,6 @@ function Profile() {
 
       if (error) throw error;
 
-      // Get locked bonuses for all currencies (USDT only currently)
-      const { data: lockedBonusData } = await supabase
-        .from('locked_bonuses')
-        .select('current_amount')
-        .eq('user_id', user.id)
-        .eq('status', 'active');
-
-      const totalLockedBonus = lockedBonusData?.reduce((sum, bonus) => sum + parseFloat(bonus.current_amount), 0) || 0;
-
       if (data) {
         // Group balances by currency (total) and track main wallet balance separately
         const currencyTotals = new Map<string, number>();
@@ -366,9 +357,9 @@ function Profile() {
           const mainBalance = mainWalletBalances.get(currency) || 0;
           const mainLockedBalance = mainWalletLockedBalances.get(currency) || 0;
 
-          // Calculate available balance: main balance - locked balance - locked bonuses (for USDT only)
-          const lockedBonusAmount = currency === 'USDT' ? totalLockedBonus : 0;
-          const availableBalance = Math.max(mainBalance - mainLockedBalance - lockedBonusAmount, 0);
+          // Calculate available balance: main balance - locked balance (pending withdrawals)
+          // Note: Locked bonuses are stored separately and don't affect withdrawal availability
+          const availableBalance = Math.max(mainBalance - mainLockedBalance, 0);
 
           return {
             symbol: currency,

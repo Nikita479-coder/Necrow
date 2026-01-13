@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import Navbar from '../components/Navbar';
-import { ArrowRight, AlertTriangle, Shield, Clock, CheckCircle2, Search, Info, Send, Users, Zap } from 'lucide-react';
+import { ArrowRight, AlertTriangle, Shield, Clock, CheckCircle2, Search, Info, Send, Users, Zap, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import CryptoIcon from '../components/CryptoIcon';
@@ -46,6 +46,7 @@ function Withdraw() {
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [walletBalances, setWalletBalances] = useState<Record<string, number>>({});
   const [lockedBalances, setLockedBalances] = useState<Record<string, number>>({});
+  const [isLoadingBalances, setIsLoadingBalances] = useState(true);
 
   const cryptos = [
     { symbol: 'USDT', name: 'Tether', balance: '10000', networks: ['TRC20', 'ERC20', 'BEP20', 'Polygon', 'Solana'], fee: '1', minWithdraw: '10' },
@@ -100,7 +101,14 @@ function Withdraw() {
   }, [selectedRecipient, transferAmount]);
 
   const loadWalletBalances = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('[Withdraw] No user, skipping wallet load');
+      setIsLoadingBalances(false);
+      return;
+    }
+
+    setIsLoadingBalances(true);
+    console.log('[Withdraw] Loading wallets for user:', user.id);
 
     try {
       const { data, error } = await supabase
@@ -109,9 +117,11 @@ function Withdraw() {
         .eq('user_id', user.id)
         .eq('wallet_type', 'main');
 
+      console.log('[Withdraw] Wallet query result:', { data, error });
+
       if (error) throw error;
 
-      if (data) {
+      if (data && data.length > 0) {
         const balances: Record<string, number> = {};
         const locked: Record<string, number> = {};
         data.forEach(w => {
@@ -119,12 +129,17 @@ function Withdraw() {
           const lockedAmt = parseFloat(w.locked_balance) || 0;
           balances[w.currency] = Math.max(total - lockedAmt, 0);
           locked[w.currency] = lockedAmt;
+          console.log(`[Withdraw] ${w.currency}: balance=${total}, locked=${lockedAmt}, available=${balances[w.currency]}`);
         });
         setWalletBalances(balances);
         setLockedBalances(locked);
+      } else {
+        console.log('[Withdraw] No wallet data returned');
       }
     } catch (error) {
-      console.error('Error loading wallet balances:', error);
+      console.error('[Withdraw] Error loading wallet balances:', error);
+    } finally {
+      setIsLoadingBalances(false);
     }
   };
 
@@ -510,11 +525,27 @@ function Withdraw() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-gray-400 text-sm font-medium">Amount</label>
-                    <div className="text-gray-400 text-sm text-right">
-                      <div>Available: <span className="text-white font-semibold">{(walletBalances[selectedCrypto] || 0).toFixed(6)} {selectedCrypto}</span></div>
-                      {(lockedBalances[selectedCrypto] || 0) > 0 && (
-                        <div className="text-yellow-400 text-xs">Locked (pending withdrawal): {(lockedBalances[selectedCrypto] || 0).toFixed(2)} {selectedCrypto}</div>
-                      )}
+                    <div className="text-gray-400 text-sm text-right flex items-center gap-2">
+                      <div>
+                        <div>Available: <span className="text-white font-semibold">
+                          {isLoadingBalances ? (
+                            <span className="text-gray-500">Loading...</span>
+                          ) : (
+                            `${(walletBalances[selectedCrypto] || 0).toFixed(6)} ${selectedCrypto}`
+                          )}
+                        </span></div>
+                        {(lockedBalances[selectedCrypto] || 0) > 0 && (
+                          <div className="text-yellow-400 text-xs">Locked (pending withdrawal): {(lockedBalances[selectedCrypto] || 0).toFixed(2)} {selectedCrypto}</div>
+                        )}
+                      </div>
+                      <button
+                        onClick={loadWalletBalances}
+                        disabled={isLoadingBalances}
+                        className="p-1 hover:bg-gray-700 rounded transition-colors"
+                        title="Refresh balance"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${isLoadingBalances ? 'animate-spin text-gray-500' : 'text-gray-400 hover:text-white'}`} />
+                      </button>
                     </div>
                   </div>
                   <div className="relative">
