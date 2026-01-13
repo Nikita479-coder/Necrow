@@ -76,20 +76,19 @@ export default function AddFundsToCopyModal({
       const totalCopyBalance = parseFloat(copyWallet?.balance || '0');
       setCopyWalletBalance(totalCopyBalance);
 
-      const { data: activeRelationships } = await supabase
+      const { data: allActiveRelationships } = await supabase
         .from('copy_relationships')
-        .select('initial_balance')
+        .select('id, initial_balance')
         .eq('follower_id', user.id)
         .eq('is_active', true)
-        .eq('is_mock', false)
-        .neq('id', relationshipId);
+        .eq('is_mock', false);
 
-      const allocatedToOthers = activeRelationships?.reduce(
+      const totalAllocated = allActiveRelationships?.reduce(
         (sum, rel) => sum + parseFloat(rel.initial_balance || '0'),
         0
       ) || 0;
 
-      const available = Math.max(0, totalCopyBalance - allocatedToOthers);
+      const available = Math.max(0, totalCopyBalance - totalAllocated);
       setAvailableBalance(available);
     } catch (err) {
       console.error('Error fetching balances:', err);
