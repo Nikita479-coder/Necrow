@@ -34,14 +34,14 @@ function HomePage() {
 
   const heroSlides = [
     {
-      id: 'first-deposit-bonus',
-      title: '100% First Deposit Bonus',
-      subtitle: 'Up to $500 USD',
-      description: 'Make your first deposit and receive a 100% bonus match up to $500 USD! Start trading with double the funds. Deposit terms apply.',
-      cta: 'Deposit Now',
-      ctaAction: () => navigateTo('deposit'),
-      visual: 'bonus',
-      reward: 'Up to $500',
+      id: 'shark-card',
+      title: 'Introducing Shark Card',
+      subtitle: 'Your Crypto-Backed Credit',
+      description: 'Access instant credit backed by your crypto holdings. Spend anywhere while your assets keep growing. No credit checks, no hassle.',
+      cta: 'Apply Now',
+      ctaAction: () => setShowSharkCardModal(true),
+      visual: 'sharkcard',
+      reward: 'Zero Interest',
       status: 'available',
     },
     {
@@ -340,14 +340,37 @@ function HomePage() {
                       <div className="relative flex items-center justify-center order-1 lg:order-2 py-4 sm:py-0">
                         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-orange-500/20 blur-3xl"></div>
 
-                        {/* Bonus Visual */}
-                        {slide.visual === 'bonus' && (
-                          <div className="relative scale-[0.6] sm:scale-75 lg:scale-90 xl:scale-100 origin-center">
-                            <div className="w-64 h-64 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center shadow-2xl">
-                              <Gift className="w-32 h-32 text-white" />
+                        {/* Shark Card Visual */}
+                        {slide.visual === 'sharkcard' && (
+                          <div className="relative scale-[0.55] sm:scale-75 lg:scale-90 xl:scale-100 origin-center">
+                            <div className="transform hover:scale-105 transition-transform duration-500">
+                              <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-black rounded-2xl p-6 shadow-2xl border border-amber-500/30" style={{ width: '360px', height: '220px' }}>
+                                <div className="flex flex-col justify-between h-full">
+                                  <div className="flex justify-between items-start">
+                                    <div className="text-amber-400 font-bold text-lg">SHARK CARD</div>
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                                      <svg className="w-7 h-7 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                      </svg>
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    <div className="text-white/60 text-xs uppercase tracking-wide">Available Credit</div>
+                                    <div className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">
+                                      $10,000
+                                    </div>
+                                  </div>
+
+                                  <div className="flex justify-between items-center">
+                                    <div className="text-white/80 font-semibold tracking-wider">•••• •••• •••• 8742</div>
+                                    <div className="text-white/60 text-sm">{slide.reward}</div>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <div className="absolute -top-8 -right-8 bg-emerald-500 rounded-full px-6 py-3 shadow-xl">
-                              <span className="text-white font-bold text-2xl">{slide.reward}</span>
+                            <div className="absolute -top-6 -right-6 w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center shadow-xl animate-bounce">
+                              <span className="text-white font-bold text-xs text-center leading-tight">0%<br/>APR</span>
                             </div>
                           </div>
                         )}
