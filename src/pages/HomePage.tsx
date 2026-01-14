@@ -34,20 +34,6 @@ function HomePage() {
 
   const heroSlides = [
     {
-      id: 'shark-card',
-      title: 'Limited-Time 10% Cashback',
-      subtitle: 'for Selected Users!',
-      description: 'Apply for your exclusive Shark Card credit card and enjoy instant credit with up to 10% cashback on all crypto purchases.',
-      cta: 'Apply Now',
-      ctaAction: () => user ? setShowSharkCardModal(true) : navigateTo('signup'),
-      visual: 'card',
-      stats: [
-        { value: '$50K', label: 'Max Credit' },
-        { value: '10%', label: 'Cashback' },
-        { value: '$0', label: 'Annual Fee' },
-      ],
-    },
-    {
       id: 'first-deposit-bonus',
       title: '100% First Deposit Bonus',
       subtitle: 'Up to $500 USD',
@@ -56,17 +42,6 @@ function HomePage() {
       ctaAction: () => navigateTo('deposit'),
       visual: 'bonus',
       reward: 'Up to $500',
-      status: 'available',
-    },
-    {
-      id: 'copy-trading-bonus',
-      title: 'Copy Trading Bonus',
-      subtitle: 'Get 50 USDT',
-      description: 'Allocate 200 USDT to your Copy Trading wallet and receive an instant 50 USDT bonus! Start copying professional traders today.',
-      cta: 'Start Copy Trading',
-      ctaAction: () => navigateTo('copytrading'),
-      visual: 'copytrading',
-      reward: '50 USDT',
       status: 'available',
     },
     {
@@ -323,13 +298,6 @@ function HomePage() {
                     <div className="flex flex-col lg:grid lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 p-5 sm:p-8 lg:p-12 h-full">
                       {/* Left Side - Content */}
                       <div className="flex flex-col justify-center space-y-3 sm:space-y-4 lg:space-y-6 order-2 lg:order-1">
-                        {slide.id === 'shark-card' && (
-                          <div className="inline-flex items-center gap-2 bg-amber-500/20 border border-amber-500/40 rounded-full px-3 py-1.5 sm:px-4 sm:py-2 w-fit">
-                            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-amber-500 rounded-full animate-pulse"></span>
-                            <span className="text-amber-300 text-xs sm:text-sm font-medium">LIMITED TIME OFFER</span>
-                          </div>
-                        )}
-
                         <div>
                           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white leading-tight mb-1 sm:mb-2">
                             {slide.title}
@@ -355,21 +323,6 @@ function HomePage() {
                           </button>
                         </div>
 
-                        {/* Stats for Shark Card */}
-                        {slide.stats && (
-                          <div className="flex items-center gap-4 sm:gap-6 lg:gap-8 pt-2 sm:pt-4">
-                            {slide.stats.map((stat, idx) => (
-                              <div key={idx} className="flex items-center gap-2 sm:gap-4">
-                                {idx > 0 && <div className="w-px h-8 sm:h-12 bg-slate-700"></div>}
-                                <div>
-                                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-white">{stat.value}</div>
-                                  <div className="text-slate-400 text-xs sm:text-sm">{stat.label}</div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
                         {/* Reward Badge for Bonus Slides */}
                         {slide.reward && (
                           <div className="flex items-center gap-4">
@@ -387,52 +340,6 @@ function HomePage() {
                       <div className="relative flex items-center justify-center order-1 lg:order-2 py-4 sm:py-0">
                         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-orange-500/20 blur-3xl"></div>
 
-                        {/* Shark Cards Visual */}
-                        {slide.visual === 'card' && (
-                          <div className="relative scale-[0.55] sm:scale-75 lg:scale-90 xl:scale-100 origin-center">
-                            <div className="transform rotate-12 hover:rotate-0 transition-transform duration-500">
-                              <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-800 rounded-xl p-6 shadow-2xl border border-amber-500/20" style={{ width: '340px', height: '214px' }}>
-                                <div className="flex justify-between items-start mb-8">
-                                  <div className="text-white/80 font-semibold text-base">SHARK CARD</div>
-                                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600"></div>
-                                </div>
-                                <div className="space-y-6">
-                                  <div className="text-xl font-mono text-white tracking-widest">**** **** **** 1234</div>
-                                  <div className="flex justify-between items-end">
-                                    <div>
-                                      <div className="text-white/60 text-xs mb-1">CARDHOLDER</div>
-                                      <div className="text-white font-semibold text-sm">YOUR NAME</div>
-                                    </div>
-                                    <div>
-                                      <div className="text-white/60 text-xs mb-1">EXPIRES</div>
-                                      <div className="text-white font-semibold text-sm">12/28</div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="absolute -bottom-4 -right-4 bg-gradient-to-br from-amber-600 via-amber-500 to-orange-600 rounded-xl p-6 shadow-2xl border border-amber-400/30 transform -rotate-6" style={{ width: '340px', height: '214px' }}>
-                              <div className="flex justify-between items-start mb-8">
-                                <div className="text-white font-semibold text-base">SHARK CARD</div>
-                                <div className="text-white/80 text-sm font-medium">GOLD</div>
-                              </div>
-                              <div className="space-y-6">
-                                <div className="text-xl font-mono text-white tracking-widest">**** **** **** 5678</div>
-                                <div className="flex justify-between items-end">
-                                  <div>
-                                    <div className="text-white/70 text-xs mb-1">CARDHOLDER</div>
-                                    <div className="text-white font-semibold text-sm">YOUR NAME</div>
-                                  </div>
-                                  <div>
-                                    <div className="text-white/70 text-xs mb-1">EXPIRES</div>
-                                    <div className="text-white font-semibold text-sm">12/28</div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
                         {/* Bonus Visual */}
                         {slide.visual === 'bonus' && (
                           <div className="relative scale-[0.6] sm:scale-75 lg:scale-90 xl:scale-100 origin-center">
@@ -441,36 +348,6 @@ function HomePage() {
                             </div>
                             <div className="absolute -top-8 -right-8 bg-emerald-500 rounded-full px-6 py-3 shadow-xl">
                               <span className="text-white font-bold text-2xl">{slide.reward}</span>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Copy Trading Visual */}
-                        {slide.visual === 'copytrading' && (
-                          <div className="relative scale-[0.55] sm:scale-75 lg:scale-90 xl:scale-100 origin-center">
-                            <div className="transform -rotate-3 hover:rotate-0 transition-transform duration-500">
-                              <div className="bg-gradient-to-br from-blue-900 via-blue-800 to-slate-800 rounded-xl p-6 shadow-2xl border border-blue-500/30" style={{ width: '340px', height: '214px' }}>
-                                <div className="flex justify-between items-start mb-6">
-                                  <div className="text-blue-300 font-semibold text-base">COPY TRADING</div>
-                                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center">
-                                    <span className="text-white text-lg">👥</span>
-                                  </div>
-                                </div>
-                                <div className="space-y-4">
-                                  <div className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">{slide.reward}</div>
-                                  <div className="text-white/70 text-sm font-medium">Bonus on 200 USDT allocation</div>
-                                  <div className="flex items-center gap-2 text-emerald-400 text-xs">
-                                    <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                                    <span>Active traders copying</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center shadow-xl animate-pulse">
-                              <div className="text-center">
-                                <div className="text-white font-bold text-lg">25%</div>
-                                <div className="text-white/80 text-xs">Bonus</div>
-                              </div>
                             </div>
                           </div>
                         )}
