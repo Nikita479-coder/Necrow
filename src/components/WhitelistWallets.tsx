@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Shield, Plus, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Shield, Plus, Trash2, AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../hooks/useToast';
 import CryptoIcon from './CryptoIcon';
@@ -32,6 +32,8 @@ function WhitelistWallets({ mfaEnabled }: WhitelistWalletsProps) {
   const [verificationCode, setVerificationCode] = useState('');
   const [needsVerification, setNeedsVerification] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [walletToRemove, setWalletToRemove] = useState<WhitelistedWallet | null>(null);
+  const [removing, setRemoving] = useState(false);
 
   const cryptoOptions = [
     'BTC', 'ETH', 'USDT', 'USDC', 'BNB', 'SOL', 'XRP',
@@ -63,8 +65,19 @@ function WhitelistWallets({ mfaEnabled }: WhitelistWalletsProps) {
 
       if (error) throw error;
 
-      if (data?.success && data.wallets) {
-        setWallets(data.wallets);
+      if (data?.success) {
+        const walletsData = data.wallets;
+        if (Array.isArray(walletsData)) {
+          setWallets(walletsData);
+        } else if (walletsData && typeof walletsData === 'string') {
+          try {
+            setWallets(JSON.parse(walletsData));
+          } catch {
+            setWallets([]);
+          }
+        } else {
+          setWallets([]);
+        }
       }
     } catch (error: any) {
       console.error('Error loading wallets:', error);
@@ -101,14 +114,20 @@ function WhitelistWallets({ mfaEnabled }: WhitelistWalletsProps) {
       const totpFactor = factors?.totp?.find(f => f.status === 'verified');
 
       if (!totpFactor) {
-        throw new Error('No verified 2FA factor found');
+        showToast('No verified 2FA factor found', 'error');
+        setSubmitting(false);
+        return;
       }
 
       const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
         factorId: totpFactor.id
       });
 
-      if (challengeError) throw challengeError;
+      if (challengeError || !challengeData) {
+        showToast(challengeError?.message || 'Failed to initiate verification', 'error');
+        setSubmitting(false);
+        return;
+      }
 
       const { error: verifyError } = await supabase.auth.mfa.verify({
         factorId: totpFactor.id,
@@ -117,9 +136,12 @@ function WhitelistWallets({ mfaEnabled }: WhitelistWalletsProps) {
       });
 
       if (verifyError) {
-        showToast('Invalid verification code', 'error');
+        showToast(verifyError.message || 'Invalid verification code', 'error');
+        setSubmitting(false);
         return;
       }
+
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       const { data, error } = await supabase.rpc('add_whitelisted_wallet', {
         p_wallet_address: formData.address,
@@ -128,48 +150,53 @@ function WhitelistWallets({ mfaEnabled }: WhitelistWalletsProps) {
         p_network: formData.network
       });
 
-      if (error) throw error;
-
-      if (data?.error === 'MFA_REQUIRED') {
-        showToast(data.message, 'error');
+      if (error) {
+        showToast(error.message || 'Failed to add wallet', 'error');
+        setSubmitting(false);
         return;
       }
 
-      if (data?.success) {
-        showToast('Wallet added to whitelist successfully!', 'success');
-        setShowAddForm(false);
-        setNeedsVerification(false);
-        setFormData({ address: '', label: '', currency: 'USDT', network: 'TRC20' });
-        setVerificationCode('');
-        loadWallets();
+      if (data?.error) {
+        showToast(data.message || data.error, 'error');
+        setSubmitting(false);
+        return;
       }
+
+      showToast('Wallet added successfully!', 'success');
+      setShowAddForm(false);
+      setNeedsVerification(false);
+      setFormData({ address: '', label: '', currency: 'USDT', network: 'TRC20' });
+      setVerificationCode('');
+      loadWallets().catch(console.error);
     } catch (error: any) {
-      console.error('Error adding wallet:', error);
-      showToast(error.message || 'Failed to add wallet', 'error');
+      console.error('Error:', error);
+      showToast(error.message || 'An error occurred', 'error');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleRemoveWallet = async (walletId: string) => {
-    if (!confirm('Are you sure you want to remove this wallet from the whitelist?')) {
-      return;
-    }
+  const handleRemoveWallet = async () => {
+    if (!walletToRemove) return;
 
+    setRemoving(true);
     try {
       const { data, error } = await supabase.rpc('remove_whitelisted_wallet', {
-        p_wallet_id: walletId
+        p_wallet_id: walletToRemove.id
       });
 
       if (error) throw error;
 
       if (data?.success) {
         showToast('Wallet removed from whitelist', 'success');
+        setWalletToRemove(null);
         loadWallets();
       }
     } catch (error: any) {
       console.error('Error removing wallet:', error);
       showToast('Failed to remove wallet', 'error');
+    } finally {
+      setRemoving(false);
     }
   };
 
@@ -386,7 +413,7 @@ function WhitelistWallets({ mfaEnabled }: WhitelistWalletsProps) {
                   </div>
                 </div>
                 <button
-                  onClick={() => handleRemoveWallet(wallet.id)}
+                  onClick={() => setWalletToRemove(wallet)}
                   className="p-2 bg-red-900/20 hover:bg-red-900/40 border border-red-700/30 hover:border-red-600/50 rounded-lg transition-colors text-red-400 hover:text-red-300"
                 >
                   <Trash2 className="w-5 h-5" />
@@ -396,6 +423,81 @@ function WhitelistWallets({ mfaEnabled }: WhitelistWalletsProps) {
           ))
         )}
       </div>
+
+      {walletToRemove && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#181a20] border border-gray-700 rounded-xl w-full max-w-md overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-gray-700">
+              <h3 className="text-lg font-bold text-white">Remove Wallet</h3>
+              <button
+                onClick={() => setWalletToRemove(null)}
+                className="p-1 text-gray-400 hover:text-white rounded transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-red-900/30 rounded-full flex items-center justify-center">
+                  <Trash2 className="w-6 h-6 text-red-400" />
+                </div>
+                <div>
+                  <p className="text-white font-semibold">Are you sure?</p>
+                  <p className="text-sm text-gray-400">This action cannot be undone</p>
+                </div>
+              </div>
+
+              <div className="bg-[#0b0e11] border border-gray-700 rounded-lg p-4 mb-6">
+                <div className="flex items-center gap-3">
+                  <CryptoIcon symbol={walletToRemove.currency} size={32} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-semibold">{walletToRemove.label}</p>
+                    <p className="text-xs text-gray-400 font-mono truncate">
+                      {walletToRemove.wallet_address}
+                    </p>
+                    <div className="flex gap-2 mt-1">
+                      <span className="px-1.5 py-0.5 bg-blue-900/30 rounded text-xs text-blue-400">
+                        {walletToRemove.currency}
+                      </span>
+                      <span className="px-1.5 py-0.5 bg-gray-700 rounded text-xs text-gray-300">
+                        {walletToRemove.network}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setWalletToRemove(null)}
+                  disabled={removing}
+                  className="flex-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRemoveWallet}
+                  disabled={removing}
+                  className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  {removing ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Removing...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      Remove Wallet
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

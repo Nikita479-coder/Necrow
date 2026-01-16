@@ -244,8 +244,9 @@ function ExclusiveAffiliateDashboard() {
   const getActiveLevels = () => {
     const levels: number[] = [];
     for (let i = 1; i <= 10; i++) {
-      const rate = depositRates[`level_${i}`] || feeRates[`level_${i}`] || 0;
-      if (rate > 0) levels.push(i);
+      const count = network[`level_${i}_count`] || 0;
+      const rate = depositRates[`level_${i}`] || feeRates[`level_${i}`] || copyProfitRates[`level_${i}`] || 0;
+      if (count > 0 || rate > 0) levels.push(i);
     }
     return levels.length > 0 ? levels : [1, 2, 3, 4, 5];
   };

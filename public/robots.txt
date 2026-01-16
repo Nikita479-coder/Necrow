@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://shark-trades.com/sitemap.xml
+
+# Allow favicon crawling
+Allow: /favicon*.png
+Allow: /favicon.svg
+Allow: /favicon.ico

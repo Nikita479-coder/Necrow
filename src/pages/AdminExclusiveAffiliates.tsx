@@ -145,7 +145,7 @@ export default function AdminExclusiveAffiliates() {
   const [networkMembers, setNetworkMembers] = useState<NetworkMember[]>([]);
   const [loadingNetwork, setLoadingNetwork] = useState(false);
   const [expandedLevels, setExpandedLevels] = useState<Set<number>>(new Set([1]));
-  const [showAllReferrals, setShowAllReferrals] = useState(false);
+  const [showAllReferrals, setShowAllReferrals] = useState(true);
 
   useEffect(() => {
     if (!profile?.is_admin) {
@@ -977,7 +977,7 @@ export default function AdminExclusiveAffiliates() {
                     setSelectedAffiliateForNetwork(null);
                     setNetworkStats(null);
                     setNetworkMembers([]);
-                    setShowAllReferrals(false);
+                    setShowAllReferrals(true);
                   }}
                   className="p-2 hover:bg-[#2b3139] rounded-lg transition-all"
                 >
@@ -1004,7 +1004,7 @@ export default function AdminExclusiveAffiliates() {
                       : 'bg-[#2b3139] text-gray-300 hover:bg-[#363d47]'
                   }`}
                 >
-                  {showAllReferrals ? 'Showing All' : 'Show All Referrals'}
+                  {showAllReferrals ? 'All Referrals' : 'Only After Enrollment'}
                 </button>
               </div>
             </div>
