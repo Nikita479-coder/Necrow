@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Search, Filter, X, Download, TrendingUp, DollarSign, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Search, Filter, X, Download, TrendingUp, DollarSign, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw, BarChart3, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '../App';
@@ -54,6 +54,7 @@ export default function AdminDeposits() {
   const [filterCurrency, setFilterCurrency] = useState<string>('all');
   const [filterWalletType, setFilterWalletType] = useState<string>('all');
   const [filterDateRange, setFilterDateRange] = useState<string>('all');
+  const [showChart, setShowChart] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -292,7 +293,32 @@ export default function AdminDeposits() {
           </div>
         </div>
 
-        <DepositStatisticsChart deposits={deposits} />
+        <div className="bg-[#1a1d24] rounded-xl border border-gray-800 mb-8">
+          <button
+            onClick={() => setShowChart(!showChart)}
+            className="w-full flex items-center justify-between p-4 text-left hover:bg-[#1e222a] transition-colors rounded-xl"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                <BarChart3 className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold">Statistics</h3>
+                <p className="text-sm text-gray-400">View deposit trends and analytics</p>
+              </div>
+            </div>
+            {showChart ? (
+              <ChevronUp className="w-5 h-5 text-gray-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-400" />
+            )}
+          </button>
+          {showChart && (
+            <div className="border-t border-gray-800">
+              <DepositStatisticsChart deposits={deposits} />
+            </div>
+          )}
+        </div>
 
         <div className="bg-[#1a1d24] rounded-xl p-6 border border-gray-800">
           <div className="mb-6">

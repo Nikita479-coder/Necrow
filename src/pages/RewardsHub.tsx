@@ -15,6 +15,19 @@ interface Task {
   type: 'volume' | 'referral' | 'trade';
 }
 
+interface CopyBonusStatus {
+  eligible: boolean;
+  already_claimed: boolean;
+  claimed_at?: string;
+  claim_amount?: number;
+  forfeited?: boolean;
+  eligible_relationship_id?: string;
+  eligible_trader_name?: string;
+  current_allocation?: string;
+  bonus_locked_until?: string;
+  is_vested?: boolean;
+}
+
 function RewardsHub() {
   const { user } = useAuth();
   const [currentVolume, setCurrentVolume] = useState(0);
@@ -30,6 +43,7 @@ function RewardsHub() {
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
   const [copyTradingAllocated, setCopyTradingAllocated] = useState(0);
+  const [copyBonusStatus, setCopyBonusStatus] = useState<CopyBonusStatus | null>(null);
   const [allTasks] = useState<Task[]>([
     {
       id: 'first_referral',
@@ -63,8 +77,8 @@ function RewardsHub() {
     },
     {
       id: 'copy_trading_allocation_v2',
-      title: 'Copy Trading Wallet Bonus',
-      description: 'Move 500 USDT to Copy Trading wallet - locked 30 days, keep bonus + profits after',
+      title: 'Copy Trading Bonus',
+      description: 'Start copy trading with 500+ USDT to get 100 USDT added on top. Keep everything after 30 days!',
       reward: 100,
       rewardType: 'locked_bonus',
       target: 500,
@@ -118,15 +132,26 @@ function RewardsHub() {
 
       const { data: copyRelationshipsData } = await supabase
         .from('copy_relationships')
-        .select('initial_balance')
+        .select('initial_balance, bonus_amount')
         .eq('follower_id', user.id)
         .eq('is_mock', false)
         .eq('is_active', true);
 
       if (copyRelationshipsData && copyRelationshipsData.length > 0) {
-        const totalAllocated = copyRelationshipsData.reduce((sum, rel) =>
-          sum + parseFloat(rel.initial_balance || '0'), 0);
+        const totalAllocated = copyRelationshipsData.reduce((sum, rel) => {
+          const initialBalance = parseFloat(rel.initial_balance || '0');
+          const bonusAmount = parseFloat(rel.bonus_amount || '0');
+          return sum + (initialBalance - bonusAmount);
+        }, 0);
         setCopyTradingAllocated(totalAllocated);
+      }
+
+      const { data: bonusStatusData } = await supabase.rpc('get_copy_trading_bonus_status');
+      if (bonusStatusData) {
+        setCopyBonusStatus(bonusStatusData as CopyBonusStatus);
+        if (bonusStatusData.already_claimed) {
+          setClaimedTaskIds(prev => new Set([...prev, 'copy_trading_allocation_v2']));
+        }
       }
 
       const { data: rewardsData, error: rewardsError } = await supabase
@@ -189,6 +214,43 @@ function RewardsHub() {
     if (!user) return;
 
     try {
+      if (task.id === 'copy_trading_allocation_v2') {
+        const { data: result, error } = await supabase.rpc('claim_copy_trading_bonus');
+
+        if (error) {
+          throw error;
+        }
+
+        if (!result?.success) {
+          setNotification({type: 'error', message: result?.error || 'Failed to claim bonus'});
+          setTimeout(() => setNotification(null), 3000);
+          return;
+        }
+
+        const { error: rewardError } = await supabase
+          .from('user_rewards')
+          .insert({
+            user_id: user.id,
+            task_type: task.type,
+            amount: task.reward.toString(),
+            status: 'claimed',
+            task_id: task.id,
+            reward_type: 'copy_bonus',
+            description: `Copy Trading Bonus - ${result.trader_name}`,
+            claimed_at: new Date().toISOString()
+          });
+
+        if (rewardError) {
+          console.error('Reward record error:', rewardError);
+        }
+
+        setNotification({type: 'success', message: `100 USDT bonus added to your copy trading with ${result.trader_name}! Locked for 30 days.`});
+        setTimeout(() => setNotification(null), 5000);
+        setClaimedTaskIds(prev => new Set([...prev, task.id]));
+        loadUserStats();
+        return;
+      }
+
       const { data: existingClaim } = await supabase
         .from('user_rewards')
         .select('*')
@@ -395,9 +457,12 @@ function RewardsHub() {
   const tasks = allTasks;
 
   const completedTasks = tasks.filter(task => {
+    if (task.id === 'copy_trading_allocation_v2') {
+      return copyBonusStatus?.eligible || copyBonusStatus?.already_claimed;
+    }
     let progress = 0;
     if (task.type === 'volume') {
-      progress = task.id === 'copy_trading_allocation_v2' ? copyTradingAllocated : currentVolume;
+      progress = currentVolume;
     } else if (task.type === 'referral') {
       progress = task.id === 'referral_5' ? qualifiedReferrals : totalReferrals;
     } else if (task.type === 'trade') {
@@ -509,25 +574,29 @@ function RewardsHub() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {tasks.map((task) => {
               let progress = 0;
-              if (task.type === 'volume') {
-                if (task.id === 'copy_trading_allocation_v2') {
-                  progress = copyTradingAllocated;
-                } else {
-                  progress = currentVolume;
-                }
+              let isCompleted = false;
+              let isCopyTradingTask = task.id === 'copy_trading_allocation_v2';
+
+              if (isCopyTradingTask) {
+                isCompleted = copyBonusStatus?.eligible || copyBonusStatus?.already_claimed || false;
+                progress = copyBonusStatus?.eligible || copyBonusStatus?.already_claimed ? task.target : copyTradingAllocated;
+              } else if (task.type === 'volume') {
+                progress = currentVolume;
+                isCompleted = progress >= task.target;
               } else if (task.type === 'referral') {
                 if (task.id === 'referral_5') {
                   progress = qualifiedReferrals;
                 } else {
                   progress = totalReferrals;
                 }
+                isCompleted = progress >= task.target;
               } else if (task.type === 'trade') {
                 if (task.id === 'first_trade') {
                   progress = totalTrades;
                 }
+                isCompleted = progress >= task.target;
               }
               const percentage = Math.min((progress / task.target) * 100, 100);
-              const isCompleted = progress >= task.target;
               const isClaimed = claimedTaskIds.has(task.id);
 
               return (
@@ -609,8 +678,8 @@ function RewardsHub() {
                 <div className="text-3xl">🚀</div>
                 <h3 className="text-base font-medium text-[#eaecef]">Copy Trading Bonus</h3>
               </div>
-              <p className="text-sm text-[#848e9c] mb-3">$100 locked bonus when you allocate 500 USDT. Keep bonus + profits after 30 days!</p>
-              <div className="text-xs text-[#f6465d]">Early withdrawal cancels the bonus</div>
+              <p className="text-sm text-[#848e9c] mb-3">Start copy trading with 500+ USDT and we add $100 on top! After 30 days, keep everything including profits.</p>
+              <div className="text-xs text-[#f6465d]">Early withdrawal forfeits the bonus portion only</div>
             </div>
 
             <div className="bg-[#181a20] rounded-lg p-5">
@@ -631,8 +700,9 @@ function RewardsHub() {
                 <ul className="space-y-1 text-xs text-[#848e9c]">
                   <li>• Referral bonuses require friends to deposit $100+ to qualify</li>
                   <li>• Locked bonuses can be used for trading immediately</li>
-                  <li>• Copy Trading bonus locks for 30 days - keep bonus + profits after</li>
-                  <li>• Fee rebates automatically reduce your trading fees</li>
+                  <li>• Copy Trading bonus: 100 USDT added ON TOP of your 500+ USDT allocation</li>
+                  <li>• After 30 days, the bonus vests and you keep everything including profits</li>
+                  <li>• One-time bonus per account, applies to your first eligible copy trading</li>
                 </ul>
               </div>
             </div>

@@ -826,18 +826,29 @@ function Profile() {
               const isPositive = tx.transaction_type === 'deposit' || tx.transaction_type === 'transfer' || tx.transaction_type === 'reward' || tx.transaction_type === 'fee_rebate' || tx.transaction_type === 'admin_credit';
               const amount = parseFloat(tx.amount);
 
-              let displayType = '';
-              if (tx.details) {
-                displayType = tx.details;
-              } else if (tx.transaction_type === 'fee_rebate') {
-                displayType = 'Fee Rebate';
-              } else if (tx.transaction_type === 'admin_credit') {
-                displayType = 'Account Credit';
-              } else if (tx.transaction_type === 'admin_debit') {
-                displayType = 'Balance Adjustment';
-              } else {
-                displayType = tx.transaction_type.charAt(0).toUpperCase() + tx.transaction_type.slice(1);
-              }
+              const formatTransactionType = (type: string, details?: string): string => {
+                if (type === 'deposit') return 'Deposit';
+                if (type === 'withdrawal') return 'Withdrawal';
+                if (type === 'fee_rebate') return 'Fee Rebate';
+                if (type === 'admin_credit') return 'Account Credit';
+                if (type === 'admin_debit') return 'Balance Adjustment';
+                if (type === 'reward') return 'Reward';
+                if (type === 'transfer') return 'Transfer';
+                if (type === 'futures_open') return 'Futures Open';
+                if (type === 'futures_close') return 'Futures Close';
+                if (type === 'referral_commission') return 'Referral Commission';
+                if (type === 'referral_rebate') return 'Referral Rebate';
+                if (type === 'staking') return 'Staking';
+                if (type === 'unstaking') return 'Unstaking';
+
+                if (details && !details.startsWith('{') && !details.startsWith('[')) {
+                  return details;
+                }
+
+                return type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ');
+              };
+
+              const displayType = formatTransactionType(tx.transaction_type, tx.details);
 
               return (
                 <div key={tx.id} className="flex items-center justify-between p-3 sm:p-4 bg-[#0b0e11] rounded-lg gap-3">
@@ -859,7 +870,7 @@ function Profile() {
                     </div>
                     <div className="min-w-0">
                       <div className="font-semibold text-white text-sm truncate">{displayType}</div>
-                      {tx.address && (
+                      {tx.address && !tx.address.startsWith('{') && !tx.address.startsWith('[') && (
                         <div className="text-gray-400 text-xs max-w-[120px] sm:max-w-[200px] truncate">{tx.address}</div>
                       )}
                       <div className="text-gray-400 text-xs sm:text-sm">{formatTimeAgo(tx.created_at)}</div>

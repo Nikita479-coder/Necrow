@@ -82,6 +82,10 @@ function Transactions() {
   };
 
   const formatDetails = (details: string | undefined, transactionType: string): string | null => {
+    if (transactionType === 'deposit') {
+      return 'Deposit';
+    }
+
     if (!details) return null;
 
     try {
@@ -90,11 +94,12 @@ function Transactions() {
       if (parsed.source === 'exclusive_affiliate') {
         return 'Affiliate earnings withdrawal';
       }
-      if (parsed.wallet_type === 'main' && parsed.normalized_currency) {
-        return `Crypto deposit - ${parsed.normalized_currency}`;
+      if (parsed.type === 'copy_trading_withdrawal') {
+        const traderName = parsed.trader_name || 'trader';
+        return `Withdraw from ${traderName}`;
       }
-      if (parsed.pay_amount && parsed.normalized_currency) {
-        return `Deposit of ${parsed.pay_amount} ${parsed.normalized_currency}`;
+      if (parsed.type === 'copy_trading_bonus') {
+        return 'Copy Trading Bonus';
       }
       if (parsed.destination === 'main_wallet') {
         return 'Transfer to Main Wallet';
@@ -114,7 +119,7 @@ function Transactions() {
                       parsed.to_wallet === 'copy' ? 'Copy Trading' : parsed.to_wallet;
         return `Transfer: ${fromName} to ${toName}`;
       }
-      if (parsed.trader_name) {
+      if (parsed.trader_name && !parsed.type) {
         return `Copy trading with ${parsed.trader_name}`;
       }
       if (parsed.position_id || parsed.symbol) {
@@ -395,7 +400,7 @@ function Transactions() {
                               const formattedDetails = formatDetails(tx.details, tx.transaction_type);
                               if (formattedDetails) {
                                 return <div className="text-white text-sm">{formattedDetails}</div>;
-                              } else if (tx.address) {
+                              } else if (tx.address && !tx.address.startsWith('{') && !tx.address.startsWith('[')) {
                                 return <div className="text-white text-sm font-mono text-xs truncate">{tx.address}</div>;
                               } else if (tx.tx_hash) {
                                 return (

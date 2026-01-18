@@ -108,12 +108,69 @@ export default function AdminUserTransactions({ userId }: Props) {
   };
 
   const getTransactionDescription = (tx: any) => {
-    // Prioritize the details field for custom descriptions
-    if (tx.details) {
-      return tx.details;
+    const type = tx.transaction_type;
+
+    if (type === 'deposit') {
+      if (tx.network) return `Deposit via ${tx.network}`;
+      return 'Deposit';
     }
 
-    const type = tx.transaction_type;
+    if (tx.details) {
+      try {
+        const parsed = JSON.parse(tx.details);
+
+        if (parsed.source === 'exclusive_affiliate') {
+          return 'Affiliate earnings withdrawal';
+        }
+        if (parsed.type === 'copy_trading_withdrawal') {
+          return `Withdraw from ${parsed.trader_name || 'trader'}`;
+        }
+        if (parsed.type === 'copy_trading_bonus') {
+          return 'Copy Trading Bonus';
+        }
+        if (parsed.destination === 'main_wallet') {
+          return 'Transfer to Main Wallet';
+        }
+        if (parsed.destination === 'futures_wallet') {
+          return 'Transfer to Futures Wallet';
+        }
+        if (parsed.destination === 'copy_wallet') {
+          return 'Transfer to Copy Trading Wallet';
+        }
+        if (parsed.from_wallet && parsed.to_wallet) {
+          const fromName = parsed.from_wallet === 'main' ? 'Main' :
+                          parsed.from_wallet === 'futures' ? 'Futures' :
+                          parsed.from_wallet === 'copy' ? 'Copy Trading' : parsed.from_wallet;
+          const toName = parsed.to_wallet === 'main' ? 'Main' :
+                        parsed.to_wallet === 'futures' ? 'Futures' :
+                        parsed.to_wallet === 'copy' ? 'Copy Trading' : parsed.to_wallet;
+          return `Transfer: ${fromName} to ${toName}`;
+        }
+        if (parsed.trader_name && !parsed.type) {
+          return `Copy trading with ${parsed.trader_name}`;
+        }
+        if (parsed.symbol) {
+          const side = parsed.side ? (parsed.side === 'long' ? 'Long' : 'Short') : '';
+          return side ? `${parsed.symbol} ${side}` : parsed.symbol;
+        }
+        if (parsed.bonus_name) {
+          return parsed.bonus_name;
+        }
+        if (parsed.pool_name) {
+          return `Staking: ${parsed.pool_name}`;
+        }
+        if (parsed.reason) {
+          return parsed.reason;
+        }
+        if (parsed.message) {
+          return parsed.message;
+        }
+      } catch {
+        if (!tx.details.startsWith('{') && !tx.details.startsWith('[')) {
+          return tx.details;
+        }
+      }
+    }
 
     switch (type) {
       case 'transfer':
@@ -124,27 +181,32 @@ export default function AdminUserTransactions({ userId }: Props) {
         return `Staked ${tx.currency}`;
       case 'unstake':
         return `Unstaked ${tx.currency}`;
-      case 'deposit':
-        if (tx.network) return `Deposit via ${tx.network}`;
-        return 'Deposit';
       case 'withdraw':
       case 'withdrawal':
         if (tx.network) return `Withdrawal via ${tx.network}`;
-        if (tx.address) return `Withdrawal to ${tx.address.substring(0, 10)}...`;
+        if (tx.address && !tx.address.startsWith('{')) return `Withdrawal to ${tx.address.substring(0, 10)}...`;
         return 'Withdrawal';
       case 'trade':
       case 'futures_trade':
-        return 'Trading fee';
+      case 'futures_open':
+        return 'Futures Open';
+      case 'futures_close':
+        return 'Futures Close';
       case 'reward':
         return 'Reward earned';
       case 'referral':
+      case 'referral_commission':
         return 'Referral commission';
+      case 'referral_rebate':
+        return 'Referral rebate';
+      case 'fee_rebate':
+        return 'Fee rebate';
       case 'admin_credit':
-        return 'Admin credit';
+        return 'Account credit';
       case 'admin_debit':
-        return 'Admin debit';
+        return 'Balance adjustment';
       default:
-        return type || 'Transaction';
+        return type?.replace(/_/g, ' ') || 'Transaction';
     }
   };
 
