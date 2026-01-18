@@ -276,13 +276,37 @@ export default function AdminDashboard() {
     }
 
     try {
-      const [usersResult, sessionsResult] = await Promise.all([
-        supabase.rpc('get_admin_users_list'),
+      const [totalCountResult, sessionsResult] = await Promise.all([
+        supabase.rpc('get_admin_users_total_count'),
         supabase.from('user_sessions').select('user_id, is_online, last_activity, heartbeat')
       ]);
 
-      if (usersResult.error || !usersResult.data) {
-        console.error('Error loading users with RPC:', usersResult.error);
+      const totalCount = totalCountResult.data || 0;
+      const batchSize = 500;
+      const allUsers: any[] = [];
+
+      for (let offset = 0; offset < totalCount; offset += batchSize) {
+        const { data: batchData, error: batchError } = await supabase.rpc('get_admin_users_list', {
+          p_offset: offset,
+          p_limit: batchSize
+        });
+
+        if (batchError) {
+          console.error('Error loading users batch:', batchError);
+          break;
+        }
+
+        if (batchData && batchData.length > 0) {
+          allUsers.push(...batchData);
+        }
+
+        if (!batchData || batchData.length < batchSize) {
+          break;
+        }
+      }
+
+      if (allUsers.length === 0) {
+        console.error('No users loaded, falling back to direct query');
         await loadUsersDirectly();
         return;
       }
@@ -296,7 +320,7 @@ export default function AdminDashboard() {
         }) || []
       );
 
-      const usersWithOnlineStatus = usersResult.data.map(u => ({
+      const usersWithOnlineStatus = allUsers.map(u => ({
         ...u,
         is_online: sessionsMap.get(u.id)?.is_online || false,
         last_activity: sessionsMap.get(u.id)?.last_activity,
@@ -310,20 +334,40 @@ export default function AdminDashboard() {
   };
 
   const loadUsersDirectly = async () => {
-    const { data: profiles } = await supabase
-      .from('user_profiles')
-      .select(`
-        id,
-        username,
-        full_name,
-        kyc_status,
-        kyc_level,
-        created_at,
-        referred_by
-      `)
-      .order('created_at', { ascending: false });
+    const batchSize = 500;
+    let allProfiles: any[] = [];
+    let offset = 0;
+    let hasMore = true;
 
-    if (!profiles) return;
+    while (hasMore) {
+      const { data: profiles } = await supabase
+        .from('user_profiles')
+        .select(`
+          id,
+          username,
+          full_name,
+          kyc_status,
+          kyc_level,
+          created_at,
+          referred_by
+        `)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + batchSize - 1);
+
+      if (!profiles || profiles.length === 0) {
+        hasMore = false;
+      } else {
+        allProfiles = [...allProfiles, ...profiles];
+        offset += batchSize;
+        if (profiles.length < batchSize) {
+          hasMore = false;
+        }
+      }
+    }
+
+    if (allProfiles.length === 0) return;
+
+    const profiles = allProfiles;
 
     const [walletsRes, positionsRes, vipRes, referralRes, sessionsRes] = await Promise.all([
       supabase.from('wallets').select('user_id, balance'),

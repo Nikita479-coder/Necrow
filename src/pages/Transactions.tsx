@@ -81,6 +81,69 @@ function Transactions() {
     });
   };
 
+  const formatDetails = (details: string | undefined, transactionType: string): string | null => {
+    if (!details) return null;
+
+    try {
+      const parsed = JSON.parse(details);
+
+      if (parsed.source === 'exclusive_affiliate') {
+        return 'Affiliate earnings withdrawal';
+      }
+      if (parsed.wallet_type === 'main' && parsed.normalized_currency) {
+        return `Crypto deposit - ${parsed.normalized_currency}`;
+      }
+      if (parsed.pay_amount && parsed.normalized_currency) {
+        return `Deposit of ${parsed.pay_amount} ${parsed.normalized_currency}`;
+      }
+      if (parsed.destination === 'main_wallet') {
+        return 'Transfer to Main Wallet';
+      }
+      if (parsed.destination === 'futures_wallet') {
+        return 'Transfer to Futures Wallet';
+      }
+      if (parsed.destination === 'copy_wallet') {
+        return 'Transfer to Copy Trading Wallet';
+      }
+      if (parsed.from_wallet && parsed.to_wallet) {
+        const fromName = parsed.from_wallet === 'main' ? 'Main' :
+                        parsed.from_wallet === 'futures' ? 'Futures' :
+                        parsed.from_wallet === 'copy' ? 'Copy Trading' : parsed.from_wallet;
+        const toName = parsed.to_wallet === 'main' ? 'Main' :
+                      parsed.to_wallet === 'futures' ? 'Futures' :
+                      parsed.to_wallet === 'copy' ? 'Copy Trading' : parsed.to_wallet;
+        return `Transfer: ${fromName} to ${toName}`;
+      }
+      if (parsed.trader_name) {
+        return `Copy trading with ${parsed.trader_name}`;
+      }
+      if (parsed.position_id || parsed.symbol) {
+        const symbol = parsed.symbol || '';
+        const side = parsed.side ? (parsed.side === 'long' ? 'Long' : 'Short') : '';
+        return symbol && side ? `${symbol} ${side} position` : symbol || null;
+      }
+      if (parsed.bonus_type || parsed.bonus_name) {
+        return parsed.bonus_name || 'Bonus reward';
+      }
+      if (parsed.staking_pool || parsed.pool_name) {
+        return `Staking: ${parsed.pool_name || parsed.staking_pool}`;
+      }
+      if (parsed.reason) {
+        return parsed.reason;
+      }
+      if (parsed.message) {
+        return parsed.message;
+      }
+
+      return null;
+    } catch {
+      if (details.startsWith('{') || details.startsWith('[')) {
+        return null;
+      }
+      return details;
+    }
+  };
+
   const currencies = ['all', ...new Set(transactions.map(tx => tx.currency))];
 
   const filteredTransactions = transactions.filter(tx => {
@@ -328,17 +391,22 @@ function Transactions() {
                         </td>
                         <td className="py-4 px-4">
                           <div className="max-w-[300px]">
-                            {tx.details ? (
-                              <div className="text-white text-sm">{tx.details}</div>
-                            ) : tx.address ? (
-                              <div className="text-white text-sm">{tx.address}</div>
-                            ) : tx.tx_hash ? (
-                              <div className="font-mono text-xs text-gray-400 truncate">
-                                {tx.tx_hash}
-                              </div>
-                            ) : (
-                              <span className="text-gray-600 text-xs">-</span>
-                            )}
+                            {(() => {
+                              const formattedDetails = formatDetails(tx.details, tx.transaction_type);
+                              if (formattedDetails) {
+                                return <div className="text-white text-sm">{formattedDetails}</div>;
+                              } else if (tx.address) {
+                                return <div className="text-white text-sm font-mono text-xs truncate">{tx.address}</div>;
+                              } else if (tx.tx_hash) {
+                                return (
+                                  <div className="font-mono text-xs text-gray-400 truncate">
+                                    {tx.tx_hash}
+                                  </div>
+                                );
+                              } else {
+                                return <span className="text-gray-600 text-xs">-</span>;
+                              }
+                            })()}
                           </div>
                         </td>
                         <td className="py-4 px-4">
