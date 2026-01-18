@@ -3,17 +3,18 @@ import {
   Activity, DollarSign, Shield, AlertCircle, FileText, RefreshCw, Search, Filter,
   Users, TrendingUp, Download, Tag, BarChart3, UserCheck, UserX, Clock,
   ChevronDown, Check, X, Eye, Mail, Ban, Unlock, Bell, LogIn, Copy, ExternalLink, Image,
-  UserPlus, Phone, Lock, Megaphone, Gift, Send
+  UserPlus, Phone, Lock, Megaphone, Gift, Send, GitBranch
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import PopupBannerManager from '../components/admin/PopupBannerManager';
 import PhoneRevealButton from '../components/admin/PhoneRevealButton';
+import { DepositorReferralTree } from '../components/admin/DepositorReferralTree';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '../App';
 import { loggingService } from '../services/loggingService';
 
-type MainTab = 'analytics' | 'users' | 'segments' | 'referrers' | 'logs' | 'popups' | 'phones';
+type MainTab = 'analytics' | 'users' | 'segments' | 'referrers' | 'depositor_tree' | 'logs' | 'popups' | 'phones';
 type LogType = 'admin' | 'financial' | 'kyc' | 'security' | 'system';
 
 interface DashboardStats {
@@ -873,6 +874,7 @@ export default function AdminCRM() {
             { id: 'analytics', label: 'Analytics', icon: BarChart3, requiresPhoneAccess: false },
             { id: 'users', label: 'User Management', icon: Users, requiresPhoneAccess: false },
             { id: 'referrers', label: 'Referrers', icon: UserPlus, requiresPhoneAccess: false },
+            { id: 'depositor_tree', label: 'Depositor Tree', icon: GitBranch, requiresPhoneAccess: false },
             { id: 'phones', label: 'Phone Numbers', icon: Phone, requiresPhoneAccess: true },
             { id: 'segments', label: 'Segments & Tags', icon: Tag, requiresPhoneAccess: false },
             { id: 'popups', label: 'Popup Banners', icon: Image, requiresPhoneAccess: false },
@@ -1605,6 +1607,18 @@ export default function AdminCRM() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {mainTab === 'depositor_tree' && (
+          <div className="space-y-4">
+            <div className="mb-4">
+              <h2 className="text-lg font-bold text-white">Depositor Referral Tree</h2>
+              <p className="text-gray-400 text-sm mt-1">
+                Visualize referral hierarchies filtered by users who have made deposits
+              </p>
+            </div>
+            <DepositorReferralTree />
           </div>
         )}
 
