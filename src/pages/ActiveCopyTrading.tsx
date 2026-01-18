@@ -70,6 +70,9 @@ interface CopyRelationship {
   is_active: boolean;
   is_mock: boolean;
   created_at: string;
+  bonus_amount: number;
+  bonus_claimed_at: string | null;
+  bonus_locked_until: string | null;
   trader: {
     id: string;
     name: string;
@@ -92,6 +95,12 @@ function ActiveCopyTrading() {
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [showAddFundsModal, setShowAddFundsModal] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
+  const [withdrawalPreview, setWithdrawalPreview] = useState<{
+    isBonusLocked: boolean;
+    daysRemaining: number;
+    forfeitedAmount: number;
+    youWillReceive: number;
+  } | null>(null);
   const [respondingToTrade, setRespondingToTrade] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'positions' | 'history' | 'allocations'>('positions');
 
@@ -148,6 +157,7 @@ function ActiveCopyTrading() {
         .select(`
           id, trader_id, allocation_percentage, leverage, initial_balance,
           current_balance, cumulative_pnl, total_pnl, is_active, is_mock, created_at,
+          bonus_amount, bonus_claimed_at, bonus_locked_until,
           traders:trader_id (id, name, avatar, roi_30d)
         `)
         .eq('id', copyId)
@@ -174,6 +184,9 @@ function ActiveCopyTrading() {
         is_active: data.is_active,
         is_mock: data.is_mock || false,
         created_at: data.created_at,
+        bonus_amount: parseFloat(data.bonus_amount || '0'),
+        bonus_claimed_at: data.bonus_claimed_at,
+        bonus_locked_until: data.bonus_locked_until,
         trader: {
           id: (data.traders as any).id,
           name: (data.traders as any).name,
@@ -386,6 +399,34 @@ function ActiveCopyTrading() {
     }
   };
 
+  const loadWithdrawalPreview = async () => {
+    if (!selectedCopy) return;
+
+    try {
+      const { data, error } = await supabase.rpc('calculate_copy_trading_early_withdrawal', {
+        p_relationship_id: selectedCopy.id
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        setWithdrawalPreview({
+          isBonusLocked: data.is_bonus_locked || false,
+          daysRemaining: data.days_remaining || 0,
+          forfeitedAmount: data.forfeited_amount || 0,
+          youWillReceive: data.you_will_receive || 0
+        });
+      }
+    } catch (error) {
+      console.error('Error loading withdrawal preview:', error);
+    }
+  };
+
+  const openWithdrawModal = async () => {
+    setShowWithdrawModal(true);
+    await loadWithdrawalPreview();
+  };
+
   const handleWithdraw = async () => {
     if (!user || !selectedCopy) return;
 
@@ -407,11 +448,16 @@ function ActiveCopyTrading() {
       } else {
         const withdrawAmount = data.withdraw_amount || 0;
         const platformFee = data.platform_fee || 0;
-        showSuccess(
-          `Successfully withdrawn ${withdrawAmount.toFixed(2)} USDT to your wallet${
-            platformFee > 0 ? `. Platform fee: ${platformFee.toFixed(2)} USDT (20% of profits)` : ''
-          }`
-        );
+        const forfeitedAmount = data.forfeited_amount || 0;
+
+        let message = `Successfully withdrawn ${withdrawAmount.toFixed(2)} USDT to your wallet`;
+        if (platformFee > 0) {
+          message += `. Platform fee: ${platformFee.toFixed(2)} USDT (20% of profits)`;
+        }
+        if (forfeitedAmount > 0) {
+          message += `. Bonus forfeited: ${forfeitedAmount.toFixed(2)} USDT (early withdrawal)`;
+        }
+        showSuccess(message);
       }
 
       setShowWithdrawModal(false);
@@ -538,6 +584,19 @@ function ActiveCopyTrading() {
                         ACTIVE
                       </span>
                     )}
+                    {selectedCopy.bonus_amount > 0 && (
+                      <span className={`px-2.5 py-1 text-xs font-medium rounded-full flex items-center gap-1 ${
+                        selectedCopy.bonus_locked_until && new Date(selectedCopy.bonus_locked_until) > new Date()
+                          ? 'bg-[#f0b90b]/20 text-[#f0b90b] border border-[#f0b90b]/30'
+                          : 'bg-[#0ecb81]/20 text-[#0ecb81] border border-[#0ecb81]/30'
+                      }`}>
+                        +{selectedCopy.bonus_amount} USDT Bonus
+                        {selectedCopy.bonus_locked_until && new Date(selectedCopy.bonus_locked_until) > new Date()
+                          ? ` (${Math.ceil((new Date(selectedCopy.bonus_locked_until).getTime() - Date.now()) / (1000 * 60 * 60 * 24))}d lock)`
+                          : ' (Vested)'
+                        }
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 text-[#848e9c] text-sm">
                     <Clock className="w-4 h-4" />
@@ -558,7 +617,7 @@ function ActiveCopyTrading() {
                     Add Funds
                   </button>
                   <button
-                    onClick={() => setShowWithdrawModal(true)}
+                    onClick={openWithdrawModal}
                     className="flex items-center justify-center gap-2 bg-gradient-to-r from-[#f6465d] to-[#d93547] hover:from-[#ff4d63] hover:to-[#e03a4c] text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg shadow-[#f6465d]/20 hover:shadow-[#f6465d]/30"
                   >
                     <Wallet className="w-5 h-5" />
@@ -1028,10 +1087,35 @@ function ActiveCopyTrading() {
                     </div>
                   )}
 
+                  {withdrawalPreview?.isBonusLocked && withdrawalPreview.forfeitedAmount > 0 && (
+                    <div className="bg-[#f6465d]/10 border border-[#f6465d]/30 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[#848e9c] text-sm">Bonus Forfeiture (Early Withdrawal)</span>
+                        <span className="text-[#f6465d] font-semibold">
+                          -{withdrawalPreview.forfeitedAmount.toFixed(2)} USDT
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#f6465d]">
+                        Your bonus is locked for {withdrawalPreview.daysRemaining} more days. Withdrawing now forfeits the bonus portion and its proportional profits.
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedCopy.bonus_amount > 0 && selectedCopy.bonus_locked_until && new Date(selectedCopy.bonus_locked_until) <= new Date() && (
+                    <div className="bg-[#0ecb81]/10 border border-[#0ecb81]/30 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[#0ecb81] font-semibold">Bonus Vested!</span>
+                      </div>
+                      <p className="text-xs text-[#848e9c]">
+                        Your {selectedCopy.bonus_amount} USDT bonus has fully vested. You keep everything including profits!
+                      </p>
+                    </div>
+                  )}
+
                   <div className="bg-[#0ecb81]/10 border border-[#0ecb81]/30 rounded-xl p-5">
                     <div className="text-sm text-[#848e9c] mb-1">You will receive</div>
                     <div className="text-[#0ecb81] text-3xl font-bold">
-                      {withdrawal.net.toFixed(2)} USDT
+                      {withdrawalPreview ? withdrawalPreview.youWillReceive.toFixed(2) : withdrawal.net.toFixed(2)} USDT
                     </div>
                   </div>
 
