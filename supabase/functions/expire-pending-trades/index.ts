@@ -21,13 +21,21 @@ Deno.serve(async (req: Request) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Call the expire_old_pending_trades function
-    const { data, error } = await supabase.rpc('expire_old_pending_trades');
+    const { data: expiredTrades, error: tradesError } = await supabase.rpc('expire_old_pending_trades');
 
-    if (error) {
-      console.error('Error expiring trades:', error);
+    if (tradesError) {
+      console.error('Error expiring trades:', tradesError);
+    }
+
+    const { data: expiredAutoAccept, error: autoAcceptError } = await supabase.rpc('expire_auto_accept_settings');
+
+    if (autoAcceptError) {
+      console.error('Error expiring auto-accept:', autoAcceptError);
+    }
+
+    if (tradesError && autoAcceptError) {
       return new Response(
-        JSON.stringify({ success: false, error: error.message }),
+        JSON.stringify({ success: false, error: 'Failed to expire trades and auto-accept settings' }),
         {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -38,8 +46,9 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         success: true,
-        expired_count: data,
-        message: `Expired ${data} pending trades`
+        expired_trades: expiredTrades || 0,
+        expired_auto_accept: expiredAutoAccept || 0,
+        message: `Expired ${expiredTrades || 0} pending trades, ${expiredAutoAccept || 0} auto-accept settings`
       }),
       {
         status: 200,

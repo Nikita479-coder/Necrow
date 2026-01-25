@@ -161,18 +161,39 @@ Deno.serve(async (req: Request) => {
 
     const tradeUrl = `${SITE_URL}?page=copytrading&trade=${tradeId}`;
 
-    const messageText =
-      `<b>\u{1F4C8} NEW TRADE SIGNAL</b>\n\n` +
-      `<b>Trader:</b> ${traderName}\n` +
-      `<b>Pair:</b> ${trade.pair}\n` +
-      `<b>Leverage:</b> ${trade.leverage}x\n` +
-      `<b>Entry:</b> $${Number(trade.entry_price).toLocaleString()}\n\n` +
-      `<i>You have 5 minutes to respond.</i>\n\n` +
-      `${tradeUrl}`;
+    const { data: autoAcceptedUsers } = await supabase
+      .from("pending_trade_responses")
+      .select("follower_id")
+      .eq("pending_trade_id", tradeId)
+      .eq("response", "accepted")
+      .eq("auto_accepted", true);
+
+    const autoAcceptedSet = new Set(
+      (autoAcceptedUsers || []).map((r: { follower_id: string }) => r.follower_id)
+    );
 
     const results: NotificationResult[] = [];
-    
+
     for (const follower of followers) {
+      const isAutoAccepted = autoAcceptedSet.has(follower.user_id);
+
+      const messageText = isAutoAccepted
+        ? `<b>\u{2705} TRADE AUTO-ACCEPTED</b>\n\n` +
+          `<b>Trader:</b> ${traderName}\n` +
+          `<b>Pair:</b> ${trade.pair}\n` +
+          `<b>Side:</b> ${trade.side.toUpperCase()}\n` +
+          `<b>Leverage:</b> ${trade.leverage}x\n` +
+          `<b>Entry:</b> $${Number(trade.entry_price).toLocaleString()}\n\n` +
+          `<i>This trade was automatically accepted based on your settings.</i>\n\n` +
+          `${tradeUrl}`
+        : `<b>\u{1F4C8} NEW TRADE SIGNAL</b>\n\n` +
+          `<b>Trader:</b> ${traderName}\n` +
+          `<b>Pair:</b> ${trade.pair}\n` +
+          `<b>Side:</b> ${trade.side.toUpperCase()}\n` +
+          `<b>Leverage:</b> ${trade.leverage}x\n` +
+          `<b>Entry:</b> $${Number(trade.entry_price).toLocaleString()}\n\n` +
+          `<i>You have 5 minutes to respond.</i>\n\n` +
+          `${tradeUrl}`;
       const { data: logData } = await supabase.rpc("log_telegram_notification", {
         p_user_id: follower.user_id,
         p_pending_trade_id: tradeId,
