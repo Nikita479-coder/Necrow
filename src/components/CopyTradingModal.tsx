@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, AlertCircle, Wallet, ArrowDown, TrendingUp } from 'lucide-react';
+import { X, AlertCircle, Wallet, ArrowDown, TrendingUp, Gift } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '../App';
@@ -37,6 +37,13 @@ export default function CopyTradingModal({
   const [allocatedBalance, setAllocatedBalance] = useState(0);
   const [traderROI, setTraderROI] = useState<number | null>(null);
   const [loadingTrader, setLoadingTrader] = useState(true);
+  const [minimumAmount, setMinimumAmount] = useState(100);
+  const [promoBonus, setPromoBonus] = useState<{
+    hasBonus: boolean;
+    promoCode?: string;
+    bonusAmount?: number;
+    daysRemaining?: number;
+  }>({ hasBonus: false });
 
   useEffect(() => {
     const fetchTraderData = async () => {
@@ -51,9 +58,7 @@ export default function CopyTradingModal({
           .maybeSingle();
 
         if (traderData) {
-          // Use target_monthly_roi if available (for automated traders), otherwise use actual roi_30d
           const monthlyROI = traderData.target_monthly_roi || traderData.roi_30d || 0;
-          // Convert monthly ROI to daily average
           const dailyROI = monthlyROI / 30;
           setTraderROI(dailyROI);
         }
@@ -66,6 +71,32 @@ export default function CopyTradingModal({
 
     fetchTraderData();
   }, [traderId, isOpen]);
+
+  useEffect(() => {
+    const fetchMinimumAmount = async () => {
+      if (!user || !isOpen || isMock) return;
+
+      try {
+        const { data, error } = await supabase.rpc('get_user_copy_trading_minimum', {
+          p_user_id: user.id
+        });
+
+        if (!error && data) {
+          setMinimumAmount(data.minimum_amount || 100);
+          setPromoBonus({
+            hasBonus: data.has_promo_bonus || false,
+            promoCode: data.promo_code,
+            bonusAmount: data.bonus_amount,
+            daysRemaining: data.days_remaining
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching minimum amount:', err);
+      }
+    };
+
+    fetchMinimumAmount();
+  }, [user, isOpen, isMock]);
 
   useEffect(() => {
     const fetchBalance = async () => {
@@ -238,8 +269,8 @@ export default function CopyTradingModal({
       ? (availableBalance * parseInt(allocationPercentage || '0')) / 100
       : 0;
 
-    if (!isMock && calculatedAmount < 100) {
-      setError('Minimum copy amount is 100 USDT. Please increase your allocation percentage or add funds to your wallet.');
+    if (!isMock && calculatedAmount < minimumAmount) {
+      setError(`Minimum copy amount is ${minimumAmount} USDT. Please increase your allocation percentage or add funds to your wallet.`);
       return;
     }
 
@@ -362,6 +393,32 @@ export default function CopyTradingModal({
             </div>
           );
         })()}
+
+        {/* Promo Bonus Display */}
+        {!isMock && promoBonus.hasBonus && (
+          <div className="bg-gradient-to-r from-[#fcd535]/10 to-[#f0b90b]/5 border border-[#fcd535]/30 rounded-lg p-4 mb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Gift className="w-5 h-5 text-[#fcd535]" />
+                <div>
+                  <p className="text-white text-sm font-semibold">{promoBonus.promoCode} Bonus Active</p>
+                  <p className="text-[#848e9c] text-xs">Minimum reduced to ${minimumAmount}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-[#fcd535] text-lg font-bold">
+                  ${promoBonus.bonusAmount}
+                </div>
+                <div className="text-[#848e9c] text-xs">{promoBonus.daysRemaining} days left</div>
+              </div>
+            </div>
+            <div className="mt-3 pt-3 border-t border-[#fcd535]/20">
+              <p className="text-[#848e9c] text-xs">
+                This bonus can only be used for copy trading. You can withdraw profits, but not the bonus itself. Bonus expires after 30 days.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Available Balance Display */}
         <div className="bg-[#0b0e11] border border-[#2b3139] rounded-lg p-3 mb-4">
@@ -505,7 +562,7 @@ export default function CopyTradingModal({
               <div className="flex-1">
                 <p className="text-[#f6465d] text-sm font-medium">No Funds Available</p>
                 <p className="text-[#f6465d]/80 text-xs mt-1">
-                  You need to deposit funds to your account before you can start copy trading. Minimum 100 USDT required.
+                  You need to deposit funds to your account before you can start copy trading. Minimum {minimumAmount} USDT required.
                 </p>
               </div>
             </div>
@@ -522,10 +579,10 @@ export default function CopyTradingModal({
         )}
 
         {!isMock && availableBalance !== null && availableBalance > 0 &&
-         ((availableBalance * parseInt(allocationPercentage || '0')) / 100) < 100 && (
+         ((availableBalance * parseInt(allocationPercentage || '0')) / 100) < minimumAmount && (
           <div className="bg-[#f6465d]/10 border border-[#f6465d]/30 rounded-lg p-3 mb-4 flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-[#f6465d] flex-shrink-0 mt-0.5" />
-            <span className="text-[#f6465d] text-sm">Minimum copy amount is 100 USDT. Increase your allocation percentage or transfer more funds.</span>
+            <span className="text-[#f6465d] text-sm">Minimum copy amount is {minimumAmount} USDT. Increase your allocation percentage or transfer more funds.</span>
           </div>
         )}
 

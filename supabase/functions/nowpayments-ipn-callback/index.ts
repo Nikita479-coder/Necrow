@@ -138,6 +138,46 @@ Deno.serve(async (req: Request) => {
 
     console.log('Deposit processed:', result);
 
+    // Send deposit confirmation email when deposit is finished
+    if ((paymentStatus === 'finished' || paymentStatus === 'partially_paid') && deposit) {
+      try {
+        // Get user's new balance
+        const { data: walletData } = await supabase
+          .from('wallets')
+          .select('balance')
+          .eq('user_id', deposit.user_id)
+          .eq('currency', 'USDT')
+          .eq('wallet_type', 'main')
+          .maybeSingle();
+
+        const newBalance = walletData?.balance || outcomeAmount;
+
+        // Call the deposit confirmation email function
+        const emailResponse = await fetch(
+          `${supabaseUrl}/functions/v1/send-deposit-confirmation-email`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+            },
+            body: JSON.stringify({
+              user_id: deposit.user_id,
+              deposit_amount: outcomeAmount,
+              pay_currency: payCurrency,
+              new_balance: newBalance,
+            }),
+          }
+        );
+
+        const emailResult = await emailResponse.json();
+        console.log('Deposit confirmation email result:', emailResult);
+      } catch (emailError) {
+        console.error('Failed to send deposit confirmation email:', emailError);
+        // Don't fail the whole callback if email fails
+      }
+    }
+
     if ((paymentStatus === 'failed' || paymentStatus === 'refunded') && deposit) {
       await supabase.from('notifications').insert({
         user_id: deposit.user_id,
