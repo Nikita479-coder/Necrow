@@ -91,7 +91,7 @@ export default function AdminUserActions({ userId, userData, onRefresh }: Props)
       if (userEmail) {
         const { data: template } = await supabase
           .from('email_templates')
-          .select('id, subject, html_content')
+          .select('id, subject, body')
           .eq('name', 'KYC Approved')
           .maybeSingle();
 
@@ -108,7 +108,7 @@ export default function AdminUserActions({ userId, userData, onRefresh }: Props)
             body: JSON.stringify({
               to: userEmail,
               subject: template.subject.replace('{{user_name}}', userName),
-              html: template.html_content
+              html: template.body
                 .replace(/\{\{user_name\}\}/g, userName)
                 .replace(/\{\{kyc_level\}\}/g, String(level))
                 .replace(/\{\{bonus_amount\}\}/g, '$20')
@@ -137,7 +137,7 @@ export default function AdminUserActions({ userId, userData, onRefresh }: Props)
       if (userEmail) {
         const { data: template } = await supabase
           .from('email_templates')
-          .select('id, subject, html_content')
+          .select('id, subject, body')
           .eq('name', 'KYC Rejected')
           .maybeSingle();
 
@@ -154,7 +154,7 @@ export default function AdminUserActions({ userId, userData, onRefresh }: Props)
             body: JSON.stringify({
               to: userEmail,
               subject: template.subject.replace('{{user_name}}', userName),
-              html: template.html_content.replace(/\{\{user_name\}\}/g, userName)
+              html: template.body.replace(/\{\{user_name\}\}/g, userName)
             })
           });
         }

@@ -175,7 +175,7 @@ export default function AdminDashboard() {
     if (!hasAccess) return;
 
     const channel = supabase
-      .channel('admin-user-sessions')
+      .channel('admin-realtime-sessions')
       .on(
         'postgres_changes',
         {
@@ -199,14 +199,6 @@ export default function AdminDashboard() {
         }
       )
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [hasAccess]);
-
-  useEffect(() => {
-    if (!hasAccess) return;
 
     const refreshOnlineStatus = async () => {
       try {
@@ -235,9 +227,12 @@ export default function AdminDashboard() {
       }
     };
 
-    const interval = setInterval(refreshOnlineStatus, 15000);
+    const interval = setInterval(refreshOnlineStatus, 5000);
 
-    return () => clearInterval(interval);
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
   }, [hasAccess]);
 
   const checkAccess = async () => {

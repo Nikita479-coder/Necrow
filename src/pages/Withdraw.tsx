@@ -203,10 +203,12 @@ function Withdraw() {
     }
 
     const availableBalance = walletBalances[selectedCrypto] || 0;
-    console.log('Available balance:', availableBalance, 'Requested:', withdrawAmount);
-    if (withdrawAmount > availableBalance) {
+    const roundedWithdrawAmount = Math.round(withdrawAmount * 1e6) / 1e6;
+    const roundedAvailableBalance = Math.round(availableBalance * 1e6) / 1e6;
+    console.log('Available balance:', roundedAvailableBalance, 'Requested:', roundedWithdrawAmount);
+    if (roundedWithdrawAmount > roundedAvailableBalance + 0.000001) {
       console.error('Insufficient balance');
-      showToast(`Insufficient balance. Available: ${availableBalance.toFixed(6)} ${selectedCrypto}`, 'error');
+      showToast(`Insufficient balance. Available: ${roundedAvailableBalance.toFixed(6)} ${selectedCrypto}`, 'error');
       return;
     }
 
@@ -216,7 +218,7 @@ function Withdraw() {
     try {
       const requestBody = {
         currency: selectedCrypto,
-        amount: withdrawAmount,
+        amount: roundedWithdrawAmount,
         address: address.trim(),
         network: selectedNetwork
       };
@@ -238,7 +240,7 @@ function Withdraw() {
 
       if (data && data.success) {
         console.log('✓ Withdrawal successful!');
-        showToast(`Withdrawal request submitted! ${withdrawAmount} ${selectedCrypto} is pending approval`, 'success');
+        showToast(`Withdrawal request submitted! ${roundedWithdrawAmount} ${selectedCrypto} is pending approval`, 'success');
         setAmount('');
         setAddress('');
         await loadRecentWithdrawals();
