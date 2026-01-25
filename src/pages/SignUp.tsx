@@ -19,6 +19,7 @@ function SignUp() {
     phone: '',
     password: '',
     referralCode: '',
+    promoCode: '',
   });
   const [phonePrefix, setPhonePrefix] = useState('+1');
   const [showPassword, setShowPassword] = useState(false);
@@ -268,7 +269,8 @@ function SignUp() {
         formData.password,
         formData.name,
         fullPhoneNumber,
-        formData.referralCode || undefined
+        formData.referralCode || undefined,
+        formData.promoCode || undefined
       );
 
       if (signUpError) {
@@ -444,6 +446,20 @@ function SignUp() {
           value={formData.referralCode}
           onChange={(e) => setFormData({ ...formData, referralCode: e.target.value.toUpperCase() })}
           placeholder="Referral code (optional)"
+          className="w-full bg-[#252837] border-0 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#f0b90b] transition-all uppercase"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="promoCode" className="block text-sm text-gray-400 mb-2">
+          Promo code (optional)
+        </label>
+        <input
+          id="promoCode"
+          type="text"
+          value={formData.promoCode}
+          onChange={(e) => setFormData({ ...formData, promoCode: e.target.value.toUpperCase() })}
+          placeholder="Promo code (optional)"
           className="w-full bg-[#252837] border-0 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#f0b90b] transition-all uppercase"
         />
       </div>

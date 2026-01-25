@@ -100,6 +100,13 @@ function ActiveCopyTrading() {
     daysRemaining: number;
     forfeitedAmount: number;
     youWillReceive: number;
+    isPromoOnly: boolean;
+    hasPromo: boolean;
+    promoBonusAmount: number;
+    userAllocation: number;
+    profit: number;
+    userProfit: number;
+    platformFee: number;
   } | null>(null);
   const [respondingToTrade, setRespondingToTrade] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'positions' | 'history' | 'allocations'>('positions');
@@ -414,7 +421,14 @@ function ActiveCopyTrading() {
           isBonusLocked: data.is_bonus_locked || false,
           daysRemaining: data.days_remaining || 0,
           forfeitedAmount: data.forfeited_amount || 0,
-          youWillReceive: data.you_will_receive || 0
+          youWillReceive: data.you_will_receive || 0,
+          isPromoOnly: data.is_promo_only || false,
+          hasPromo: data.has_promo || false,
+          promoBonusAmount: data.promo_bonus_amount || 0,
+          userAllocation: data.user_allocation || 0,
+          profit: data.profit || 0,
+          userProfit: data.user_profit || 0,
+          platformFee: data.platform_fee || 0
         });
       }
     } catch (error) {
@@ -1073,7 +1087,144 @@ function ActiveCopyTrading() {
                     </div>
                   </div>
 
-                  {withdrawal.fee > 0 && (
+                  {/* PROMO BONUS ONLY: Early withdrawal - LOSE ALL */}
+                  {withdrawalPreview?.hasPromo && withdrawalPreview.isPromoOnly && withdrawalPreview.isBonusLocked && (
+                    <div className="bg-[#f6465d]/20 border-2 border-[#f6465d] rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle className="w-5 h-5 text-[#f6465d]" />
+                        <span className="text-[#f6465d] font-bold">WARNING: Early Withdrawal</span>
+                      </div>
+                      <p className="text-sm text-white mb-3">
+                        Your ${withdrawalPreview.promoBonusAmount} promo bonus has <span className="text-[#f6465d] font-bold">{withdrawalPreview.daysRemaining} days</span> remaining.
+                      </p>
+                      <p className="text-sm text-[#f6465d] font-semibold mb-2">
+                        If you withdraw now, you will lose ALL funds:
+                      </p>
+                      <div className="bg-[#f6465d]/10 rounded-lg p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[#848e9c] text-sm">Amount forfeited</span>
+                          <span className="text-[#f6465d] font-bold">-{withdrawalPreview.forfeitedAmount.toFixed(2)} USDT</span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-[#848e9c] mt-3">
+                        Wait {withdrawalPreview.daysRemaining} more days to keep your profits.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* PROMO + USER FUNDS: Early withdrawal - lose promo, keep user funds */}
+                  {withdrawalPreview?.hasPromo && !withdrawalPreview.isPromoOnly && withdrawalPreview.isBonusLocked && (
+                    <div className="bg-[#f0b90b]/20 border-2 border-[#f0b90b] rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle className="w-5 h-5 text-[#f0b90b]" />
+                        <span className="text-[#f0b90b] font-bold">Early Withdrawal Notice</span>
+                      </div>
+                      <p className="text-sm text-white mb-3">
+                        Your ${withdrawalPreview.promoBonusAmount} promo bonus has <span className="text-[#f0b90b] font-bold">{withdrawalPreview.daysRemaining} days</span> remaining.
+                      </p>
+                      <p className="text-sm text-[#848e9c] mb-3">
+                        If you withdraw now, the promo bonus will be forfeited but you keep your own funds:
+                      </p>
+                      <div className="space-y-2 bg-[#1e2329] rounded-lg p-3">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-[#848e9c]">Your funds</span>
+                          <span className="text-white font-semibold">{withdrawalPreview.userAllocation.toFixed(2)} USDT</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-[#848e9c]">Your profit share</span>
+                          <span className={withdrawalPreview.userProfit >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}>
+                            {withdrawalPreview.userProfit >= 0 ? '+' : ''}{withdrawalPreview.userProfit.toFixed(2)} USDT
+                          </span>
+                        </div>
+                        {withdrawalPreview.platformFee > 0 && (
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-[#848e9c]">Platform fee (20%)</span>
+                            <span className="text-[#f6465d]">-{withdrawalPreview.platformFee.toFixed(2)} USDT</span>
+                          </div>
+                        )}
+                        <div className="border-t border-[#2b3139] pt-2 mt-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-[#f6465d]">Promo bonus forfeited</span>
+                            <span className="text-[#f6465d] font-bold">-{withdrawalPreview.promoBonusAmount.toFixed(2)} USDT</span>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-xs text-[#848e9c] mt-3">
+                        Wait {withdrawalPreview.daysRemaining} more days to keep the promo bonus profits too.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* PROMO ONLY: 30 days passed - bonus expires, keep profits */}
+                  {withdrawalPreview?.hasPromo && withdrawalPreview.isPromoOnly && !withdrawalPreview.isBonusLocked && (
+                    <div className="bg-[#f0b90b]/10 border border-[#f0b90b]/30 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Info className="w-5 h-5 text-[#f0b90b]" />
+                        <span className="text-[#f0b90b] font-semibold">Promo Bonus Period Complete</span>
+                      </div>
+                      <p className="text-sm text-[#848e9c] mb-3">
+                        Your ${withdrawalPreview.promoBonusAmount} promo bonus period has ended. The bonus will expire but you keep your profits.
+                      </p>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-[#848e9c]">Promo bonus (expires)</span>
+                          <span className="text-[#f6465d]">-{withdrawalPreview.promoBonusAmount.toFixed(2)} USDT</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-[#848e9c]">Your profits</span>
+                          <span className={withdrawalPreview.profit >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}>
+                            {withdrawalPreview.profit >= 0 ? '+' : ''}{withdrawalPreview.profit.toFixed(2)} USDT
+                          </span>
+                        </div>
+                        {withdrawalPreview.platformFee > 0 && (
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-[#848e9c]">Platform fee (20%)</span>
+                            <span className="text-[#f6465d]">-{withdrawalPreview.platformFee.toFixed(2)} USDT</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* PROMO + USER FUNDS: 30 days passed - bonus expires, keep user funds + all profits */}
+                  {withdrawalPreview?.hasPromo && !withdrawalPreview.isPromoOnly && !withdrawalPreview.isBonusLocked && (
+                    <div className="bg-[#0ecb81]/10 border border-[#0ecb81]/30 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Info className="w-5 h-5 text-[#0ecb81]" />
+                        <span className="text-[#0ecb81] font-semibold">Promo Period Complete!</span>
+                      </div>
+                      <p className="text-sm text-[#848e9c] mb-3">
+                        Your promo bonus period has ended. The ${withdrawalPreview.promoBonusAmount} bonus expires but you keep all profits!
+                      </p>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-[#848e9c]">Your funds</span>
+                          <span className="text-white font-semibold">{withdrawalPreview.userAllocation.toFixed(2)} USDT</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-[#848e9c]">Total profits (all positions)</span>
+                          <span className={withdrawalPreview.profit >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'}>
+                            {withdrawalPreview.profit >= 0 ? '+' : ''}{withdrawalPreview.profit.toFixed(2)} USDT
+                          </span>
+                        </div>
+                        {withdrawalPreview.platformFee > 0 && (
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-[#848e9c]">Platform fee (20%)</span>
+                            <span className="text-[#f6465d]">-{withdrawalPreview.platformFee.toFixed(2)} USDT</span>
+                          </div>
+                        )}
+                        <div className="border-t border-[#2b3139] pt-2 mt-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-[#848e9c]">Promo bonus (expires)</span>
+                            <span className="text-[#f6465d]">-{withdrawalPreview.promoBonusAmount.toFixed(2)} USDT</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Standard platform fee for non-promo */}
+                  {!withdrawalPreview?.hasPromo && withdrawal.fee > 0 && (
                     <div className="bg-[#f6465d]/10 border border-[#f6465d]/30 rounded-xl p-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[#848e9c] text-sm">Platform Fee (20% of profit)</span>
@@ -1087,7 +1238,8 @@ function ActiveCopyTrading() {
                     </div>
                   )}
 
-                  {withdrawalPreview?.isBonusLocked && withdrawalPreview.forfeitedAmount > 0 && (
+                  {/* Standard bonus forfeiture warning (for $500+ bonus, not promo) */}
+                  {!withdrawalPreview?.hasPromo && withdrawalPreview?.isBonusLocked && withdrawalPreview.forfeitedAmount > 0 && (
                     <div className="bg-[#f6465d]/10 border border-[#f6465d]/30 rounded-xl p-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[#848e9c] text-sm">Bonus Forfeiture (Early Withdrawal)</span>
@@ -1101,7 +1253,7 @@ function ActiveCopyTrading() {
                     </div>
                   )}
 
-                  {selectedCopy.bonus_amount > 0 && selectedCopy.bonus_locked_until && new Date(selectedCopy.bonus_locked_until) <= new Date() && (
+                  {!withdrawalPreview?.hasPromo && selectedCopy.bonus_amount > 0 && selectedCopy.bonus_locked_until && new Date(selectedCopy.bonus_locked_until) <= new Date() && (
                     <div className="bg-[#0ecb81]/10 border border-[#0ecb81]/30 rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-[#0ecb81] font-semibold">Bonus Vested!</span>
@@ -1112,9 +1264,15 @@ function ActiveCopyTrading() {
                     </div>
                   )}
 
-                  <div className="bg-[#0ecb81]/10 border border-[#0ecb81]/30 rounded-xl p-5">
+                  <div className={`rounded-xl p-5 ${
+                    withdrawalPreview?.youWillReceive === 0
+                      ? 'bg-[#f6465d]/10 border border-[#f6465d]/30'
+                      : 'bg-[#0ecb81]/10 border border-[#0ecb81]/30'
+                  }`}>
                     <div className="text-sm text-[#848e9c] mb-1">You will receive</div>
-                    <div className="text-[#0ecb81] text-3xl font-bold">
+                    <div className={`text-3xl font-bold ${
+                      withdrawalPreview?.youWillReceive === 0 ? 'text-[#f6465d]' : 'text-[#0ecb81]'
+                    }`}>
                       {withdrawalPreview ? withdrawalPreview.youWillReceive.toFixed(2) : withdrawal.net.toFixed(2)} USDT
                     </div>
                   </div>

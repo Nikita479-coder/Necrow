@@ -33,7 +33,9 @@ interface TraderData {
   profitable_days: number;
   trading_days: number;
   avg_win_rate_7d: number;
+  avg_win_rate_30d: number;
   avg_win_rate_90d: number;
+  win_rate_all_time: number;
   best_trade_pnl: number;
   worst_trade_pnl: number;
   volatility_score: number;
@@ -215,9 +217,9 @@ export default function TraderProfile() {
     if (!trader) return 0;
     switch (selectedPeriod) {
       case '7d': return trader.avg_win_rate_7d;
-      case '30d': return trader.win_rate;
+      case '30d': return trader.avg_win_rate_30d;
       case '90d': return trader.avg_win_rate_90d;
-      case 'all': return trader.win_rate;
+      case 'all': return trader.win_rate_all_time;
       default: return trader.win_rate;
     }
   };

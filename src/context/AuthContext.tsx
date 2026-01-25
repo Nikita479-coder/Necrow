@@ -47,7 +47,7 @@ interface AuthContextType {
   profile: UserProfile | null;
   staffInfo: StaffInfo | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string, phone: string, referralCode?: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string, phone: string, referralCode?: string, promoCode?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<SignInResult>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -228,7 +228,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string, phone: string, referralCode?: string) => {
+  const signUp = async (email: string, password: string, fullName: string, phone: string, referralCode?: string, promoCode?: string) => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -237,6 +237,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           data: {
             full_name: fullName,
             referral_code: referralCode ? referralCode.toUpperCase().trim() : undefined,
+            promo_code: promoCode ? promoCode.toUpperCase().trim() : undefined,
           },
         },
       });
@@ -265,6 +266,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         };
 
         await updateProfile();
+
+        if (promoCode) {
+          await supabase.rpc('validate_and_redeem_promo_code', {
+            p_user_id: data.user.id,
+            p_promo_code: promoCode.toUpperCase().trim()
+          });
+        }
       }
 
       return { error: null, data };

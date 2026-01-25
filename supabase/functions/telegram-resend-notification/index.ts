@@ -224,7 +224,7 @@ Deno.serve(async (req: Request) => {
         .single();
 
       const traderName = trader?.name || traderProfile?.username || "Unknown Trader";
-      const tradeUrl = `${SITE_URL}/copy-trading?trade=${trade.id}`;
+      const tradeUrl = `${SITE_URL}?page=copytrading&trade=${trade.id}`;
       const sideEmoji = trade.side === "long" ? "\u{1F7E2}" : "\u{1F534}";
       const sideText = trade.side.toUpperCase();
       

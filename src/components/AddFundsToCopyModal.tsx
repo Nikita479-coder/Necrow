@@ -149,8 +149,8 @@ export default function AddFundsToCopyModal({
       return;
     }
 
-    if (addAmount < 10) {
-      setError('Minimum top-up amount is 10 USDT');
+    if (addAmount < 100) {
+      setError('Minimum top-up amount is 100 USDT');
       return;
     }
 
@@ -297,7 +297,7 @@ export default function AddFundsToCopyModal({
             )}
           </div>
 
-          {!isMock && !loadingBalance && availableBalance < 10 && mainWalletBalance > 0 && (
+          {!isMock && !loadingBalance && availableBalance < 100 && mainWalletBalance > 0 && (
             <div className="bg-[#fcd535]/10 border border-[#fcd535]/30 rounded-lg p-4 mb-4">
               <div className="flex items-start gap-2 mb-3">
                 <AlertCircle className="w-4 h-4 text-[#fcd535] flex-shrink-0 mt-0.5" />
@@ -374,8 +374,8 @@ export default function AddFundsToCopyModal({
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="w-full bg-[#0b0e11] border border-[#2b3139] rounded-lg px-4 py-3 text-white pr-16"
-                  placeholder="Enter amount"
-                  min="10"
+                  placeholder="Minimum 100 USDT"
+                  min="100"
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#848e9c]">USDT</span>
               </div>
@@ -431,7 +431,7 @@ export default function AddFundsToCopyModal({
 
             <button
               onClick={handleAddFunds}
-              disabled={loading || !amount || parseFloat(amount) < 10 || (!isMock && parseFloat(amount) > availableBalance)}
+              disabled={loading || !amount || parseFloat(amount) < 100 || (!isMock && parseFloat(amount) > availableBalance)}
               className="w-full bg-[#0ecb81] hover:bg-[#0db777] text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Adding Funds...' : `Add ${parseFloat(amount) > 0 ? parseFloat(amount).toFixed(2) : '0.00'} USDT`}

@@ -215,127 +215,102 @@ async function sendSmtpEmail(to: string, subject: string, htmlBody: string): Pro
 }
 
 function generateWelcomeEmailHtml(firstName: string): string {
-  return `
-<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Welcome to Shark Trades</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0a0a0f; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0a0a0f;">
+<body style="margin: 0; padding: 0; background-color: #0a0a0f; font-family: Arial, sans-serif;">
+  <table width="100%" cellspacing="0" cellpadding="0" style="background-color: #0a0a0f;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; background: linear-gradient(135deg, #12121a 0%, #1a1a2e 100%); border-radius: 16px; border: 1px solid rgba(212, 175, 55, 0.2);">
-          <!-- Header -->
+        <table width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #12121a; border-radius: 16px; border: 1px solid #2a2a3a;">
           <tr>
-            <td style="padding: 40px 40px 20px; text-align: center;">
-              <div style="display: inline-flex; align-items: center; justify-content: center; width: 80px; height: 80px; background: linear-gradient(135deg, #d4af37, #f4d03f); border-radius: 16px; margin-bottom: 24px;">
-                <span style="font-size: 40px; font-weight: bold; color: #0a0a0f;">S</span>
+            <td style="padding: 40px; text-align: center;">
+              <div style="width: 70px; height: 70px; background: #d4af37; border-radius: 14px; margin: 0 auto 24px; line-height: 70px;">
+                <span style="font-size: 36px; font-weight: bold; color: #0a0a0f;">S</span>
               </div>
-              <h1 style="margin: 0; font-size: 32px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">Welcome to Shark Trades!</h1>
-              <p style="margin: 16px 0 0; font-size: 17px; color: #9ca3af; line-height: 1.5;">Hi ${firstName}, your account is now verified and ready to go.</p>
+              <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 700; color: #ffffff;">Welcome to Shark Trades!</h1>
+              <p style="margin: 0 0 30px; font-size: 16px; color: #9ca3af; line-height: 1.5;">Hi ${firstName}, your account is ready. Start trading today!</p>
             </td>
           </tr>
-          
-          <!-- Promotional Offers -->
           <tr>
-            <td style="padding: 20px 40px;">
-              <h2 style="margin: 0 0 20px; font-size: 20px; font-weight: 600; color: #ffffff; text-align: center;">Exclusive New User Offers</h2>
-              
-              <!-- First Deposit Bonus Card -->
-              <div style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 12px; padding: 24px;">
-                <div style="display: flex; align-items: flex-start;">
-                  <div style="flex-shrink: 0; width: 48px; height: 48px; background: rgba(212, 175, 55, 0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 16px;">
-                    <span style="font-size: 20px; color: #d4af37; font-weight: bold;">100%</span>
-                  </div>
-                  <div style="flex: 1;">
-                    <h3 style="margin: 0 0 8px; font-size: 18px; font-weight: 700; color: #d4af37;">100% First Deposit Bonus</h3>
-                    <p style="margin: 0; font-size: 14px; color: #9ca3af; line-height: 1.5;">Get <strong style="color: #d4af37;">100% match</strong> on your first deposit, up to $500! Double your trading power instantly.</p>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Terms Disclaimer -->
-              <div style="margin-top: 16px; padding: 12px 16px; background: rgba(107, 114, 128, 0.1); border-radius: 8px;">
-                <p style="margin: 0; font-size: 12px; color: #6b7280; text-align: center; line-height: 1.5;">
-                  <strong>Terms Apply:</strong> These are locked bonuses valid for 7 days. Only trading profits can be withdrawn. 
-                  <a href="https://shark-trades.com/bonusterms" style="color: #d4af37; text-decoration: underline;">View Full Bonus Terms</a>
-                </p>
-              </div>
+            <td style="padding: 0 40px 30px;">
+              <table width="100%" cellspacing="0" cellpadding="0" style="background: #1a1a2e; border-radius: 12px; border: 1px solid #d4af3740;">
+                <tr>
+                  <td style="padding: 24px;">
+                    <h2 style="margin: 0 0 16px; font-size: 18px; font-weight: 600; color: #d4af37;">Your Welcome Bonuses</h2>
+                    <table width="100%" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="padding: 12px 0; border-bottom: 1px solid #2a2a3a;">
+                          <span style="color: #d4af37; font-weight: 600;">100% First Deposit Bonus</span>
+                          <p style="margin: 4px 0 0; font-size: 13px; color: #9ca3af;">Get up to $500 matched on your first deposit</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 12px 0;">
+                          <span style="color: #22c55e; font-weight: 600;">Zero Trading Fees for 7 Days</span>
+                          <p style="margin: 4px 0 0; font-size: 13px; color: #9ca3af;">Trade with 0% fees after KYC verification</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
-          
-          <!-- Quick Start Guide -->
           <tr>
-            <td style="padding: 20px 40px 30px;">
-              <h2 style="margin: 0 0 20px; font-size: 18px; font-weight: 600; color: #ffffff; text-align: center;">Get Started in 3 Easy Steps</h2>
-              
-              <div style="display: flex; flex-direction: column; gap: 12px;">
-                <!-- Step 1 -->
-                <div style="display: flex; align-items: center; padding: 16px; background: rgba(255, 255, 255, 0.03); border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);">
-                  <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #d4af37, #f4d03f); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 16px; flex-shrink: 0;">
-                    <span style="font-size: 14px; font-weight: 700; color: #0a0a0f;">1</span>
-                  </div>
-                  <div>
-                    <p style="margin: 0; font-size: 15px; color: #ffffff; font-weight: 500;">Make Your First Deposit</p>
-                    <p style="margin: 4px 0 0; font-size: 13px; color: #6b7280;">Get 100% matched up to $500 on your first deposit</p>
-                  </div>
-                </div>
-
-                <!-- Step 2 -->
-                <div style="display: flex; align-items: center; padding: 16px; background: rgba(255, 255, 255, 0.03); border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);">
-                  <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #d4af37, #f4d03f); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 16px; flex-shrink: 0;">
-                    <span style="font-size: 14px; font-weight: 700; color: #0a0a0f;">2</span>
-                  </div>
-                  <div>
-                    <p style="margin: 0; font-size: 15px; color: #ffffff; font-weight: 500;">Complete KYC Verification</p>
-                    <p style="margin: 4px 0 0; font-size: 13px; color: #6b7280;">Unlock full platform features and higher withdrawal limits</p>
-                  </div>
-                </div>
-
-                <!-- Step 3 -->
-                <div style="display: flex; align-items: center; padding: 16px; background: rgba(255, 255, 255, 0.03); border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);">
-                  <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #d4af37, #f4d03f); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 16px; flex-shrink: 0;">
-                    <span style="font-size: 14px; font-weight: 700; color: #0a0a0f;">3</span>
-                  </div>
-                  <div>
-                    <p style="margin: 0; font-size: 15px; color: #ffffff; font-weight: 500;">Start Trading</p>
-                    <p style="margin: 4px 0 0; font-size: 13px; color: #6b7280;">Trade futures, copy top traders, or explore DeFi earning</p>
-                  </div>
-                </div>
-              </div>
+            <td style="padding: 0 40px 30px;">
+              <h2 style="margin: 0 0 16px; font-size: 18px; font-weight: 600; color: #ffffff;">Get Started</h2>
+              <table width="100%" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="padding: 10px 0;">
+                    <table cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td width="30"><span style="display: inline-block; width: 24px; height: 24px; background: #d4af37; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 700; color: #0a0a0f;">1</span></td>
+                        <td style="padding-left: 12px; color: #ffffff; font-size: 14px;">Make your first deposit</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px 0;">
+                    <table cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td width="30"><span style="display: inline-block; width: 24px; height: 24px; background: #d4af37; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 700; color: #0a0a0f;">2</span></td>
+                        <td style="padding-left: 12px; color: #ffffff; font-size: 14px;">Complete KYC verification</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px 0;">
+                    <table cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td width="30"><span style="display: inline-block; width: 24px; height: 24px; background: #d4af37; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 700; color: #0a0a0f;">3</span></td>
+                        <td style="padding-left: 12px; color: #ffffff; font-size: 14px;">Start trading or copy expert traders</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
-          
-          <!-- CTA Button -->
           <tr>
-            <td style="padding: 0 40px 30px; text-align: center;">
-              <a href="https://shark-trades.com" style="display: inline-block; padding: 16px 48px; background: linear-gradient(135deg, #d4af37, #f4d03f); color: #0a0a0f; font-size: 16px; font-weight: 700; text-decoration: none; border-radius: 10px;">Start Trading Now</a>
+            <td style="padding: 0 40px 40px; text-align: center;">
+              <a href="https://shark-trades.com/?page=deposit" style="display: inline-block; padding: 16px 40px; background: #d4af37; color: #0a0a0f; font-size: 16px; font-weight: 700; text-decoration: none; border-radius: 8px;">Make Your First Deposit</a>
             </td>
           </tr>
-          
-          <!-- Divider -->
           <tr>
-            <td style="padding: 0 40px;">
-              <div style="height: 1px; background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.3), transparent);"></div>
+            <td style="padding: 20px 40px; text-align: center; border-top: 1px solid #2a2a3a;">
+              <p style="margin: 0 0 8px; font-size: 13px; color: #6b7280;">Need help? Contact us at</p>
+              <a href="mailto:support@shark-trades.com" style="color: #d4af37; text-decoration: none; font-size: 13px;">support@shark-trades.com</a>
             </td>
           </tr>
-          
-          <!-- Support Section -->
           <tr>
-            <td style="padding: 30px 40px; text-align: center;">
-              <p style="margin: 0 0 8px; font-size: 14px; color: #9ca3af;">Need help? Our support team is here 24/7</p>
-              <a href="mailto:support@shark-trades.com" style="color: #d4af37; text-decoration: none; font-size: 14px;">support@shark-trades.com</a>
-            </td>
-          </tr>
-          
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 20px 40px 30px; text-align: center; background: rgba(0, 0, 0, 0.2); border-radius: 0 0 16px 16px;">
-              <p style="margin: 0 0 8px; font-size: 12px; color: #4b5563;">You received this email because you created an account at Shark Trades.</p>
-              <p style="margin: 0; font-size: 12px; color: #4b5563;">2024 Shark Trades. All rights reserved.</p>
+            <td style="padding: 20px 40px; text-align: center; background: #0a0a0f; border-radius: 0 0 16px 16px;">
+              <p style="margin: 0; font-size: 11px; color: #4b5563;">2025 Shark Trades. All rights reserved.</p>
             </td>
           </tr>
         </table>
@@ -343,8 +318,7 @@ function generateWelcomeEmailHtml(firstName: string): string {
     </tr>
   </table>
 </body>
-</html>
-`;
+</html>`;
 }
 
 Deno.serve(async (req: Request) => {

@@ -660,7 +660,11 @@ function Earn() {
                         <div className="font-semibold text-lg">{product.coin}</div>
                         <div className="flex items-center gap-2 text-xs text-[#848e9c]">
                           <Clock className="w-3 h-3" />
-                          {product.product_type === 'flexible' ? 'Flexible' : `${product.duration_days} Days`}
+                          {product.product_type === 'flexible' && product.is_new_user_exclusive
+                            ? '3 Days (Auto-withdraw)'
+                            : product.product_type === 'flexible'
+                              ? 'Flexible'
+                              : `${product.duration_days} Days`}
                         </div>
                       </div>
                     </div>
@@ -885,7 +889,11 @@ function Earn() {
                               </div>
                             </td>
                             <td className="py-4 px-4 text-[#848e9c] text-sm">
-                              {product.product_type === 'flexible' ? 'Flexible' : `${product.duration_days} Days`}
+                              {product.product_type === 'flexible' && product.is_new_user_exclusive
+                                ? '3 Days'
+                                : product.product_type === 'flexible'
+                                  ? 'Flexible'
+                                  : `${product.duration_days} Days`}
                             </td>
                             <td className="py-4 px-4 text-right">
                               <div className="text-[#0ecb81] font-semibold">{product.apr}%</div>
@@ -921,7 +929,11 @@ function Earn() {
                             <div>
                               <div className="font-medium text-base">{product.coin}</div>
                               <div className="text-xs text-[#848e9c]">
-                                {product.product_type === 'flexible' ? 'Flexible' : `${product.duration_days} Days`}
+                                {product.product_type === 'flexible' && product.is_new_user_exclusive
+                                  ? '3 Days'
+                                  : product.product_type === 'flexible'
+                                    ? 'Flexible'
+                                    : `${product.duration_days} Days`}
                               </div>
                             </div>
                           </div>
@@ -1079,7 +1091,11 @@ function Earn() {
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400 text-sm">Duration</span>
                   <span className="text-white font-semibold">
-                    {selectedProduct.product_type === 'flexible' ? 'Flexible' : `${selectedProduct.duration_days} Days`}
+                    {selectedProduct.product_type === 'flexible' && selectedProduct.is_new_user_exclusive
+                      ? '3 Days (Auto-withdraw)'
+                      : selectedProduct.product_type === 'flexible'
+                        ? 'Flexible'
+                        : `${selectedProduct.duration_days} Days`}
                   </span>
                 </div>
               </div>

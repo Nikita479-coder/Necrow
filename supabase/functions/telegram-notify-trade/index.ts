@@ -159,7 +159,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const tradeUrl = `${SITE_URL}/copy-trading?trade=${tradeId}`;
+    const tradeUrl = `${SITE_URL}?page=copytrading&trade=${tradeId}`;
 
     const messageText =
       `<b>\u{1F4C8} NEW TRADE SIGNAL</b>\n\n` +

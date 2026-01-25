@@ -50,7 +50,7 @@ function RewardsHub() {
       title: 'First Referral Bonus',
       description: 'Bring your first active trader onboard - requires $100+ deposit',
       reward: 5,
-      rewardType: 'locked_bonus',
+      rewardType: 'balance',
       target: 1,
       icon: '✨',
       type: 'referral'
@@ -60,7 +60,7 @@ function RewardsHub() {
       title: 'Growing Network Bonus',
       description: 'Invite 5 friends who each deposit $100+ to qualify',
       reward: 25,
-      rewardType: 'locked_bonus',
+      rewardType: 'balance',
       target: 5,
       icon: '🌱',
       type: 'referral'
@@ -614,7 +614,7 @@ function RewardsHub() {
                         {isClaimed ? 'Claimed' : `+$${task.reward} USDT`}
                       </div>
                       <div className="text-[10px] text-[#848e9c]">
-                        {task.rewardType === 'fee_rebate' ? 'Fee Rebate' : task.rewardType === 'locked_bonus' ? 'Locked Bonus' : 'Balance'}
+                        {task.rewardType === 'fee_rebate' ? 'Fee Rebate' : task.rewardType === 'locked_bonus' ? 'Locked Bonus' : 'Instant Withdrawal'}
                       </div>
                     </div>
                   </div>
@@ -670,7 +670,7 @@ function RewardsHub() {
                 <h3 className="text-base font-medium text-[#eaecef]">Referral Bonuses</h3>
               </div>
               <p className="text-sm text-[#848e9c] mb-3">$5 for your first referral, $25 for 5 referrals. Referrals must deposit $100+ to qualify.</p>
-              <div className="text-xs text-[#0ecb81]">Locked bonuses - use for trading</div>
+              <div className="text-xs text-[#0ecb81]">Instant withdrawal - goes directly to your wallet</div>
             </div>
 
             <div className="bg-[#181a20] rounded-lg p-5">
@@ -698,8 +698,8 @@ function RewardsHub() {
               <div className="text-sm text-[#eaecef]">
                 <p className="font-medium mb-2">Quick Tips:</p>
                 <ul className="space-y-1 text-xs text-[#848e9c]">
-                  <li>• Referral bonuses require friends to deposit $100+ to qualify</li>
-                  <li>• Locked bonuses can be used for trading immediately</li>
+                  <li>• Referral bonuses go directly to your wallet - instantly withdrawable!</li>
+                  <li>• Referrals must deposit $100+ to qualify for your bonus</li>
                   <li>• Copy Trading bonus: 100 USDT added ON TOP of your 500+ USDT allocation</li>
                   <li>• After 30 days, the bonus vests and you keep everything including profits</li>
                   <li>• One-time bonus per account, applies to your first eligible copy trading</li>

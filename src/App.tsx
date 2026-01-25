@@ -98,6 +98,14 @@ function App() {
       setCurrentPage('privacy');
       return;
     }
+    if (pathname === '/futures') {
+      setCurrentPage('futures');
+      return;
+    }
+    if (pathname === '/copy-trading') {
+      setCurrentPage('copytrading');
+      return;
+    }
 
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const type = hashParams.get('type');
