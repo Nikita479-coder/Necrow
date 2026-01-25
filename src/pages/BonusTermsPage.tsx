@@ -1,6 +1,6 @@
 import { useNavigation } from '../App';
 import Navbar from '../components/Navbar';
-import { ArrowLeft, Gift, AlertTriangle, Clock, DollarSign, TrendingUp, Shield, Info } from 'lucide-react';
+import { ArrowLeft, Gift, AlertTriangle, Clock, DollarSign, TrendingUp, Shield, Info, Users, Copy, Zap } from 'lucide-react';
 
 export default function BonusTermsPage() {
   const { navigateTo } = useNavigation();
@@ -25,8 +25,8 @@ export default function BonusTermsPage() {
               <div>
                 <h1 className="text-2xl font-bold text-white">Promotional Bonus Terms and Conditions</h1>
                 <div className="flex items-center gap-4 mt-2 text-sm text-slate-300">
-                  <span>Version 1.0</span>
-                  <span>Effective December 2024</span>
+                  <span>Version 2.0</span>
+                  <span>Effective January 2025</span>
                 </div>
               </div>
             </div>
@@ -39,32 +39,35 @@ export default function BonusTermsPage() {
                 1. Introduction
               </h2>
               <p className="text-slate-300 leading-relaxed mb-4">
-                Welcome to the Shark Trades promotional bonus program. These terms and conditions govern the
-                promotional bonuses offered to new users, including the KYC Verification Bonus and First
-                Deposit Match Bonus. By participating in these promotions, you agree to be bound by these terms.
+                Welcome to the Shark Trades promotional bonus program. These terms and conditions govern all
+                promotional bonuses offered on our platform, including the Copy Trading Bonus, Referral Bonuses,
+                Zero Fee Promotions, and Performance Rewards. By participating in these promotions, you agree to be bound by these terms.
               </p>
               <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
                 <p className="text-slate-300 text-sm">
                   <strong className="text-[#f0b90b]">What is a Locked Bonus?</strong> A locked bonus is trading
-                  credit that can be used as margin for futures trading but cannot be withdrawn directly. Only
-                  profits generated from trading with this bonus can be withdrawn. The bonus itself remains
-                  locked and expires after a specified period.
+                  credit that can be used for copy trading or futures trading but cannot be withdrawn directly.
+                  Profits generated from trading with this bonus can be withdrawn. The bonus itself remains
+                  locked until specific conditions are met or it expires.
                 </p>
               </div>
             </section>
 
             <section>
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <Shield className="w-5 h-5 text-green-400" />
-                2. KYC Verification Bonus ($20 Free Credit)
+                <Copy className="w-5 h-5 text-[#f0b90b]" />
+                2. Copy Trading Bonus ($100)
               </h2>
               <div className="space-y-4">
-                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-                  <h3 className="font-semibold text-green-400 mb-2">Eligibility</h3>
+                <div className="bg-[#f0b90b]/10 border border-[#f0b90b]/30 rounded-lg p-4">
+                  <h3 className="font-semibold text-[#f0b90b] mb-2">Featured Promotion</h3>
+                  <p className="text-slate-300 text-sm mb-3">
+                    Allocate $500 or more to your Copy Trading wallet and receive an instant $100 bonus!
+                  </p>
                   <ul className="list-disc list-inside text-slate-300 space-y-1 text-sm">
-                    <li>Available to new users only</li>
-                    <li>User must complete full KYC verification</li>
-                    <li>KYC must be approved by our verification team</li>
+                    <li>Minimum allocation: $500 USDT to Copy Trading wallet</li>
+                    <li>Bonus amount: $100 USDT credited instantly</li>
+                    <li>Lock period: 30 days from activation</li>
                     <li>One-time offer per user/account</li>
                   </ul>
                 </div>
@@ -73,33 +76,98 @@ export default function BonusTermsPage() {
                   <div className="bg-slate-700/50 rounded-lg p-4">
                     <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
                       <DollarSign className="w-4 h-4 text-[#f0b90b]" />
-                      Award Amount
+                      How It Works
                     </h3>
                     <p className="text-slate-300 text-sm">
-                      $20 USD credited as locked trading bonus instantly upon KYC approval
+                      Transfer $500+ to your Copy Trading wallet, start copying expert traders, and your $100 bonus is added automatically.
                     </p>
                   </div>
 
                   <div className="bg-slate-700/50 rounded-lg p-4">
                     <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
                       <Clock className="w-4 h-4 text-[#f0b90b]" />
-                      Validity Period
+                      After 30 Days
                     </h3>
                     <p className="text-slate-300 text-sm">
-                      7 days from the date of award. Unused bonus expires automatically.
+                      Keep your funds active for 30 days. After the lock period, both your bonus AND all profits become fully withdrawable.
                     </p>
                   </div>
                 </div>
 
-                <div className="bg-slate-700/50 rounded-lg p-4">
-                  <h3 className="font-semibold text-white mb-2">Usage Rules</h3>
+                <div className="bg-emerald-900/20 border border-emerald-600/30 rounded-lg p-4">
+                  <h3 className="font-semibold text-emerald-400 mb-2">Withdrawal Rules</h3>
                   <ul className="list-disc list-inside text-slate-300 space-y-1 text-sm">
-                    <li>Can be used as margin for futures trading only</li>
-                    <li>The bonus amount can <strong className="text-red-400">NEVER</strong> be withdrawn</li>
-                    <li>Only profits generated from trading with this bonus can be withdrawn</li>
-                    <li>Losses are deducted from the locked bonus balance</li>
-                    <li>When the locked bonus is depleted, no further trading with bonus is possible</li>
+                    <li>Profits can be withdrawn anytime after the 30-day lock period</li>
+                    <li>The $100 bonus becomes fully withdrawable after 30 days</li>
+                    <li>Early withdrawal forfeits the bonus (your original funds are always safe)</li>
+                    <li>Stopping copy trading before 30 days will forfeit the bonus</li>
                   </ul>
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <Zap className="w-5 h-5 text-green-400" />
+                3. Zero Trading Fees Promotion
+              </h2>
+              <div className="space-y-4">
+                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+                  <h3 className="font-semibold text-green-400 mb-2">7 Days of Zero Fees</h3>
+                  <p className="text-slate-300 text-sm mb-3">
+                    Complete KYC verification and enjoy 7 days of zero trading fees on all futures trades!
+                  </p>
+                  <ul className="list-disc list-inside text-slate-300 space-y-1 text-sm">
+                    <li>Available after completing KYC verification</li>
+                    <li>Applies to all futures trading pairs</li>
+                    <li>7-day period starts immediately upon KYC approval</li>
+                    <li>No minimum trade size required</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <Users className="w-5 h-5 text-blue-400" />
+                4. Referral Bonuses
+              </h2>
+              <div className="space-y-4">
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                  <h3 className="font-semibold text-blue-400 mb-2">Earn by Referring Friends</h3>
+                  <p className="text-slate-300 text-sm mb-3">
+                    Share your referral code and earn bonuses when your friends join and trade!
+                  </p>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="bg-slate-700/50 rounded-lg p-4">
+                    <h3 className="font-semibold text-white mb-2">First Referral Bonus</h3>
+                    <p className="text-slate-300 text-sm">
+                      <strong className="text-[#f0b90b]">$5 USDT</strong> - Instant bonus when your first referred friend deposits $100+
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-700/50 rounded-lg p-4">
+                    <h3 className="font-semibold text-white mb-2">Welcome Bonus (Both Parties)</h3>
+                    <p className="text-slate-300 text-sm">
+                      <strong className="text-[#f0b90b]">$20 USDT each</strong> - Both you and your friend get $20 when they make a qualified deposit
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-700/50 rounded-lg p-4">
+                    <h3 className="font-semibold text-white mb-2">Growing Network Bonus</h3>
+                    <p className="text-slate-300 text-sm">
+                      <strong className="text-[#f0b90b]">$25 USDT</strong> - Bonus for inviting 5 friends who each deposit $100+
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-700/50 rounded-lg p-4">
+                    <h3 className="font-semibold text-white mb-2">Ongoing Commissions</h3>
+                    <p className="text-slate-300 text-sm">
+                      Earn a percentage of trading fees from all your referrals' trades, forever!
+                    </p>
+                  </div>
                 </div>
               </div>
             </section>
@@ -107,74 +175,41 @@ export default function BonusTermsPage() {
             <section>
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-[#f0b90b]" />
-                3. First Deposit Match Bonus (100% up to $100)
+                5. Performance & VIP Bonuses
               </h2>
               <div className="space-y-4">
-                <div className="bg-[#f0b90b]/10 border border-[#f0b90b]/30 rounded-lg p-4">
-                  <h3 className="font-semibold text-[#f0b90b] mb-2">Eligibility</h3>
+                <div className="bg-slate-700/50 rounded-lg p-4">
+                  <h3 className="font-semibold text-white mb-2">Trading Volume Milestones</h3>
+                  <p className="text-slate-300 text-sm mb-2">
+                    Reach specific trading volume milestones to earn bonus rewards:
+                  </p>
                   <ul className="list-disc list-inside text-slate-300 space-y-1 text-sm">
-                    <li>Available to new users making their first deposit</li>
-                    <li>No minimum deposit amount required</li>
-                    <li>Only the first deposit qualifies for this bonus</li>
-                    <li>One-time offer per user/account</li>
+                    <li>Entry Level: $100 bonus for $3,000+ deposits and $1M+ monthly volume</li>
+                    <li>Advanced: $800 bonus for $50,000+ deposits and $15M+ monthly volume</li>
+                    <li>Institutional: $30,000 bonus for $250,000+ deposits and $150M+ monthly volume</li>
                   </ul>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="bg-slate-700/50 rounded-lg p-4">
-                    <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
-                      <DollarSign className="w-4 h-4 text-[#f0b90b]" />
-                      Award Calculation
-                    </h3>
-                    <p className="text-slate-300 text-sm">
-                      100% match of your deposit amount, with a maximum bonus of $100 USD
-                    </p>
-                    <div className="mt-2 text-xs text-slate-400">
-                      Examples: $50 deposit = $50 bonus | $150 deposit = $100 bonus (capped)
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-700/50 rounded-lg p-4">
-                    <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-[#f0b90b]" />
-                      Validity Period
-                    </h3>
-                    <p className="text-slate-300 text-sm">
-                      7 days from the date of award. Unused bonus expires automatically.
-                    </p>
-                  </div>
                 </div>
 
                 <div className="bg-slate-700/50 rounded-lg p-4">
-                  <h3 className="font-semibold text-white mb-2">Usage Rules</h3>
-                  <ul className="list-disc list-inside text-slate-300 space-y-1 text-sm">
-                    <li>Can be used as margin for futures trading only</li>
-                    <li>The bonus amount can <strong className="text-red-400">NEVER</strong> be withdrawn</li>
-                    <li>Only profits generated from trading with this bonus can be withdrawn</li>
-                    <li>Losses are deducted from the locked bonus balance</li>
-                    <li>When the locked bonus is depleted, no further trading with bonus is possible</li>
-                  </ul>
+                  <h3 className="font-semibold text-white mb-2">VIP Tier Upgrades</h3>
+                  <p className="text-slate-300 text-sm">
+                    Progress through VIP tiers to unlock exclusive bonuses, reduced fees, and priority support.
+                    VIP tier upgrade bonuses range from $100 to $500 depending on the tier achieved.
+                  </p>
                 </div>
               </div>
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4">4. General Terms</h2>
+              <h2 className="text-xl font-bold text-white mb-4">6. General Terms</h2>
               <div className="space-y-4 text-slate-300">
-                <div className="bg-slate-700/50 rounded-lg p-4">
-                  <h3 className="font-semibold text-white mb-2">Multiple Bonuses</h3>
-                  <p className="text-sm">
-                    Users can receive both the KYC Verification Bonus and First Deposit Match Bonus
-                    (up to $120 total). Each bonus is tracked and awarded separately.
-                  </p>
-                </div>
-
                 <div className="bg-slate-700/50 rounded-lg p-4">
                   <h3 className="font-semibold text-white mb-2">Account Restrictions</h3>
                   <ul className="list-disc list-inside text-sm space-y-1">
                     <li>One account per person - multiple accounts will forfeit all bonuses</li>
                     <li>KYC verification is required for any withdrawal</li>
                     <li>Bonuses are non-transferable between accounts</li>
+                    <li>Bonus eligibility may vary by region</li>
                   </ul>
                 </div>
 
@@ -190,6 +225,7 @@ export default function BonusTermsPage() {
                     <li>Creating multiple accounts to claim bonuses</li>
                     <li>Hedging across accounts for risk-free arbitrage</li>
                     <li>Using third-party software to manipulate trading</li>
+                    <li>Withdrawing immediately after receiving bonuses without trading activity</li>
                     <li>Any other activity deemed as bonus abuse</li>
                   </ul>
                 </div>
@@ -197,14 +233,15 @@ export default function BonusTermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4">5. Unlock Requirements</h2>
+              <h2 className="text-xl font-bold text-white mb-4">7. Unlock Requirements (General)</h2>
               <div className="bg-gradient-to-r from-blue-900/30 to-blue-800/20 border border-blue-600/40 rounded-xl p-6 space-y-4">
                 <div className="flex items-start gap-3">
                   <Shield className="w-6 h-6 text-blue-400 flex-shrink-0 mt-1" />
                   <div className="flex-1">
-                    <h3 className="font-semibold text-blue-400 mb-3">How to Unlock Your Bonus</h3>
+                    <h3 className="font-semibold text-blue-400 mb-3">How Locked Bonuses Work</h3>
                     <p className="text-slate-300 text-sm mb-4">
-                      Locked bonuses can become fully withdrawable once you meet ALL of the following requirements:
+                      Some bonuses are "locked" meaning they can be used for trading but not withdrawn directly.
+                      Each bonus type has specific unlock conditions:
                     </p>
                   </div>
                 </div>
@@ -212,37 +249,23 @@ export default function BonusTermsPage() {
                 <div className="space-y-3 ml-9">
                   <div className="bg-slate-800/50 rounded-lg p-4 border border-blue-500/20">
                     <div className="flex items-center gap-2 mb-2">
-                      <DollarSign className="w-5 h-5 text-[#f0b90b]" />
-                      <h4 className="font-semibold text-white">1. Deposit Requirement</h4>
+                      <Clock className="w-5 h-5 text-[#f0b90b]" />
+                      <h4 className="font-semibold text-white">Time-Based Unlock</h4>
                     </div>
                     <p className="text-slate-300 text-sm">
-                      Make a total deposit of at least <strong className="text-[#f0b90b]">$100 USD</strong> to your account.
-                      This can be in a single deposit or accumulated over multiple deposits.
+                      Some bonuses unlock automatically after a specified period (e.g., 30 days for Copy Trading Bonus).
+                      Keep your funds active during this period to retain the bonus.
                     </p>
                   </div>
 
                   <div className="bg-slate-800/50 rounded-lg p-4 border border-blue-500/20">
                     <div className="flex items-center gap-2 mb-2">
                       <TrendingUp className="w-5 h-5 text-[#f0b90b]" />
-                      <h4 className="font-semibold text-white">2. Trade Volume Requirement</h4>
+                      <h4 className="font-semibold text-white">Activity-Based Unlock</h4>
                     </div>
                     <p className="text-slate-300 text-sm">
-                      Complete at least <strong className="text-[#f0b90b]">10 futures trades</strong>.
-                      Each trade must be properly executed and closed.
-                    </p>
-                  </div>
-
-                  <div className="bg-slate-800/50 rounded-lg p-4 border border-blue-500/20">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Clock className="w-5 h-5 text-[#f0b90b]" />
-                      <h4 className="font-semibold text-white">3. Trade Duration Requirement</h4>
-                    </div>
-                    <p className="text-slate-300 text-sm mb-2">
-                      Your last <strong className="text-[#f0b90b]">5 trades</strong> must each be held open for
-                      at least <strong className="text-[#f0b90b]">60 minutes</strong> (1 hour).
-                    </p>
-                    <p className="text-slate-400 text-xs">
-                      This requirement ensures quality trading activity and prevents bonus abuse through rapid position flipping.
+                      Some bonuses require meeting trading volume or activity requirements.
+                      Progress is tracked automatically in your wallet dashboard.
                     </p>
                   </div>
                 </div>
@@ -252,48 +275,34 @@ export default function BonusTermsPage() {
                   <ul className="list-disc list-inside text-slate-300 text-sm space-y-1">
                     <li>The bonus amount becomes fully withdrawable</li>
                     <li>You'll receive an instant notification</li>
-                    <li>The funds are automatically transferred to your futures margin wallet</li>
                     <li>You can withdraw or continue trading with the unlocked amount</li>
-                  </ul>
-                </div>
-
-                <div className="bg-red-900/20 border border-red-600/30 rounded-lg p-4 ml-9">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle className="w-4 h-4 text-red-400" />
-                    <h4 className="font-semibold text-red-400">Important Notes</h4>
-                  </div>
-                  <ul className="list-disc list-inside text-slate-300 text-sm space-y-1">
-                    <li>All requirements must be met before the bonus expires (7 days)</li>
-                    <li>If the bonus expires before requirements are met, it cannot be unlocked</li>
-                    <li>Requirements are tracked automatically - no manual verification needed</li>
-                    <li>Progress toward unlocking can be viewed in your wallet</li>
                   </ul>
                 </div>
               </div>
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4">6. Profit Calculation</h2>
+              <h2 className="text-xl font-bold text-white mb-4">8. Profit Calculation</h2>
               <div className="bg-slate-700/50 rounded-lg p-4 text-slate-300">
-                <p className="mb-3">Profits from locked bonus trading are calculated as:</p>
+                <p className="mb-3">Profits from bonus trading are calculated as:</p>
                 <div className="bg-slate-800 rounded p-3 font-mono text-sm text-center text-[#f0b90b]">
                   Profit = Position Close Value - Position Open Value - Trading Fees
                 </div>
                 <ul className="list-disc list-inside text-sm space-y-1 mt-3">
-                  <li>Profits are added to your main wallet and can be withdrawn</li>
-                  <li>Losses reduce the locked bonus balance directly</li>
-                  <li>When locked bonus reaches zero, no further bonus trading is possible</li>
+                  <li>Profits are yours to keep and can be withdrawn (subject to lock periods)</li>
+                  <li>Losses reduce your bonus balance directly</li>
+                  <li>When bonus reaches zero, no further bonus trading is possible</li>
                   <li>Your deposited funds remain separate and unaffected by bonus losses</li>
                 </ul>
               </div>
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4">7. Expiration Policy</h2>
+              <h2 className="text-xl font-bold text-white mb-4">9. Expiration Policy</h2>
               <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 text-slate-300">
                 <ul className="list-disc list-inside text-sm space-y-2">
-                  <li>The 7-day countdown begins at the moment the bonus is credited to your account</li>
-                  <li>There are no automatic notifications before expiry - it is your responsibility to track</li>
+                  <li>Each bonus has a specific validity period (7-30 days depending on type)</li>
+                  <li>Countdown begins at the moment the bonus is credited to your account</li>
                   <li>Expired bonuses are automatically removed from your account</li>
                   <li>Any open positions using bonus margin at expiry may be liquidated</li>
                   <li>Unrealized profits on positions at expiry are forfeited with the bonus</li>
@@ -303,7 +312,7 @@ export default function BonusTermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4">8. Modifications and Discontinuation</h2>
+              <h2 className="text-xl font-bold text-white mb-4">10. Modifications and Discontinuation</h2>
               <div className="text-slate-300 text-sm space-y-2">
                 <p>
                   Shark Trades reserves the right to modify, suspend, or discontinue these promotional
@@ -317,7 +326,7 @@ export default function BonusTermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4">9. Acceptance</h2>
+              <h2 className="text-xl font-bold text-white mb-4">11. Acceptance</h2>
               <div className="bg-slate-700/50 rounded-lg p-4 text-slate-300">
                 <p className="text-sm">
                   By registering an account and participating in any promotional bonus program, you
@@ -335,7 +344,7 @@ export default function BonusTermsPage() {
 
             <div className="border-t border-slate-700 pt-6 mt-8">
               <p className="text-sm text-slate-400 mb-4">
-                Last updated: December 2024
+                Last updated: January 2025
               </p>
               <div className="flex items-center gap-4">
                 <button

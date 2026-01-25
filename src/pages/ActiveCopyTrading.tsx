@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { useNavigation } from '../App';
-import { ArrowLeft, TrendingUp, TrendingDown, X, Bell, ChevronRight, Wallet, Target, Percent, BarChart3, Clock, DollarSign, Activity, AlertTriangle, Info, Zap, Plus } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, X, Bell, ChevronRight, Wallet, Target, Percent, BarChart3, Clock, DollarSign, Activity, AlertTriangle, Info, Zap, Plus, ToggleLeft, ToggleRight, Timer, Shield, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
@@ -73,6 +73,10 @@ interface CopyRelationship {
   bonus_amount: number;
   bonus_claimed_at: string | null;
   bonus_locked_until: string | null;
+  auto_accept_enabled: boolean;
+  auto_accept_until: string | null;
+  auto_accept_max_leverage: number;
+  auto_accept_count: number;
   trader: {
     id: string;
     name: string;
@@ -110,6 +114,10 @@ function ActiveCopyTrading() {
   } | null>(null);
   const [respondingToTrade, setRespondingToTrade] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'positions' | 'history' | 'allocations'>('positions');
+  const [showAutoAcceptModal, setShowAutoAcceptModal] = useState(false);
+  const [showAutoAcceptConfirm, setShowAutoAcceptConfirm] = useState(false);
+  const [togglingAutoAccept, setTogglingAutoAccept] = useState(false);
+  const [autoAcceptMaxLeverage, setAutoAcceptMaxLeverage] = useState(50);
 
   useEffect(() => {
     loadCopyRelationship();
@@ -165,6 +173,7 @@ function ActiveCopyTrading() {
           id, trader_id, allocation_percentage, leverage, initial_balance,
           current_balance, cumulative_pnl, total_pnl, is_active, is_mock, created_at,
           bonus_amount, bonus_claimed_at, bonus_locked_until,
+          auto_accept_enabled, auto_accept_until, auto_accept_max_leverage, auto_accept_count,
           traders:trader_id (id, name, avatar, roi_30d)
         `)
         .eq('id', copyId)
@@ -194,6 +203,10 @@ function ActiveCopyTrading() {
         bonus_amount: parseFloat(data.bonus_amount || '0'),
         bonus_claimed_at: data.bonus_claimed_at,
         bonus_locked_until: data.bonus_locked_until,
+        auto_accept_enabled: data.auto_accept_enabled || false,
+        auto_accept_until: data.auto_accept_until,
+        auto_accept_max_leverage: data.auto_accept_max_leverage || 50,
+        auto_accept_count: data.auto_accept_count || 0,
         trader: {
           id: (data.traders as any).id,
           name: (data.traders as any).name,
@@ -529,6 +542,59 @@ function ActiveCopyTrading() {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
+  const getAutoAcceptTimeRemaining = () => {
+    if (!selectedCopy?.auto_accept_until) return null;
+    const until = new Date(selectedCopy.auto_accept_until);
+    const now = new Date();
+    const diff = until.getTime() - now.getTime();
+    if (diff <= 0) return null;
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  };
+
+  const isAutoAcceptActive = () => {
+    if (!selectedCopy?.auto_accept_enabled || !selectedCopy?.auto_accept_until) return false;
+    return new Date(selectedCopy.auto_accept_until) > new Date();
+  };
+
+  const handleToggleAutoAccept = async (enable: boolean) => {
+    if (!selectedCopy || togglingAutoAccept) return;
+    setTogglingAutoAccept(true);
+    try {
+      const { data, error } = await supabase.rpc('toggle_auto_accept', {
+        p_relationship_id: selectedCopy.id,
+        p_enable: enable,
+        p_max_leverage: autoAcceptMaxLeverage
+      });
+      if (error) throw error;
+      if (data?.success) {
+        setSelectedCopy(prev => prev ? {
+          ...prev,
+          auto_accept_enabled: enable,
+          auto_accept_until: enable ? data.auto_accept_until : null,
+          auto_accept_max_leverage: enable ? data.max_leverage : prev.auto_accept_max_leverage,
+          auto_accept_count: enable ? 0 : prev.auto_accept_count
+        } : null);
+        if (enable) {
+          showSuccess('Auto-accept enabled for 24 hours');
+        } else {
+          showSuccess('Auto-accept disabled');
+        }
+        setShowAutoAcceptModal(false);
+        setShowAutoAcceptConfirm(false);
+      } else {
+        throw new Error(data?.error || 'Failed to toggle auto-accept');
+      }
+    } catch (error: any) {
+      console.error('Error toggling auto-accept:', error);
+      showError(error.message || 'Failed to toggle auto-accept');
+    } finally {
+      setTogglingAutoAccept(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0b0e11] text-white">
@@ -700,15 +766,51 @@ function ActiveCopyTrading() {
 
         {pendingTrades.length > 0 && (
           <div className="mb-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="relative">
-                <Bell className="w-6 h-6 text-[#f0b90b]" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#f6465d] rounded-full text-[10px] font-bold flex items-center justify-center">
-                  {pendingTrades.length}
-                </span>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Bell className="w-6 h-6 text-[#f0b90b]" />
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#f6465d] rounded-full text-[10px] font-bold flex items-center justify-center">
+                    {pendingTrades.length}
+                  </span>
+                </div>
+                <h2 className="text-xl font-bold">Pending Trade Signals</h2>
+                <span className="text-[#848e9c] text-sm">Action required</span>
               </div>
-              <h2 className="text-xl font-bold">Pending Trade Signals</h2>
-              <span className="text-[#848e9c] text-sm">Action required</span>
+              {!selectedCopy.is_mock && (
+                <div className="flex items-center gap-3">
+                  {isAutoAcceptActive() ? (
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => handleToggleAutoAccept(false)}
+                        disabled={togglingAutoAccept}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#0ecb81]/10 border border-[#0ecb81]/30 rounded-lg hover:bg-[#0ecb81]/20 transition-all"
+                      >
+                        <ToggleRight className="w-5 h-5 text-[#0ecb81]" />
+                        <span className="text-[#0ecb81] text-sm font-medium">Auto-Accept ON</span>
+                      </button>
+                      <div className="flex items-center gap-1.5 text-xs text-[#848e9c]">
+                        <Timer className="w-3.5 h-3.5" />
+                        <span>{getAutoAcceptTimeRemaining()} remaining</span>
+                      </div>
+                      {selectedCopy.auto_accept_count > 0 && (
+                        <span className="text-xs text-[#848e9c]">
+                          ({selectedCopy.auto_accept_count} auto-accepted)
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowAutoAcceptModal(true)}
+                      disabled={togglingAutoAccept}
+                      className="flex items-center gap-2 px-4 py-2 bg-[#2b3139] border border-[#474d57] rounded-lg hover:border-[#f0b90b] hover:bg-[#f0b90b]/10 transition-all group"
+                    >
+                      <ToggleLeft className="w-5 h-5 text-[#848e9c] group-hover:text-[#f0b90b]" />
+                      <span className="text-[#848e9c] text-sm font-medium group-hover:text-[#f0b90b]">Enable Auto-Accept</span>
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {pendingTrades.map((trade) => {
@@ -1320,6 +1422,171 @@ function ActiveCopyTrading() {
             updateBalance();
           }}
         />
+      )}
+
+      {showAutoAcceptModal && selectedCopy && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1e2329] rounded-2xl max-w-md w-full border border-[#2b3139] shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-[#2b3139]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-[#f0b90b]/20 rounded-xl flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-[#f0b90b]" />
+                </div>
+                <h3 className="text-xl font-bold">Enable Auto-Accept</h3>
+              </div>
+              <button
+                onClick={() => setShowAutoAcceptModal(false)}
+                className="text-[#848e9c] hover:text-white transition-colors p-1 hover:bg-[#2b3139] rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <div className="bg-[#0b0e11] rounded-xl p-4 border border-[#2b3139]">
+                <div className="flex items-center gap-3 mb-3">
+                  <Timer className="w-5 h-5 text-[#f0b90b]" />
+                  <span className="text-white font-semibold">24-Hour Auto-Accept</span>
+                </div>
+                <p className="text-sm text-[#848e9c] leading-relaxed">
+                  Trade signals from {selectedCopy.trader.name} will be automatically accepted for the next 24 hours.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-[#848e9c]">
+                  Maximum Leverage Limit
+                </label>
+                <div className="relative">
+                  <select
+                    value={autoAcceptMaxLeverage}
+                    onChange={(e) => setAutoAcceptMaxLeverage(Number(e.target.value))}
+                    className="w-full bg-[#0b0e11] border border-[#2b3139] rounded-xl px-4 py-3 text-white appearance-none cursor-pointer focus:border-[#f0b90b] focus:outline-none"
+                  >
+                    <option value={10}>Up to 10x leverage</option>
+                    <option value={20}>Up to 20x leverage</option>
+                    <option value={50}>Up to 50x leverage</option>
+                    <option value={75}>Up to 75x leverage</option>
+                    <option value={100}>Up to 100x leverage</option>
+                    <option value={125}>All trades (up to 125x)</option>
+                  </select>
+                  <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#848e9c] rotate-90 pointer-events-none" />
+                </div>
+              </div>
+
+              <div className="bg-[#f0b90b]/10 border border-[#f0b90b]/30 rounded-xl p-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-[#f0b90b]" />
+                  <span className="text-sm text-[#f0b90b] font-semibold">Safety Features</span>
+                </div>
+                <ul className="text-xs text-[#848e9c] space-y-1 ml-6">
+                  <li>Balance checks prevent over-allocation</li>
+                  <li>You can disable anytime</li>
+                  <li>Auto-expires after 24 hours</li>
+                </ul>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowAutoAcceptModal(false)}
+                  className="flex-1 px-6 py-3 border border-[#474d57] rounded-xl text-white font-semibold hover:bg-[#2b3139] transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAutoAcceptModal(false);
+                    setShowAutoAcceptConfirm(true);
+                  }}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-[#f0b90b] to-[#d4a20a] hover:from-[#f5c423] hover:to-[#e0ac0e] text-black font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+                >
+                  <Zap className="w-4 h-4" />
+                  Continue
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAutoAcceptConfirm && selectedCopy && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1e2329] rounded-2xl max-w-md w-full border border-[#f6465d]/50 shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-[#2b3139]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-[#f6465d]/20 rounded-xl flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5 text-[#f6465d]" />
+                </div>
+                <h3 className="text-xl font-bold">Confirm Auto-Accept</h3>
+              </div>
+              <button
+                onClick={() => setShowAutoAcceptConfirm(false)}
+                className="text-[#848e9c] hover:text-white transition-colors p-1 hover:bg-[#2b3139] rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <div className="bg-[#f6465d]/10 border border-[#f6465d]/30 rounded-xl p-5">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-6 h-6 text-[#f6465d] flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-[#f6465d] font-bold text-lg mb-2">Important Warning</h4>
+                    <p className="text-white text-sm leading-relaxed">
+                      By enabling auto-accept, <span className="text-[#f6465d] font-semibold">ALL trade signals</span> from {selectedCopy.trader.name} will be <span className="text-[#f6465d] font-semibold">automatically executed</span> using your funds for the next 24 hours.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-[#0b0e11] rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-[#848e9c]">Max Leverage</span>
+                  <span className="text-white font-semibold">{autoAcceptMaxLeverage}x</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-[#848e9c]">Duration</span>
+                  <span className="text-white font-semibold">24 hours</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-[#848e9c]">Your Balance</span>
+                  <span className="text-white font-semibold">{parseFloat(selectedCopy.current_balance).toFixed(2)} USDT</span>
+                </div>
+              </div>
+
+              <p className="text-xs text-[#848e9c] text-center">
+                You understand that trades will be executed automatically and you accept the associated risks.
+              </p>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowAutoAcceptConfirm(false)}
+                  className="flex-1 px-6 py-3 border border-[#474d57] rounded-xl text-white font-semibold hover:bg-[#2b3139] transition-all"
+                >
+                  Go Back
+                </button>
+                <button
+                  onClick={() => handleToggleAutoAccept(true)}
+                  disabled={togglingAutoAccept}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-[#f6465d] to-[#d93547] hover:from-[#ff4d63] hover:to-[#e03a4c] disabled:from-[#474d57] disabled:to-[#474d57] disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+                >
+                  {togglingAutoAccept ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Enabling...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4" />
+                      I Understand, Enable
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -244,8 +244,8 @@ function generateWelcomeEmailHtml(firstName: string): string {
                     <table width="100%" cellspacing="0" cellpadding="0">
                       <tr>
                         <td style="padding: 12px 0; border-bottom: 1px solid #2a2a3a;">
-                          <span style="color: #d4af37; font-weight: 600;">100% First Deposit Bonus</span>
-                          <p style="margin: 4px 0 0; font-size: 13px; color: #9ca3af;">Get up to $500 matched on your first deposit</p>
+                          <span style="color: #d4af37; font-weight: 600;">$100 Copy Trading Bonus</span>
+                          <p style="margin: 4px 0 0; font-size: 13px; color: #9ca3af;">Allocate $500+ to Copy Trading and get $100 bonus instantly</p>
                         </td>
                       </tr>
                       <tr>
@@ -269,16 +269,6 @@ function generateWelcomeEmailHtml(firstName: string): string {
                     <table cellspacing="0" cellpadding="0">
                       <tr>
                         <td width="30"><span style="display: inline-block; width: 24px; height: 24px; background: #d4af37; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 700; color: #0a0a0f;">1</span></td>
-                        <td style="padding-left: 12px; color: #ffffff; font-size: 14px;">Make your first deposit</td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 10px 0;">
-                    <table cellspacing="0" cellpadding="0">
-                      <tr>
-                        <td width="30"><span style="display: inline-block; width: 24px; height: 24px; background: #d4af37; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 700; color: #0a0a0f;">2</span></td>
                         <td style="padding-left: 12px; color: #ffffff; font-size: 14px;">Complete KYC verification</td>
                       </tr>
                     </table>
@@ -288,8 +278,18 @@ function generateWelcomeEmailHtml(firstName: string): string {
                   <td style="padding: 10px 0;">
                     <table cellspacing="0" cellpadding="0">
                       <tr>
+                        <td width="30"><span style="display: inline-block; width: 24px; height: 24px; background: #d4af37; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 700; color: #0a0a0f;">2</span></td>
+                        <td style="padding-left: 12px; color: #ffffff; font-size: 14px;">Make your first deposit ($500+ for bonus)</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px 0;">
+                    <table cellspacing="0" cellpadding="0">
+                      <tr>
                         <td width="30"><span style="display: inline-block; width: 24px; height: 24px; background: #d4af37; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 700; color: #0a0a0f;">3</span></td>
-                        <td style="padding-left: 12px; color: #ffffff; font-size: 14px;">Start trading or copy expert traders</td>
+                        <td style="padding-left: 12px; color: #ffffff; font-size: 14px;">Start Copy Trading and claim your $100 bonus</td>
                       </tr>
                     </table>
                   </td>
@@ -299,7 +299,7 @@ function generateWelcomeEmailHtml(firstName: string): string {
           </tr>
           <tr>
             <td style="padding: 0 40px 40px; text-align: center;">
-              <a href="https://shark-trades.com/?page=deposit" style="display: inline-block; padding: 16px 40px; background: #d4af37; color: #0a0a0f; font-size: 16px; font-weight: 700; text-decoration: none; border-radius: 8px;">Make Your First Deposit</a>
+              <a href="https://shark-trades.com/?page=copy-trading" style="display: inline-block; padding: 16px 40px; background: #d4af37; color: #0a0a0f; font-size: 16px; font-weight: 700; text-decoration: none; border-radius: 8px;">Start Copy Trading</a>
             </td>
           </tr>
           <tr>
