@@ -22,7 +22,12 @@ import {
   Crown,
   Network,
   Menu,
-  X
+  X,
+  Briefcase,
+  ExternalLink,
+  DollarSign,
+  Percent,
+  Send
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useNavigation } from '../App';
@@ -1790,6 +1795,25 @@ function Profile() {
               </button>
             )}
 
+            {!isExclusiveAffiliate && (
+              <button
+                onClick={() => {
+                  setActiveSection('ApplyAffiliate');
+                  setAssetsExpanded(false);
+                  setAccountExpanded(false);
+                  setSidebarOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-6 py-3 text-sm transition-colors ${
+                  activeSection === 'ApplyAffiliate'
+                    ? 'bg-[#2b3139] text-white'
+                    : 'text-gray-400 hover:bg-[#2b3139]/50 hover:text-gray-300'
+                }`}
+              >
+                <Briefcase className="w-5 h-5" />
+                <span>Apply for Affiliate</span>
+              </button>
+            )}
+
             <button
               onClick={() => {
                 navigateTo('vip');
@@ -1862,6 +1886,160 @@ function Profile() {
             {activeSection === 'Dashboard' && renderDashboard()}
             {activeSection === 'Assets' && renderAssetsOverview()}
             {activeSection === 'Support' && <UserSupportTickets />}
+            {activeSection === 'ApplyAffiliate' && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#f0b90b]/20 to-[#f0b90b]/5 flex items-center justify-center">
+                    <Briefcase className="w-6 h-6 text-[#f0b90b]" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold">Exclusive Affiliate Program</h1>
+                    <p className="text-gray-400 text-sm">Build passive income through your network</p>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-[#f0b90b]/10 to-transparent border border-[#f0b90b]/20 rounded-xl p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-[#f0b90b]/20 flex items-center justify-center flex-shrink-0">
+                      <Network className="w-5 h-5 text-[#f0b90b]" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2">Exclusive Partnership Opportunity</h3>
+                      <p className="text-gray-400 text-sm leading-relaxed">
+                        This is an exclusive affiliate partnership: by referring friends who deposit and trade on the platform,
+                        you can build passive income on multiple levels. Grow your network and earn commissions automatically.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="bg-[#1e2026] rounded-xl p-6 border border-gray-800">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                        <DollarSign className="w-5 h-5 text-green-400" />
+                      </div>
+                      <h3 className="font-semibold">Deposit Commissions</h3>
+                    </div>
+                    <p className="text-gray-400 text-sm mb-4">Earn up to 10 levels deep on your network's deposits</p>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center py-2 border-b border-gray-700/50">
+                        <span className="text-gray-300">Level 1 (Direct)</span>
+                        <span className="text-green-400 font-medium">5%</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-700/50">
+                        <span className="text-gray-300">Level 2</span>
+                        <span className="text-green-400 font-medium">4%</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-700/50">
+                        <span className="text-gray-300">Level 3</span>
+                        <span className="text-green-400 font-medium">3%</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-700/50">
+                        <span className="text-gray-300">Level 4</span>
+                        <span className="text-green-400 font-medium">2%</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2">
+                        <span className="text-gray-300">Levels 5-10</span>
+                        <span className="text-green-400 font-medium">1% each</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#1e2026] rounded-xl p-6 border border-gray-800">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                        <Percent className="w-5 h-5 text-blue-400" />
+                      </div>
+                      <h3 className="font-semibold">Additional Earnings</h3>
+                    </div>
+                    <p className="text-gray-400 text-sm mb-4">Choose one additional passive income option:</p>
+                    <div className="space-y-3">
+                      <div className="bg-[#2b3139] rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <TrendingUp className="w-4 h-4 text-[#f0b90b]" />
+                          <span className="font-medium text-sm">Copy Trading Profits</span>
+                        </div>
+                        <p className="text-gray-400 text-xs">Earn a percentage of copy trading profits generated by your network</p>
+                      </div>
+                      <div className="bg-[#2b3139] rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <ArrowDownRight className="w-4 h-4 text-[#f0b90b]" />
+                          <span className="font-medium text-sm">Trading Fee Rebates</span>
+                        </div>
+                        <p className="text-gray-400 text-xs">Receive commissions returned on your network's trades</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-[#1e2026] rounded-xl p-6 border border-gray-800">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-purple-400" />
+                    </div>
+                    <h3 className="font-semibold">Community Benefits</h3>
+                  </div>
+                  <p className="text-gray-400 text-sm mb-4">
+                    Once your network reaches at least 50 people across all levels, we can organize exclusive events for your community:
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="bg-[#2b3139] rounded-lg p-3 text-center">
+                      <span className="text-sm text-gray-300">Group Dinners</span>
+                    </div>
+                    <div className="bg-[#2b3139] rounded-lg p-3 text-center">
+                      <span className="text-sm text-gray-300">Training Sessions</span>
+                    </div>
+                    <div className="bg-[#2b3139] rounded-lg p-3 text-center">
+                      <span className="text-sm text-gray-300">Conferences</span>
+                    </div>
+                    <div className="bg-[#2b3139] rounded-lg p-3 text-center">
+                      <span className="text-sm text-gray-300">Villa Hosting</span>
+                    </div>
+                    <div className="bg-[#2b3139] rounded-lg p-3 text-center">
+                      <span className="text-sm text-gray-300">Zoom Meetings</span>
+                    </div>
+                    <div className="bg-[#2b3139] rounded-lg p-3 text-center">
+                      <span className="text-sm text-gray-300">Beverages</span>
+                    </div>
+                    <div className="bg-[#2b3139] rounded-lg p-3 text-center">
+                      <span className="text-sm text-gray-300">Group Organizations</span>
+                    </div>
+                    <div className="bg-[#2b3139] rounded-lg p-3 text-center">
+                      <span className="text-sm text-gray-300">& More</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-[#1e2026] to-[#2b3139] rounded-xl p-6 border border-gray-700">
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-full bg-[#0088cc]/20 flex items-center justify-center">
+                        <Send className="w-7 h-7 text-[#0088cc]" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg mb-1">Ready to Apply?</h3>
+                        <p className="text-gray-400 text-sm">This program is application-only. Contact our affiliate manager to get started.</p>
+                      </div>
+                    </div>
+                    <a
+                      href="https://t.me/walterjonsonshark"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-6 py-3 bg-[#0088cc] hover:bg-[#0088cc]/90 text-white font-medium rounded-lg transition-colors whitespace-nowrap"
+                    >
+                      <Send className="w-5 h-5" />
+                      Contact @walterjonsonshark
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
+                </div>
+
+                <div className="text-center text-gray-500 text-xs mt-4">
+                  Application approval is at our discretion. Terms and conditions apply.
+                </div>
+              </div>
+            )}
             {activeSection === 'Account' && accountSubSection === 'Profile Settings' && renderProfileSettings()}
             {activeSection === 'Account' && accountSubSection === 'Security' && <SecuritySettings />}
             {activeSection === 'Account' && accountSubSection === 'Notifications' && (

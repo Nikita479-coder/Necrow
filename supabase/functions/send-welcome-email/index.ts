@@ -232,26 +232,29 @@ function generateWelcomeEmailHtml(firstName: string): string {
                 <span style="font-size: 36px; font-weight: bold; color: #0a0a0f;">S</span>
               </div>
               <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 700; color: #ffffff;">Welcome to Shark Trades!</h1>
-              <p style="margin: 0 0 30px; font-size: 16px; color: #9ca3af; line-height: 1.5;">Hi ${firstName}, your account is ready. Start trading today!</p>
+              <p style="margin: 0 0 16px; font-size: 16px; color: #9ca3af; line-height: 1.5;">Hi ${firstName}, your account is ready. Start trading today!</p>
+              <div style="display: inline-block; background: linear-gradient(135deg, #d4af37 0%, #f5c842 100%); padding: 12px 28px; border-radius: 50px; margin-bottom: 10px;">
+                <span style="font-size: 22px; font-weight: 700; color: #0a0a0f;">WELCOME PACKAGE - Up to $2,130 USDT</span>
+              </div>
             </td>
           </tr>
+
+          <!-- KYC Bonus -->
           <tr>
-            <td style="padding: 0 40px 30px;">
-              <table width="100%" cellspacing="0" cellpadding="0" style="background: #1a1a2e; border-radius: 12px; border: 1px solid #d4af3740;">
+            <td style="padding: 0 40px 20px;">
+              <table width="100%" cellspacing="0" cellpadding="0" style="background: #1a1a2e; border-radius: 12px; border: 1px solid #22c55e40;">
                 <tr>
-                  <td style="padding: 24px;">
-                    <h2 style="margin: 0 0 16px; font-size: 18px; font-weight: 600; color: #d4af37;">Your Welcome Bonuses</h2>
+                  <td style="padding: 20px;">
                     <table width="100%" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td style="padding: 12px 0; border-bottom: 1px solid #2a2a3a;">
-                          <span style="color: #d4af37; font-weight: 600;">$100 Copy Trading Bonus</span>
-                          <p style="margin: 4px 0 0; font-size: 13px; color: #9ca3af;">Allocate $500+ to Copy Trading and get $100 bonus instantly</p>
+                        <td width="50" valign="top">
+                          <div style="width: 40px; height: 40px; background: #22c55e20; border-radius: 10px; text-align: center; line-height: 40px;">
+                            <span style="font-size: 20px;">&#10003;</span>
+                          </div>
                         </td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 12px 0;">
-                          <span style="color: #22c55e; font-weight: 600;">Zero Trading Fees for 7 Days</span>
-                          <p style="margin: 4px 0 0; font-size: 13px; color: #9ca3af;">Trade with 0% fees after KYC verification</p>
+                        <td style="padding-left: 12px;">
+                          <h3 style="margin: 0 0 4px; font-size: 16px; font-weight: 600; color: #22c55e;">KYC Bonus</h3>
+                          <p style="margin: 0; font-size: 14px; color: #9ca3af;">Complete KYC verification and receive <span style="color: #22c55e; font-weight: 700;">$20 USDT</span> instantly</p>
                         </td>
                       </tr>
                     </table>
@@ -260,16 +263,108 @@ function generateWelcomeEmailHtml(firstName: string): string {
               </table>
             </td>
           </tr>
+
+          <!-- Deposit Bonuses -->
+          <tr>
+            <td style="padding: 0 40px 20px;">
+              <table width="100%" cellspacing="0" cellpadding="0" style="background: #1a1a2e; border-radius: 12px; border: 1px solid #d4af3740;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #d4af37;">Deposit Bonuses (Up to $1,610)</h3>
+                    <table width="100%" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="padding: 10px 0; border-bottom: 1px solid #2a2a3a;">
+                          <table width="100%" cellspacing="0" cellpadding="0">
+                            <tr>
+                              <td><span style="color: #ffffff;">1st Deposit</span></td>
+                              <td style="text-align: right;"><span style="color: #d4af37; font-weight: 600;">100% bonus</span><span style="color: #6b7280;"> (up to $500)</span></td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 10px 0; border-bottom: 1px solid #2a2a3a;">
+                          <table width="100%" cellspacing="0" cellpadding="0">
+                            <tr>
+                              <td><span style="color: #ffffff;">2nd Deposit</span></td>
+                              <td style="text-align: right;"><span style="color: #d4af37; font-weight: 600;">50% bonus</span><span style="color: #6b7280;"> (up to $500)</span></td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 10px 0;">
+                          <table width="100%" cellspacing="0" cellpadding="0">
+                            <tr>
+                              <td><span style="color: #ffffff;">3rd Deposit</span></td>
+                              <td style="text-align: right;"><span style="color: #d4af37; font-weight: 600;">20% bonus</span><span style="color: #6b7280;"> (up to $610)</span></td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Referral Rewards -->
+          <tr>
+            <td style="padding: 0 40px 20px;">
+              <table width="100%" cellspacing="0" cellpadding="0" style="background: #1a1a2e; border-radius: 12px; border: 1px solid #3b82f640;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #3b82f6;">Referral Rewards (Up to $500)</h3>
+                    <table width="100%" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="padding: 10px 0; border-bottom: 1px solid #2a2a3a;">
+                          <table width="100%" cellspacing="0" cellpadding="0">
+                            <tr>
+                              <td><span style="color: #ffffff;">1st Referral</span></td>
+                              <td style="text-align: right;"><span style="color: #3b82f6; font-weight: 600;">$5 USDT</span></td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 10px 0; border-bottom: 1px solid #2a2a3a;">
+                          <table width="100%" cellspacing="0" cellpadding="0">
+                            <tr>
+                              <td><span style="color: #ffffff;">5 Referrals</span></td>
+                              <td style="text-align: right;"><span style="color: #3b82f6; font-weight: 600;">$25 USDT</span></td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 10px 0;">
+                          <table width="100%" cellspacing="0" cellpadding="0">
+                            <tr>
+                              <td><span style="color: #ffffff;">10 Referrals</span></td>
+                              <td style="text-align: right;"><span style="color: #3b82f6; font-weight: 600;">$70 USDT</span></td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Get Started Steps -->
           <tr>
             <td style="padding: 0 40px 30px;">
-              <h2 style="margin: 0 0 16px; font-size: 18px; font-weight: 600; color: #ffffff;">Get Started</h2>
+              <h2 style="margin: 0 0 16px; font-size: 18px; font-weight: 600; color: #ffffff;">Get Started in 3 Easy Steps</h2>
               <table width="100%" cellspacing="0" cellpadding="0">
                 <tr>
                   <td style="padding: 10px 0;">
                     <table cellspacing="0" cellpadding="0">
                       <tr>
-                        <td width="30"><span style="display: inline-block; width: 24px; height: 24px; background: #d4af37; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 700; color: #0a0a0f;">1</span></td>
-                        <td style="padding-left: 12px; color: #ffffff; font-size: 14px;">Complete KYC verification</td>
+                        <td width="30"><span style="display: inline-block; width: 24px; height: 24px; background: #22c55e; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 700; color: #0a0a0f;">1</span></td>
+                        <td style="padding-left: 12px; color: #ffffff; font-size: 14px;">Complete KYC verification <span style="color: #22c55e;">($20 bonus)</span></td>
                       </tr>
                     </table>
                   </td>
@@ -279,7 +374,7 @@ function generateWelcomeEmailHtml(firstName: string): string {
                     <table cellspacing="0" cellpadding="0">
                       <tr>
                         <td width="30"><span style="display: inline-block; width: 24px; height: 24px; background: #d4af37; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 700; color: #0a0a0f;">2</span></td>
-                        <td style="padding-left: 12px; color: #ffffff; font-size: 14px;">Make your first deposit ($500+ for bonus)</td>
+                        <td style="padding-left: 12px; color: #ffffff; font-size: 14px;">Make your first deposit <span style="color: #d4af37;">(100% bonus up to $500)</span></td>
                       </tr>
                     </table>
                   </td>
@@ -288,8 +383,8 @@ function generateWelcomeEmailHtml(firstName: string): string {
                   <td style="padding: 10px 0;">
                     <table cellspacing="0" cellpadding="0">
                       <tr>
-                        <td width="30"><span style="display: inline-block; width: 24px; height: 24px; background: #d4af37; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 700; color: #0a0a0f;">3</span></td>
-                        <td style="padding-left: 12px; color: #ffffff; font-size: 14px;">Start Copy Trading and claim your $100 bonus</td>
+                        <td width="30"><span style="display: inline-block; width: 24px; height: 24px; background: #3b82f6; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 700; color: #ffffff;">3</span></td>
+                        <td style="padding-left: 12px; color: #ffffff; font-size: 14px;">Invite friends and earn more <span style="color: #3b82f6;">($5+ per referral)</span></td>
                       </tr>
                     </table>
                   </td>
@@ -299,7 +394,7 @@ function generateWelcomeEmailHtml(firstName: string): string {
           </tr>
           <tr>
             <td style="padding: 0 40px 40px; text-align: center;">
-              <a href="https://shark-trades.com/?page=copy-trading" style="display: inline-block; padding: 16px 40px; background: #d4af37; color: #0a0a0f; font-size: 16px; font-weight: 700; text-decoration: none; border-radius: 8px;">Start Copy Trading</a>
+              <a href="https://shark-trades.com/?page=deposit" style="display: inline-block; padding: 16px 40px; background: #d4af37; color: #0a0a0f; font-size: 16px; font-weight: 700; text-decoration: none; border-radius: 8px;">Claim Your Welcome Package</a>
             </td>
           </tr>
           <tr>

@@ -66,6 +66,16 @@ function RewardsHub() {
       type: 'referral'
     },
     {
+      id: 'referral_10',
+      title: 'Network Champion Bonus',
+      description: 'Invite 10 friends who each deposit $100+ to qualify',
+      reward: 70,
+      rewardType: 'balance',
+      target: 10,
+      icon: '🏆',
+      type: 'referral'
+    },
+    {
       id: 'first_trade',
       title: 'First Trade Welcome',
       description: 'Complete your first futures trade',
@@ -306,7 +316,8 @@ function RewardsHub() {
         const bonusTypeMap: Record<string, string> = {
           'copy_trading_allocation_v2': 'Copy Trading Wallet Bonus V2',
           'first_referral': 'First Referral Bonus',
-          'referral_5': 'Growing Network Bonus'
+          'referral_5': 'Growing Network Bonus',
+          'referral_10': 'Network Champion Bonus'
         };
         const bonusTypeName = bonusTypeMap[task.id] || 'Reward Task Bonus';
 
@@ -464,7 +475,7 @@ function RewardsHub() {
     if (task.type === 'volume') {
       progress = currentVolume;
     } else if (task.type === 'referral') {
-      progress = task.id === 'referral_5' ? qualifiedReferrals : totalReferrals;
+      progress = (task.id === 'referral_5' || task.id === 'referral_10') ? qualifiedReferrals : totalReferrals;
     } else if (task.type === 'trade') {
       if (task.id === 'first_trade') progress = totalTrades;
     }
@@ -584,7 +595,7 @@ function RewardsHub() {
                 progress = currentVolume;
                 isCompleted = progress >= task.target;
               } else if (task.type === 'referral') {
-                if (task.id === 'referral_5') {
+                if (task.id === 'referral_5' || task.id === 'referral_10') {
                   progress = qualifiedReferrals;
                 } else {
                   progress = totalReferrals;
@@ -669,7 +680,7 @@ function RewardsHub() {
                 <div className="text-3xl">🤝</div>
                 <h3 className="text-base font-medium text-[#eaecef]">Referral Bonuses</h3>
               </div>
-              <p className="text-sm text-[#848e9c] mb-3">$5 for your first referral, $25 for 5 referrals. Referrals must deposit $100+ to qualify.</p>
+              <p className="text-sm text-[#848e9c] mb-3">$5 for your first referral, $25 for 5 referrals, $70 for 10 referrals. Referrals must deposit $100+ to qualify.</p>
               <div className="text-xs text-[#0ecb81]">Instant withdrawal - goes directly to your wallet</div>
             </div>
 

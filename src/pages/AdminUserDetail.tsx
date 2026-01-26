@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, User, Wallet, TrendingUp, Copy, Gift, FileText, Shield, Settings, AlertTriangle, Activity, MessageSquare, Tag } from 'lucide-react';
+import { ArrowLeft, User, Wallet, TrendingUp, Copy, Gift, FileText, Shield, Settings, AlertTriangle, Activity, MessageSquare, Tag, Bell } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '../App';
@@ -16,6 +16,7 @@ import AdminUserActivity from '../components/admin/AdminUserActivity';
 import AdminUserRisk from '../components/admin/AdminUserRisk';
 import AdminUserNotes from '../components/admin/AdminUserNotes';
 import AdminUserTags from '../components/admin/AdminUserTags';
+import SendNotificationModal from '../components/admin/SendNotificationModal';
 
 type TabType = 'overview' | 'wallets' | 'trading' | 'copy' | 'rewards' | 'transactions' | 'kyc' | 'risk' | 'actions' | 'activity' | 'notes';
 
@@ -37,6 +38,7 @@ export default function AdminUserDetail() {
   const [hasAccess, setHasAccess] = useState(false);
   const [isOnline, setIsOnline] = useState(false);
   const [lastActivity, setLastActivity] = useState<Date | null>(null);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
 
   const allTabs: TabConfig[] = [
     { id: 'overview', label: 'Overview', icon: User, permissions: ['view_user_details'] },
@@ -313,6 +315,13 @@ export default function AdminUserDetail() {
                 </div>
                 <div className="flex flex-col items-end gap-2">
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setShowNotificationModal(true)}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-[#f0b90b]/20 hover:bg-[#f0b90b]/30 text-[#f0b90b] border border-[#f0b90b]/30 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      <Bell className="w-4 h-4" />
+                      Send Notification
+                    </button>
                     {userData.profile?.is_admin && (
                       <span className="px-3 py-1 bg-[#f0b90b]/20 text-[#f0b90b] border border-[#f0b90b]/30 rounded-lg text-sm font-medium">
                         ADMIN
@@ -382,6 +391,16 @@ export default function AdminUserDetail() {
           </div>
         )}
       </div>
+
+      {userId && userData && (
+        <SendNotificationModal
+          isOpen={showNotificationModal}
+          onClose={() => setShowNotificationModal(false)}
+          userId={userId}
+          userName={userData.profile?.full_name || userData.profile?.username || ''}
+          userEmail={userData.userEmail || ''}
+        />
+      )}
     </div>
   );
 }

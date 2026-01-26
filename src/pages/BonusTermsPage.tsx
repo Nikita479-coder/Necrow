@@ -55,8 +55,66 @@ export default function BonusTermsPage() {
 
             <section>
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <Gift className="w-5 h-5 text-emerald-400" />
+                2. Welcome Package Bonus (Up to $1,610)
+              </h2>
+              <div className="space-y-4">
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4">
+                  <h3 className="font-semibold text-emerald-400 mb-2">Deposit Match Bonuses</h3>
+                  <p className="text-slate-300 text-sm mb-3">
+                    New users can receive up to $1,610 in deposit match bonuses across their first three deposits!
+                  </p>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div className="bg-slate-700/50 rounded-lg p-4 border-l-4 border-emerald-500">
+                    <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
+                      <span className="text-[#f0b90b]">1st Deposit</span>
+                    </h3>
+                    <p className="text-slate-300 text-sm mb-2">
+                      <strong className="text-emerald-400">100% Match</strong> up to $500
+                    </p>
+                    <p className="text-xs text-slate-400">Deposit $500, get $500 bonus</p>
+                  </div>
+
+                  <div className="bg-slate-700/50 rounded-lg p-4 border-l-4 border-blue-500">
+                    <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
+                      <span className="text-[#f0b90b]">2nd Deposit</span>
+                    </h3>
+                    <p className="text-slate-300 text-sm mb-2">
+                      <strong className="text-blue-400">50% Match</strong> up to $500
+                    </p>
+                    <p className="text-xs text-slate-400">Deposit $1,000, get $500 bonus</p>
+                  </div>
+
+                  <div className="bg-slate-700/50 rounded-lg p-4 border-l-4 border-purple-500">
+                    <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
+                      <span className="text-[#f0b90b]">3rd Deposit</span>
+                    </h3>
+                    <p className="text-slate-300 text-sm mb-2">
+                      <strong className="text-purple-400">20% Match</strong> up to $610
+                    </p>
+                    <p className="text-xs text-slate-400">Deposit $3,050, get $610 bonus</p>
+                  </div>
+                </div>
+
+                <div className="bg-slate-700/50 rounded-lg p-4">
+                  <h3 className="font-semibold text-white mb-2">Welcome Package Terms</h3>
+                  <ul className="list-disc list-inside text-slate-300 space-y-1 text-sm">
+                    <li>Each deposit bonus is a locked bonus (30-day lock period)</li>
+                    <li>Bonuses can be used for futures trading immediately</li>
+                    <li>Profits from trading with bonus are withdrawable after lock period</li>
+                    <li>Each tier can only be claimed once per account</li>
+                    <li>Deposits must be made within 30 days of account creation</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 <Copy className="w-5 h-5 text-[#f0b90b]" />
-                2. Copy Trading Bonus ($100)
+                3. Copy Trading Bonus ($100)
               </h2>
               <div className="space-y-4">
                 <div className="bg-[#f0b90b]/10 border border-[#f0b90b]/30 rounded-lg p-4">
@@ -109,7 +167,7 @@ export default function BonusTermsPage() {
             <section>
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 <Zap className="w-5 h-5 text-green-400" />
-                3. Zero Trading Fees Promotion
+                4. Zero Trading Fees Promotion
               </h2>
               <div className="space-y-4">
                 <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
@@ -130,43 +188,75 @@ export default function BonusTermsPage() {
             <section>
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 <Users className="w-5 h-5 text-blue-400" />
-                4. Referral Bonuses
+                5. Referral Bonuses
               </h2>
               <div className="space-y-4">
                 <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
                   <h3 className="font-semibold text-blue-400 mb-2">Earn by Referring Friends</h3>
                   <p className="text-slate-300 text-sm mb-3">
-                    Share your referral code and earn bonuses when your friends join and trade!
+                    Share your referral code and earn bonuses when your friends join and trade! Referrals must deposit $100+ to qualify.
                   </p>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
-                  <div className="bg-slate-700/50 rounded-lg p-4">
+                  <div className="bg-slate-700/50 rounded-lg p-4 border-l-4 border-[#f0b90b]">
                     <h3 className="font-semibold text-white mb-2">First Referral Bonus</h3>
                     <p className="text-slate-300 text-sm">
                       <strong className="text-[#f0b90b]">$5 USDT</strong> - Instant bonus when your first referred friend deposits $100+
                     </p>
                   </div>
 
-                  <div className="bg-slate-700/50 rounded-lg p-4">
-                    <h3 className="font-semibold text-white mb-2">Welcome Bonus (Both Parties)</h3>
+                  <div className="bg-slate-700/50 rounded-lg p-4 border-l-4 border-blue-400">
+                    <h3 className="font-semibold text-white mb-2">5 Referrals Milestone</h3>
                     <p className="text-slate-300 text-sm">
-                      <strong className="text-[#f0b90b]">$20 USDT each</strong> - Both you and your friend get $20 when they make a qualified deposit
+                      <strong className="text-blue-400">$25 USDT</strong> - Bonus for inviting 5 friends who each deposit $100+
                     </p>
                   </div>
 
-                  <div className="bg-slate-700/50 rounded-lg p-4">
-                    <h3 className="font-semibold text-white mb-2">Growing Network Bonus</h3>
+                  <div className="bg-slate-700/50 rounded-lg p-4 border-l-4 border-emerald-400">
+                    <h3 className="font-semibold text-white mb-2">10 Referrals Milestone</h3>
                     <p className="text-slate-300 text-sm">
-                      <strong className="text-[#f0b90b]">$25 USDT</strong> - Bonus for inviting 5 friends who each deposit $100+
+                      <strong className="text-emerald-400">$70 USDT</strong> - Bonus for inviting 10 friends who each deposit $100+
                     </p>
                   </div>
 
-                  <div className="bg-slate-700/50 rounded-lg p-4">
+                  <div className="bg-slate-700/50 rounded-lg p-4 border-l-4 border-purple-400">
                     <h3 className="font-semibold text-white mb-2">Ongoing Commissions</h3>
                     <p className="text-slate-300 text-sm">
-                      Earn a percentage of trading fees from all your referrals' trades, forever!
+                      Earn a percentage of trading fees from all your referrals' trades, forever! Commission rates increase with VIP tier.
                     </p>
+                  </div>
+                </div>
+
+                <div className="bg-slate-700/50 rounded-lg p-4">
+                  <h3 className="font-semibold text-white mb-2">Referral Milestone Summary</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-600">
+                          <th className="text-left py-2 text-slate-400">Milestone</th>
+                          <th className="text-right py-2 text-slate-400">Reward</th>
+                          <th className="text-right py-2 text-slate-400">Type</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-slate-300">
+                        <tr className="border-b border-slate-700">
+                          <td className="py-2">1st Qualified Referral</td>
+                          <td className="text-right text-[#f0b90b] font-medium">$5 USDT</td>
+                          <td className="text-right text-emerald-400">Instant</td>
+                        </tr>
+                        <tr className="border-b border-slate-700">
+                          <td className="py-2">5 Qualified Referrals</td>
+                          <td className="text-right text-[#f0b90b] font-medium">$25 USDT</td>
+                          <td className="text-right text-emerald-400">Instant</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2">10 Qualified Referrals</td>
+                          <td className="text-right text-[#f0b90b] font-medium">$70 USDT</td>
+                          <td className="text-right text-emerald-400">Instant</td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
@@ -175,7 +265,7 @@ export default function BonusTermsPage() {
             <section>
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-[#f0b90b]" />
-                5. Performance & VIP Bonuses
+                6. Performance & VIP Bonuses
               </h2>
               <div className="space-y-4">
                 <div className="bg-slate-700/50 rounded-lg p-4">
@@ -201,7 +291,7 @@ export default function BonusTermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4">6. General Terms</h2>
+              <h2 className="text-xl font-bold text-white mb-4">7. General Terms</h2>
               <div className="space-y-4 text-slate-300">
                 <div className="bg-slate-700/50 rounded-lg p-4">
                   <h3 className="font-semibold text-white mb-2">Account Restrictions</h3>
@@ -233,7 +323,7 @@ export default function BonusTermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4">7. Unlock Requirements (General)</h2>
+              <h2 className="text-xl font-bold text-white mb-4">8. Unlock Requirements (General)</h2>
               <div className="bg-gradient-to-r from-blue-900/30 to-blue-800/20 border border-blue-600/40 rounded-xl p-6 space-y-4">
                 <div className="flex items-start gap-3">
                   <Shield className="w-6 h-6 text-blue-400 flex-shrink-0 mt-1" />
@@ -282,7 +372,7 @@ export default function BonusTermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4">8. Profit Calculation</h2>
+              <h2 className="text-xl font-bold text-white mb-4">9. Profit Calculation</h2>
               <div className="bg-slate-700/50 rounded-lg p-4 text-slate-300">
                 <p className="mb-3">Profits from bonus trading are calculated as:</p>
                 <div className="bg-slate-800 rounded p-3 font-mono text-sm text-center text-[#f0b90b]">
@@ -298,7 +388,7 @@ export default function BonusTermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4">9. Expiration Policy</h2>
+              <h2 className="text-xl font-bold text-white mb-4">10. Expiration Policy</h2>
               <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 text-slate-300">
                 <ul className="list-disc list-inside text-sm space-y-2">
                   <li>Each bonus has a specific validity period (7-30 days depending on type)</li>
@@ -312,7 +402,7 @@ export default function BonusTermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4">10. Modifications and Discontinuation</h2>
+              <h2 className="text-xl font-bold text-white mb-4">11. Modifications and Discontinuation</h2>
               <div className="text-slate-300 text-sm space-y-2">
                 <p>
                   Shark Trades reserves the right to modify, suspend, or discontinue these promotional
@@ -326,7 +416,7 @@ export default function BonusTermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4">11. Acceptance</h2>
+              <h2 className="text-xl font-bold text-white mb-4">12. Acceptance</h2>
               <div className="bg-slate-700/50 rounded-lg p-4 text-slate-300">
                 <p className="text-sm">
                   By registering an account and participating in any promotional bonus program, you

@@ -3,7 +3,7 @@ import Navbar from '../components/Navbar';
 import SharkCardApplicationModal from '../components/SharkCardApplicationModal';
 import CryptoIcon from '../components/CryptoIcon';
 import TelegramPromoSection from '../components/TelegramPromoSection';
-import { Shield, ChevronDown, ArrowRight, Gift, Check, ChevronLeft, ChevronRight, Zap, Lock, Globe, Users, TrendingUp, LineChart, Clock, Headphones, Loader2, Newspaper, ExternalLink, Smartphone, Bell } from 'lucide-react';
+import { Shield, ChevronDown, ArrowRight, Gift, Check, ChevronLeft, ChevronRight, Zap, Lock, Globe, Users, TrendingUp, LineChart, Clock, Headphones, Loader2, Newspaper, ExternalLink, Smartphone, Bell, BadgeCheck, Wallet, UserPlus, Sparkles } from 'lucide-react';
 import { usePrices } from '../hooks/usePrices';
 import { useNavigation } from '../App';
 import { useAuth } from '../context/AuthContext';
@@ -33,6 +33,17 @@ function HomePage() {
   const [dragOffset, setDragOffset] = useState(0);
 
   const heroSlides = [
+    {
+      id: 'welcome-bonus',
+      title: 'Welcome Package',
+      subtitle: 'Up to $2,130 USDT',
+      description: 'Start your trading journey with exclusive rewards! Get $20 KYC bonus, up to $1,610 in deposit bonuses, and earn from referrals. New users only.',
+      cta: 'Claim Now',
+      ctaAction: () => user ? navigateTo('deposit') : navigateTo('signup'),
+      visual: 'welcome',
+      reward: 'Limited Time',
+      status: 'available',
+    },
     {
       id: 'shark-card',
       title: 'Introducing Shark Card',
@@ -340,6 +351,52 @@ function HomePage() {
                       <div className="relative flex items-center justify-center order-1 lg:order-2 py-4 sm:py-0">
                         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-orange-500/20 blur-3xl"></div>
 
+                        {/* Welcome Bonus Visual */}
+                        {slide.visual === 'welcome' && (
+                          <div className="relative scale-[0.55] sm:scale-75 lg:scale-90 xl:scale-100 origin-center">
+                            <div className="transform hover:scale-105 transition-transform duration-500">
+                              <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-black rounded-2xl p-6 shadow-2xl border border-amber-500/30" style={{ width: '360px', height: '280px' }}>
+                                <div className="flex flex-col h-full">
+                                  <div className="flex justify-between items-start mb-4">
+                                    <div className="text-amber-400 font-bold text-lg">WELCOME PACKAGE</div>
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                                      <Gift className="w-7 h-7 text-black" />
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-3 flex-1">
+                                    <div className="flex items-center gap-3 bg-emerald-500/10 rounded-lg px-3 py-2">
+                                      <BadgeCheck className="w-5 h-5 text-emerald-400" />
+                                      <span className="text-white/80 text-sm">KYC Bonus</span>
+                                      <span className="ml-auto text-emerald-400 font-bold">$20</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 bg-amber-500/10 rounded-lg px-3 py-2">
+                                      <Wallet className="w-5 h-5 text-amber-400" />
+                                      <span className="text-white/80 text-sm">Deposit Bonus</span>
+                                      <span className="ml-auto text-amber-400 font-bold">$1,610</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 bg-blue-500/10 rounded-lg px-3 py-2">
+                                      <UserPlus className="w-5 h-5 text-blue-400" />
+                                      <span className="text-white/80 text-sm">Referral Rewards</span>
+                                      <span className="ml-auto text-blue-400 font-bold">$500</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="pt-3 border-t border-white/10">
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-white/60 text-sm">Total Value</span>
+                                      <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">$2,130</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="absolute -top-6 -right-6 w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center shadow-xl animate-bounce">
+                              <span className="text-white font-bold text-xs text-center leading-tight">NEW<br/>USER</span>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Shark Card Visual */}
                         {slide.visual === 'sharkcard' && (
                           <div className="relative scale-[0.55] sm:scale-75 lg:scale-90 xl:scale-100 origin-center">
@@ -475,6 +532,135 @@ function HomePage() {
                 </button>
               </div>
             )}
+          </div>
+
+          {/* Welcome Package Section */}
+          <div className="bg-gradient-to-br from-[#181a20] via-[#1a1d24] to-[#181a20] rounded-2xl border border-amber-500/20 mb-8 overflow-hidden relative">
+            <div className="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDMpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-50"></div>
+            <div className="absolute -top-24 -right-24 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl"></div>
+            <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl"></div>
+
+            <div className="relative p-6 sm:p-8">
+              <div className="flex flex-col lg:flex-row items-center gap-6 mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+                    <Gift className="w-7 h-7 text-black" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl sm:text-3xl font-bold text-white">Welcome Package</h2>
+                    <p className="text-gray-400 text-sm">Start strong with exclusive rewards</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-full px-5 py-2.5">
+                  <Sparkles className="w-5 h-5 text-amber-400" />
+                  <span className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">Up to $2,130 USDT</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+                {/* KYC Bonus */}
+                <div className="bg-[#0b0e11]/80 backdrop-blur-sm rounded-xl p-5 border border-gray-800 hover:border-emerald-500/30 transition-all group">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <BadgeCheck className="w-5 h-5 text-emerald-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold">KYC Bonus</h3>
+                      <p className="text-emerald-400 text-sm font-bold">$20 USDT</p>
+                    </div>
+                  </div>
+                  <p className="text-gray-400 text-sm mb-4">Complete KYC verification and receive $20 USDT instantly</p>
+                  <button
+                    onClick={() => navigateTo('kyc')}
+                    className="w-full py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-medium rounded-lg transition-all text-sm flex items-center justify-center gap-2"
+                  >
+                    <BadgeCheck className="w-4 h-4" />
+                    Verify Now
+                  </button>
+                </div>
+
+                {/* Deposit Bonuses */}
+                <div className="bg-[#0b0e11]/80 backdrop-blur-sm rounded-xl p-5 border border-gray-800 hover:border-amber-500/30 transition-all group">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Wallet className="w-5 h-5 text-amber-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold">Deposit Bonuses</h3>
+                      <p className="text-amber-400 text-sm font-bold">Up to $1,610</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-400">1st Deposit</span>
+                      <span className="text-white font-medium">100% <span className="text-gray-500">(up to $500)</span></span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-400">2nd Deposit</span>
+                      <span className="text-white font-medium">50% <span className="text-gray-500">(up to $500)</span></span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-400">3rd Deposit</span>
+                      <span className="text-white font-medium">20% <span className="text-gray-500">(up to $610)</span></span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigateTo('deposit')}
+                    className="w-full py-2.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 font-medium rounded-lg transition-all text-sm flex items-center justify-center gap-2"
+                  >
+                    <Wallet className="w-4 h-4" />
+                    Deposit Now
+                  </button>
+                </div>
+
+                {/* Referral Rewards */}
+                <div className="bg-[#0b0e11]/80 backdrop-blur-sm rounded-xl p-5 border border-gray-800 hover:border-blue-500/30 transition-all group">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <UserPlus className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold">Referral Rewards</h3>
+                      <p className="text-blue-400 text-sm font-bold">Up to $500</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-400">1st Referral</span>
+                      <span className="text-white font-medium">$5 USDT</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-400">5 Referrals</span>
+                      <span className="text-white font-medium">$25 USDT</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-400">10 Referrals</span>
+                      <span className="text-white font-medium">$70 USDT</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigateTo('referral')}
+                    className="w-full py-2.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 font-medium rounded-lg transition-all text-sm flex items-center justify-center gap-2"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    Start Referring
+                  </button>
+                </div>
+              </div>
+
+              {!user && (
+                <div className="mt-6 text-center">
+                  <button
+                    onClick={() => navigateTo('signup')}
+                    className="px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-black font-bold rounded-xl transition-all hover:scale-105 shadow-lg shadow-amber-500/20 flex items-center gap-2 mx-auto"
+                  >
+                    <Gift className="w-5 h-5" />
+                    Claim Your Welcome Package
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="bg-[#181a20] rounded-2xl p-4 sm:p-6 border border-gray-800 mb-8">
