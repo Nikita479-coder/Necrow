@@ -119,9 +119,13 @@ function App() {
     const urlParams = new URLSearchParams(window.location.search);
 
     const pageParam = urlParams.get('page');
-    if (pageParam === 'signup') {
-      setCurrentPage('signup');
-      return;
+    if (pageParam) {
+      const validPages: PageType[] = ['home', 'markets', 'futures', 'profile', 'swap', 'swaphistory', 'copytrading', 'mocktrading', 'activecopying', 'deposit', 'withdraw', 'kyc', 'wallet', 'referral', 'affiliate', 'vip', 'rewardshub', 'earn', 'signin', 'signup', 'transactions', 'giveaway', 'support', 'legal', 'terms'];
+      if (validPages.includes(pageParam as PageType)) {
+        setCurrentPage(pageParam as PageType);
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+      }
     }
 
     if (urlParams.get('reset') === 'true') {
