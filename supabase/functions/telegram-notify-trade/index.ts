@@ -181,7 +181,6 @@ Deno.serve(async (req: Request) => {
         ? `<b>\u{2705} TRADE AUTO-ACCEPTED</b>\n\n` +
           `<b>Trader:</b> ${traderName}\n` +
           `<b>Pair:</b> ${trade.pair}\n` +
-          `<b>Side:</b> ${trade.side.toUpperCase()}\n` +
           `<b>Leverage:</b> ${trade.leverage}x\n` +
           `<b>Entry:</b> $${Number(trade.entry_price).toLocaleString()}\n\n` +
           `<i>This trade was automatically accepted based on your settings.</i>\n\n` +
@@ -189,7 +188,6 @@ Deno.serve(async (req: Request) => {
         : `<b>\u{1F4C8} NEW TRADE SIGNAL</b>\n\n` +
           `<b>Trader:</b> ${traderName}\n` +
           `<b>Pair:</b> ${trade.pair}\n` +
-          `<b>Side:</b> ${trade.side.toUpperCase()}\n` +
           `<b>Leverage:</b> ${trade.leverage}x\n` +
           `<b>Entry:</b> $${Number(trade.entry_price).toLocaleString()}\n\n` +
           `<i>You have 5 minutes to respond.</i>\n\n` +

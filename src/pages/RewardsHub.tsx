@@ -185,6 +185,9 @@ function RewardsHub() {
             .filter(r => r.task_id && r.status === 'claimed')
             .map(r => r.task_id)
         );
+        if (bonusStatusData?.already_claimed) {
+          claimedIds.add('copy_trading_allocation_v2');
+        }
         setClaimedTaskIds(claimedIds);
       }
 
@@ -609,6 +612,7 @@ function RewardsHub() {
               }
               const percentage = Math.min((progress / task.target) * 100, 100);
               const isClaimed = claimedTaskIds.has(task.id);
+              const isForfeited = isCopyTradingTask && copyBonusStatus?.forfeited;
 
               return (
                 <div key={task.id} className={`bg-[#181a20] rounded-lg p-4 transition-all ${
@@ -618,11 +622,13 @@ function RewardsHub() {
                     <div className="text-3xl">{task.icon}</div>
                     <div className="text-right">
                       <div className={`text-xs px-2 py-1 rounded font-medium mb-1 ${
-                        isClaimed
+                        isForfeited
+                          ? 'bg-[#f6465d]/10 text-[#f6465d]'
+                          : isClaimed
                           ? 'bg-[#848e9c]/10 text-[#848e9c]'
                           : 'bg-[#0ecb81]/10 text-[#0ecb81]'
                       }`}>
-                        {isClaimed ? 'Claimed' : `+$${task.reward} USDT`}
+                        {isForfeited ? 'Forfeited' : isClaimed ? 'Claimed' : `+$${task.reward} USDT`}
                       </div>
                       <div className="text-[10px] text-[#848e9c]">
                         {task.rewardType === 'fee_rebate' ? 'Fee Rebate' : task.rewardType === 'locked_bonus' ? 'Locked Bonus' : 'Instant Withdrawal'}
@@ -663,7 +669,7 @@ function RewardsHub() {
                         : 'bg-[#2b3139] text-[#848e9c] cursor-not-allowed'
                     }`}
                   >
-                    {isClaimed ? 'Claimed ✓' : isCompleted ? 'Claim Reward' : `${percentage.toFixed(0)}% Complete`}
+                    {isForfeited ? 'Bonus Forfeited' : isClaimed ? 'Claimed' : isCompleted ? 'Claim Reward' : `${percentage.toFixed(0)}% Complete`}
                   </button>
                 </div>
               );

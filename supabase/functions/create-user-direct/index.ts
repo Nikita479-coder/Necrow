@@ -19,7 +19,7 @@ Deno.serve(async (req: Request) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    const { email, password, fullName } = await req.json();
+    const { email, password, fullName, referralCode } = await req.json();
 
     if (!email || !password) {
       return new Response(
@@ -33,7 +33,8 @@ Deno.serve(async (req: Request) => {
       password,
       email_confirm: true,
       user_metadata: {
-        full_name: fullName || null
+        full_name: fullName || null,
+        referral_code: referralCode || null
       }
     });
 
