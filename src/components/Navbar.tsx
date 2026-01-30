@@ -1,4 +1,4 @@
-import { User, Bell, Settings, Wallet, ChevronDown, Zap, Shield, LogOut, Menu, X } from 'lucide-react';
+import { User, Bell, Settings, Wallet, ChevronDown, Zap, Shield, LogOut, Menu, X, Smartphone } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigation } from '../App';
 import { useAuth } from '../context/AuthContext';
@@ -207,6 +207,16 @@ export default function Navbar() {
           )}
 
           <div className="hidden md:flex items-center gap-2">
+            <a
+              href="https://play.google.com/store/apps/details?id=com.sharktrading.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-[#f0b90b] transition-all duration-300 hover:scale-110 p-2 rounded-full hover:bg-[#f0b90b]/10 relative"
+              title="Download Mobile App"
+            >
+              <Smartphone className="w-5 h-5" />
+            </a>
+
             {canAccessAdmin() && (
               <button
                 onClick={() => navigateTo('admindashboard')}
@@ -295,6 +305,16 @@ export default function Navbar() {
             ))}
 
             <div className="border-t border-gray-800 my-2"></div>
+
+            <a
+              href="https://play.google.com/store/apps/details?id=com.sharktrading.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-left text-gray-300 hover:text-[#f0b90b] px-4 py-3 rounded-lg hover:bg-[#181a20] transition-all text-base font-medium flex items-center gap-2"
+            >
+              <Smartphone className="w-5 h-5" />
+              Download Mobile App
+            </a>
 
             {canAccessAdmin() && (
               <button

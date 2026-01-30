@@ -157,6 +157,19 @@ function App() {
     setNavigationState(state);
   };
 
+  useEffect(() => {
+    const handleAppNavigate = (event: CustomEvent<{ page: string; state?: any }>) => {
+      const { page, state } = event.detail;
+      setCurrentPage(page as PageType);
+      if (state) setNavigationState(state);
+    };
+
+    window.addEventListener('app-navigate', handleAppNavigate as EventListener);
+    return () => {
+      window.removeEventListener('app-navigate', handleAppNavigate as EventListener);
+    };
+  }, []);
+
   const getPageTitle = (page: PageType): string => {
     const titles: Record<PageType, string> = {
       home: 'Home',

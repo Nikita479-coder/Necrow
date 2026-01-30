@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
-import { Gift, TrendingUp, Target, Award, Trophy, CheckCircle2, XCircle } from 'lucide-react';
+import { Gift, TrendingUp, Target, Award, Trophy, CheckCircle2, XCircle, ExternalLink } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
@@ -12,7 +12,8 @@ interface Task {
   rewardType: 'fee_rebate' | 'balance' | 'locked_bonus';
   target: number;
   icon: string;
-  type: 'volume' | 'referral' | 'trade';
+  type: 'volume' | 'referral' | 'trade' | 'external';
+  externalLink?: string;
 }
 
 interface CopyBonusStatus {
@@ -84,6 +85,28 @@ function RewardsHub() {
       target: 1,
       icon: '🎯',
       type: 'trade'
+    },
+    {
+      id: 'trustpilot_review',
+      title: 'Leave a Review',
+      description: 'Share your experience on Trustpilot and help others discover Shark Trades',
+      reward: 5,
+      rewardType: 'locked_bonus',
+      target: 1,
+      icon: '⭐',
+      type: 'external',
+      externalLink: 'https://www.trustpilot.com/review/shark-trades.com'
+    },
+    {
+      id: 'mobile_app_download',
+      title: 'Download Mobile App',
+      description: 'Get the Shark Trades mobile app and trade on the go',
+      reward: 3,
+      rewardType: 'locked_bonus',
+      target: 1,
+      icon: '📱',
+      type: 'external',
+      externalLink: 'https://play.google.com/store/apps/details?id=com.sharktrading.app'
     },
     {
       id: 'copy_trading_allocation_v2',
@@ -320,7 +343,8 @@ function RewardsHub() {
           'copy_trading_allocation_v2': 'Copy Trading Wallet Bonus V2',
           'first_referral': 'First Referral Bonus',
           'referral_5': 'Growing Network Bonus',
-          'referral_10': 'Network Champion Bonus'
+          'referral_10': 'Network Champion Bonus',
+          'trustpilot_review': 'Reward Task Bonus'
         };
         const bonusTypeName = bonusTypeMap[task.id] || 'Reward Task Bonus';
 
@@ -609,10 +633,14 @@ function RewardsHub() {
                   progress = totalTrades;
                 }
                 isCompleted = progress >= task.target;
+              } else if (task.type === 'external') {
+                isCompleted = false;
+                progress = 0;
               }
               const percentage = Math.min((progress / task.target) * 100, 100);
               const isClaimed = claimedTaskIds.has(task.id);
               const isForfeited = isCopyTradingTask && copyBonusStatus?.forfeited;
+              const isExternalTask = task.type === 'external';
 
               return (
                 <div key={task.id} className={`bg-[#181a20] rounded-lg p-4 transition-all ${
@@ -639,7 +667,7 @@ function RewardsHub() {
                   <h3 className="text-sm font-medium text-white mb-1">{task.title}</h3>
                   <p className="text-xs text-[#848e9c] mb-2">{task.description}</p>
 
-                  {!isClaimed && (
+                  {!isClaimed && !isExternalTask && (
                     <div className="mb-2">
                       <div className="flex items-center justify-between text-xs mb-1">
                         <span className="text-[#848e9c]">Progress</span>
@@ -658,19 +686,38 @@ function RewardsHub() {
                     </div>
                   )}
 
-                  <button
-                    disabled={!isCompleted || isClaimed}
-                    onClick={() => isCompleted && !isClaimed && claimReward(task)}
-                    className={`w-full text-xs font-medium py-2 rounded transition-all ${
-                      isClaimed
-                        ? 'bg-[#2b3139] text-[#848e9c] cursor-not-allowed'
-                        : isCompleted
-                        ? 'bg-[#fcd535] hover:bg-[#f0b90b] text-[#0b0e11]'
-                        : 'bg-[#2b3139] text-[#848e9c] cursor-not-allowed'
-                    }`}
-                  >
-                    {isForfeited ? 'Bonus Forfeited' : isClaimed ? 'Claimed' : isCompleted ? 'Claim Reward' : `${percentage.toFixed(0)}% Complete`}
-                  </button>
+                  {isExternalTask && !isClaimed ? (
+                    <div className="space-y-2">
+                      <a
+                        href={task.externalLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full text-xs font-medium py-2 rounded transition-all bg-[#fcd535] hover:bg-[#f0b90b] text-[#0b0e11] flex items-center justify-center gap-2"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        {task.id === 'mobile_app_download' ? 'Download App' : 'Leave a Review'}
+                      </a>
+                      <p className="text-[10px] text-[#848e9c] text-center">
+                        {task.id === 'mobile_app_download'
+                          ? 'After downloading, contact support with a screenshot to claim your bonus'
+                          : 'After leaving your review, contact support with your Trustpilot username to claim your bonus'}
+                      </p>
+                    </div>
+                  ) : (
+                    <button
+                      disabled={!isCompleted || isClaimed}
+                      onClick={() => isCompleted && !isClaimed && claimReward(task)}
+                      className={`w-full text-xs font-medium py-2 rounded transition-all ${
+                        isClaimed
+                          ? 'bg-[#2b3139] text-[#848e9c] cursor-not-allowed'
+                          : isCompleted
+                          ? 'bg-[#fcd535] hover:bg-[#f0b90b] text-[#0b0e11]'
+                          : 'bg-[#2b3139] text-[#848e9c] cursor-not-allowed'
+                      }`}
+                    >
+                      {isForfeited ? 'Bonus Forfeited' : isClaimed ? 'Claimed' : isCompleted ? 'Claim Reward' : `${percentage.toFixed(0)}% Complete`}
+                    </button>
+                  )}
                 </div>
               );
             })}
