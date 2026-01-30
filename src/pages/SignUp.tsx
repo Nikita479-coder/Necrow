@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigation } from '../App';
 import { useAuth } from '../context/AuthContext';
-import { Eye, EyeOff, CreditCard, Sparkles, TrendingUp, Shield, Mail, ArrowLeft, RefreshCw, Gift, CheckCircle, ChevronDown, Search } from 'lucide-react';
+import { Eye, EyeOff, CreditCard, Sparkles, TrendingUp, Shield, Mail, ArrowLeft, RefreshCw, Gift, CheckCircle, ChevronDown, Search, AlertTriangle } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { supabase } from '../lib/supabase';
 import { countryCodes } from '../constants/countryCodes';
@@ -25,6 +25,8 @@ function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [agreedToRisk, setAgreedToRisk] = useState(false);
+  const [isOver18, setIsOver18] = useState(false);
   const [loading, setLoading] = useState(false);
   const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -191,6 +193,16 @@ function SignUp() {
 
     if (!agreedToTerms) {
       setError('Please agree to the Terms and Conditions');
+      return;
+    }
+
+    if (!agreedToRisk) {
+      setError('Please acknowledge the Risk Disclosure');
+      return;
+    }
+
+    if (!isOver18) {
+      setError('You must be at least 18 years old to register');
       return;
     }
 
@@ -464,40 +476,87 @@ function SignUp() {
         />
       </div>
 
-      <div className="flex items-start gap-3 pt-2">
-        <input
-          id="terms"
-          type="checkbox"
-          checked={agreedToTerms}
-          onChange={(e) => setAgreedToTerms(e.target.checked)}
-          className="mt-0.5 w-4 h-4 rounded border-gray-600 bg-[#252837] text-[#f0b90b] focus:ring-[#f0b90b] focus:ring-offset-0 cursor-pointer"
-        />
-        <label htmlFor="terms" className="text-sm text-gray-400 leading-tight">
-          By signing up, you agree to the{' '}
-          <button
-            type="button"
-            onClick={() => navigateTo('terms')}
-            className="text-gray-300 underline hover:text-white"
-          >
-            Terms of Service
-          </button>
-          {' '}and{' '}
-          <button
-            type="button"
-            onClick={() => navigateTo('terms')}
-            className="text-gray-300 underline hover:text-white"
-          >
-            Privacy Policy
-          </button>
-          .{' '}
-          <button
-            type="button"
-            onClick={() => navigateTo('bonusterms')}
-            className="text-[#f0b90b] underline hover:text-[#d9a506]"
-          >
-            View Bonus Terms
-          </button>
-        </label>
+      <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 mt-2">
+        <div className="flex items-start gap-2 mb-2">
+          <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+          <p className="text-amber-200/80 text-xs leading-relaxed">
+            Trading cryptocurrencies involves significant risk and may not be suitable for all investors.
+            You could lose some or all of your invested capital.
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-3 pt-3">
+        <div className="flex items-start gap-3">
+          <input
+            id="age"
+            type="checkbox"
+            checked={isOver18}
+            onChange={(e) => setIsOver18(e.target.checked)}
+            className="mt-0.5 w-4 h-4 rounded border-gray-600 bg-[#252837] text-[#f0b90b] focus:ring-[#f0b90b] focus:ring-offset-0 cursor-pointer"
+          />
+          <label htmlFor="age" className="text-sm text-gray-400 leading-tight">
+            I confirm that I am at least 18 years old and not a resident of a restricted jurisdiction.
+          </label>
+        </div>
+
+        <div className="flex items-start gap-3">
+          <input
+            id="risk"
+            type="checkbox"
+            checked={agreedToRisk}
+            onChange={(e) => setAgreedToRisk(e.target.checked)}
+            className="mt-0.5 w-4 h-4 rounded border-gray-600 bg-[#252837] text-[#f0b90b] focus:ring-[#f0b90b] focus:ring-offset-0 cursor-pointer"
+          />
+          <label htmlFor="risk" className="text-sm text-gray-400 leading-tight">
+            I have read and understand the{' '}
+            <button
+              type="button"
+              onClick={() => navigateTo('legal')}
+              className="text-amber-400 underline hover:text-amber-300"
+            >
+              Risk Disclosure
+            </button>
+            {' '}and acknowledge that trading carries a high level of risk.
+          </label>
+        </div>
+
+        <div className="flex items-start gap-3">
+          <input
+            id="terms"
+            type="checkbox"
+            checked={agreedToTerms}
+            onChange={(e) => setAgreedToTerms(e.target.checked)}
+            className="mt-0.5 w-4 h-4 rounded border-gray-600 bg-[#252837] text-[#f0b90b] focus:ring-[#f0b90b] focus:ring-offset-0 cursor-pointer"
+          />
+          <label htmlFor="terms" className="text-sm text-gray-400 leading-tight">
+            I agree to the{' '}
+            <button
+              type="button"
+              onClick={() => navigateTo('terms')}
+              className="text-gray-300 underline hover:text-white"
+            >
+              Terms of Service
+            </button>
+            ,{' '}
+            <button
+              type="button"
+              onClick={() => navigateTo('privacy')}
+              className="text-gray-300 underline hover:text-white"
+            >
+              Privacy Policy
+            </button>
+            , and{' '}
+            <button
+              type="button"
+              onClick={() => navigateTo('bonusterms')}
+              className="text-[#f0b90b] underline hover:text-[#d9a506]"
+            >
+              Bonus Terms
+            </button>
+            .
+          </label>
+        </div>
       </div>
 
       {error && (

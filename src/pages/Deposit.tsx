@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
-import { Copy, CheckCircle2, Search, Info, AlertCircle, Loader2, ExternalLink, RefreshCw, ArrowLeft, Clock } from 'lucide-react';
+import { Copy, CheckCircle2, Search, Info, AlertCircle, Loader2, ExternalLink, RefreshCw, ArrowLeft, Clock, ShieldAlert, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import CryptoIcon from '../components/CryptoIcon';
 import { useToast } from '../hooks/useToast';
+import { useNavigation } from '../App';
 
 interface CryptoDeposit {
   payment_id: string;
@@ -22,6 +23,7 @@ interface CryptoDeposit {
 function Deposit() {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { navigateTo } = useNavigation();
   const [selectedCrypto, setSelectedCrypto] = useState<string | null>(null);
   const [selectedNetwork, setSelectedNetwork] = useState<string | null>(null);
   const [showNetworkSelection, setShowNetworkSelection] = useState(false);
@@ -434,9 +436,24 @@ function Deposit() {
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-4xl font-bold text-white mb-2">Deposit Crypto</h1>
           <p className="text-gray-400">Fast and secure cryptocurrency deposits</p>
+        </div>
+
+        <div className="bg-gradient-to-r from-red-900/20 to-orange-900/10 border border-red-500/30 rounded-xl p-4 mb-6">
+          <div className="flex items-start gap-3">
+            <ShieldAlert className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-red-200 font-semibold text-sm mb-1">Security Notice - Protect Yourself from Scams</p>
+              <ul className="text-gray-300 text-xs space-y-1">
+                <li>- Our staff will NEVER ask you to send crypto to any address</li>
+                <li>- NEVER share your deposit address with anyone claiming to be support</li>
+                <li>- Only deposit directly from your own wallet - verify the address carefully</li>
+                <li>- Cryptocurrency transactions are IRREVERSIBLE - double-check all details</li>
+              </ul>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -733,6 +750,23 @@ function Deposit() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-amber-900/20 to-orange-900/10 border border-amber-500/20 rounded-2xl p-5">
+              <div className="flex items-start gap-3 mb-3">
+                <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                <h3 className="text-amber-200 font-semibold text-sm">Risk Warning</h3>
+              </div>
+              <p className="text-gray-400 text-xs leading-relaxed mb-3">
+                Trading cryptocurrencies involves significant risk of loss. Never deposit more than you can afford to lose.
+                The value of digital assets can fluctuate significantly.
+              </p>
+              <button
+                onClick={() => navigateTo('legal')}
+                className="text-amber-400 hover:text-amber-300 text-xs font-medium transition-colors"
+              >
+                Read Full Risk Disclosure
+              </button>
             </div>
 
           </div>
