@@ -98,6 +98,17 @@ function RewardsHub() {
       externalLink: 'https://www.trustpilot.com/review/shark-trades.com'
     },
     {
+      id: 'mobile_app_download',
+      title: 'Download Mobile App',
+      description: 'Get the Shark Trades mobile app and trade on the go',
+      reward: 3,
+      rewardType: 'locked_bonus',
+      target: 1,
+      icon: '📱',
+      type: 'external',
+      externalLink: 'https://play.google.com/store/apps/details?id=com.sharktrading.app'
+    },
+    {
       id: 'copy_trading_allocation_v2',
       title: 'Copy Trading Bonus',
       description: 'Start copy trading with 500+ USDT to get 100 USDT added on top. Keep everything after 30 days!',
@@ -684,10 +695,12 @@ function RewardsHub() {
                         className="w-full text-xs font-medium py-2 rounded transition-all bg-[#fcd535] hover:bg-[#f0b90b] text-[#0b0e11] flex items-center justify-center gap-2"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
-                        Leave a Review
+                        {task.id === 'mobile_app_download' ? 'Download App' : 'Leave a Review'}
                       </a>
                       <p className="text-[10px] text-[#848e9c] text-center">
-                        After leaving your review, contact support with your Trustpilot username to claim your bonus
+                        {task.id === 'mobile_app_download'
+                          ? 'After downloading, contact support with a screenshot to claim your bonus'
+                          : 'After leaving your review, contact support with your Trustpilot username to claim your bonus'}
                       </p>
                     </div>
                   ) : (

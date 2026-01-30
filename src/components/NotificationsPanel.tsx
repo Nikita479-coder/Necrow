@@ -1,5 +1,5 @@
 import { X, Bell, ChevronRight } from 'lucide-react';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
@@ -20,22 +20,31 @@ interface NotificationsPanelProps {
   onNavigate?: (path: string) => void;
 }
 
-export default function NotificationsPanel({ isOpen, onClose, onNavigate }: NotificationsPanelProps) {
+export default function NotificationsPanel({ isOpen, onClose }: NotificationsPanelProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const handleNotificationClick = (notification: Notification) => {
-    if (notification.redirect_url) {
+  const handleNotificationClick = useCallback((notification: Notification, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const url = notification.redirect_url;
+    if (!url) {
       onClose();
-      if (onNavigate) {
-        onNavigate(notification.redirect_url);
-      } else {
-        window.location.hash = notification.redirect_url;
-      }
+      return;
     }
-  };
+
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+      onClose();
+    } else {
+      const path = url.startsWith('/') ? url.slice(1) : url;
+      window.dispatchEvent(new CustomEvent('app-navigate', { detail: { page: path } }));
+      setTimeout(() => onClose(), 50);
+    }
+  }, [onClose]);
 
   const getDefaultRedirectUrl = (type: string): string | null => {
     switch (type) {
@@ -289,9 +298,16 @@ export default function NotificationsPanel({ isOpen, onClose, onNavigate }: Noti
               return (
                 <div
                   key={notification.id}
-                  onClick={() => {
+                  role={isClickable ? "button" : undefined}
+                  tabIndex={isClickable ? 0 : undefined}
+                  onMouseDown={(e) => {
                     if (isClickable) {
-                      handleNotificationClick({ ...notification, redirect_url: redirectUrl });
+                      e.stopPropagation();
+                    }
+                  }}
+                  onClick={(e) => {
+                    if (isClickable) {
+                      handleNotificationClick({ ...notification, redirect_url: redirectUrl }, e);
                     }
                   }}
                   className={`p-3 transition-all hover:bg-white/5 ${isClickable ? 'cursor-pointer' : ''}`}
