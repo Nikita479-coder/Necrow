@@ -2,6 +2,7 @@ import { useState, createContext, useContext, useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import PopupBanner from './components/PopupBanner';
 import PageTracker from './components/PageTracker';
+import CookieConsentBanner from './components/CookieConsentBanner';
 import { initAcquisitionTracking } from './services/acquisitionService';
 import { priceSyncService } from './services/priceSyncService';
 import HomePage from './pages/HomePage';
@@ -343,11 +344,14 @@ function App() {
     }
   };
 
+  const isLandingPage = currentPage === 'lp';
+
   return (
     <AuthProvider>
       <NavigationContext.Provider value={{ currentPage, navigateTo, navigationState }}>
-        {currentPage !== 'lp' && <PopupBanner />}
+        {!isLandingPage && <PopupBanner />}
         {renderPage()}
+        <CookieConsentBanner />
       </NavigationContext.Provider>
     </AuthProvider>
   );

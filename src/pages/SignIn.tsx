@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigation } from '../App';
 import { useAuth } from '../context/AuthContext';
-import { Eye, EyeOff, Shield, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Shield, ArrowLeft, AlertTriangle } from 'lucide-react';
 import Navbar from '../components/Navbar';
 
 function SignIn() {
@@ -318,7 +318,22 @@ function SignIn() {
                   </button>
                 </form>
 
-                <div className="mt-8 text-center">
+                <div className="mt-6 p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-amber-200/70 text-xs leading-relaxed">
+                      Risk Warning: Trading cryptocurrencies involves substantial risk of loss. Only trade with capital you can afford to lose.{' '}
+                      <button
+                        onClick={() => navigateTo('legal')}
+                        className="text-amber-400 hover:underline"
+                      >
+                        Read Risk Disclosure
+                      </button>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 text-center">
                   <button
                     onClick={() => navigateTo('home')}
                     className="text-gray-500 hover:text-gray-400 text-sm transition-colors"
