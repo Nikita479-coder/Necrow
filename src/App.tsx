@@ -60,8 +60,11 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import CopyTradingLandingPage from './pages/CopyTradingLandingPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import NoDepositBonus from './pages/NoDepositBonus';
+import ReviewBonus from './pages/ReviewBonus';
+import ReferFriendsBonus from './pages/ReferFriendsBonus';
 
-type PageType = 'home' | 'markets' | 'futures' | 'profile' | 'swap' | 'swaphistory' | 'copytrading' | 'mocktrading' | 'activecopying' | 'traderprofile' | 'deposit' | 'withdraw' | 'kyc' | 'kycdocuments' | 'adminkyc' | 'wallet' | 'referral' | 'affiliate' | 'vip' | 'rewardshub' | 'earn' | 'signin' | 'signup' | 'forgotpassword' | 'resetpassword' | 'transactions' | 'admindashboard' | 'adminuser' | 'adminuserdetail' | 'admintrader' | 'adminlogs' | 'admincrm' | 'adminemails' | 'adminbonuses' | 'adminsupport' | 'adminviptracking' | 'adminsharkcards' | 'adminstaff' | 'admintelegram' | 'adminwithdrawals' | 'admindeposits' | 'adminreferrals' | 'adminpopups' | 'admingiveaway' | 'adminacquisition' | 'adminexclusiveaffiliates' | 'adminphonereveals' | 'adminstafflogs' | 'giveaway' | 'event' | 'terms' | 'bonusterms' | 'support' | 'legal' | 'privacy' | 'lp';
+type PageType = 'home' | 'markets' | 'futures' | 'profile' | 'swap' | 'swaphistory' | 'copytrading' | 'mocktrading' | 'activecopying' | 'traderprofile' | 'deposit' | 'withdraw' | 'kyc' | 'kycdocuments' | 'adminkyc' | 'wallet' | 'referral' | 'affiliate' | 'vip' | 'rewardshub' | 'earn' | 'signin' | 'signup' | 'forgotpassword' | 'resetpassword' | 'transactions' | 'admindashboard' | 'adminuser' | 'adminuserdetail' | 'admintrader' | 'adminlogs' | 'admincrm' | 'adminemails' | 'adminbonuses' | 'adminsupport' | 'adminviptracking' | 'adminsharkcards' | 'adminstaff' | 'admintelegram' | 'adminwithdrawals' | 'admindeposits' | 'adminreferrals' | 'adminpopups' | 'admingiveaway' | 'adminacquisition' | 'adminexclusiveaffiliates' | 'adminphonereveals' | 'adminstafflogs' | 'giveaway' | 'event' | 'terms' | 'bonusterms' | 'support' | 'legal' | 'privacy' | 'lp' | 'nodepositbonus' | 'reviewbonus' | 'referfriendsbonus';
 
 interface NavigationContextType {
   currentPage: PageType;
@@ -105,6 +108,18 @@ function App() {
     }
     if (pathname === '/copy-trading') {
       setCurrentPage('copytrading');
+      return;
+    }
+    if (pathname === '/no-deposit-bonus') {
+      setCurrentPage('nodepositbonus');
+      return;
+    }
+    if (pathname === '/review-bonus') {
+      setCurrentPage('reviewbonus');
+      return;
+    }
+    if (pathname === '/refer-friends-bonus' || pathname === '/referral-bonus') {
+      setCurrentPage('referfriendsbonus');
       return;
     }
 
@@ -227,7 +242,10 @@ function App() {
       support: 'Support',
       legal: 'Legal Hub',
       privacy: 'Privacy Policy',
-      lp: 'Copy Trading'
+      lp: 'Copy Trading',
+      nodepositbonus: 'No Deposit Bonus - Get $20 Free USDT',
+      reviewbonus: 'Leave a Review & Earn $5 USDT',
+      referfriendsbonus: 'Refer Friends & Earn Up to 70% Commission'
     };
     return titles[page] || page;
   };
@@ -352,6 +370,12 @@ function App() {
         return wrapWithTracker(<PrivacyPolicy />);
       case 'lp':
         return wrapWithTracker(<CopyTradingLandingPage />);
+      case 'nodepositbonus':
+        return wrapWithTracker(<NoDepositBonus />);
+      case 'reviewbonus':
+        return wrapWithTracker(<ReviewBonus />);
+      case 'referfriendsbonus':
+        return wrapWithTracker(<ReferFriendsBonus />);
       default:
         return wrapWithTracker(<HomePage />);
     }
