@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Activity, DollarSign, Shield, AlertCircle, FileText, RefreshCw, Search, Filter,
   Users, TrendingUp, Download, Tag, BarChart3, UserCheck, UserX, Clock,
@@ -13,6 +13,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '../App';
 import { loggingService } from '../services/loggingService';
+import { useAdminPresence } from '../hooks/usePresence';
 
 type MainTab = 'analytics' | 'users' | 'segments' | 'referrers' | 'depositor_tree' | 'logs' | 'popups' | 'phones';
 type LogType = 'admin' | 'financial' | 'kyc' | 'security' | 'system';
@@ -103,6 +104,7 @@ interface UserPhone {
 export default function AdminCRM() {
   const { user, profile } = useAuth();
   const { navigateTo } = useNavigation();
+  const { onlineUsers, isUserOnline } = useAdminPresence();
   const [mainTab, setMainTab] = useState<MainTab>('analytics');
   const [logTab, setLogTab] = useState<LogType>('admin');
   const [loading, setLoading] = useState(true);
@@ -180,6 +182,31 @@ export default function AdminCRM() {
     success: null,
     error: null,
   });
+
+  const onlineUserIds = useMemo(() => new Set(onlineUsers.map(u => u.id)), [onlineUsers]);
+
+  const displayedUsers = useMemo(() => {
+    const enrichedUsers = users.map(u => ({
+      ...u,
+      is_online: onlineUserIds.has(u.id),
+    }));
+
+    if (filters.onlineStatus === 'online') {
+      return enrichedUsers.filter(u => u.is_online);
+    } else if (filters.onlineStatus === 'offline') {
+      return enrichedUsers.filter(u => !u.is_online);
+    }
+    return enrichedUsers;
+  }, [users, onlineUserIds, filters.onlineStatus]);
+
+  const displayedCount = useMemo(() => {
+    if (filters.onlineStatus === 'online') {
+      return onlineUsers.filter(u => !(u as any).is_admin_observer).length;
+    } else if (filters.onlineStatus === 'offline') {
+      return totalUsers - onlineUsers.filter(u => !(u as any).is_admin_observer).length;
+    }
+    return totalUsers;
+  }, [filters.onlineStatus, onlineUsers, totalUsers]);
 
   const broadcastTemplates = [
     {
@@ -323,40 +350,6 @@ export default function AdminCRM() {
     setPage(0);
   }, [filters]);
 
-  useEffect(() => {
-    if (!profile?.is_admin) return;
-
-    const channel = supabase
-      .channel('admin-crm-user-sessions')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_sessions',
-        },
-        (payload) => {
-          const session = payload.new as any;
-          if (session) {
-            const heartbeat = new Date(session.heartbeat || session.last_activity);
-            const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
-            const isOnline = session.is_online && heartbeat > twoMinutesAgo;
-
-            setUsers(prevUsers => prevUsers.map(user =>
-              user.id === session.user_id
-                ? { ...user, is_online: isOnline, last_activity: session.last_activity }
-                : user
-            ));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [profile]);
-
   const loadInitialData = async () => {
     setLoading(true);
     try {
@@ -402,32 +395,7 @@ export default function AdminCRM() {
       });
 
       if (data) {
-        const { data: sessions } = await supabase
-          .from('user_sessions')
-          .select('user_id, is_online, last_activity, heartbeat');
-
-        const sessionsMap = new Map(
-          sessions?.map(s => {
-            const heartbeat = new Date(s.heartbeat || s.last_activity);
-            const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
-            const isOnline = s.is_online && heartbeat > twoMinutesAgo;
-            return [s.user_id, { is_online: isOnline, last_activity: s.last_activity }];
-          }) || []
-        );
-
-        let usersWithOnlineStatus = (data.users || []).map((u: FilteredUser) => ({
-          ...u,
-          is_online: sessionsMap.get(u.id)?.is_online || false,
-          last_activity: sessionsMap.get(u.id)?.last_activity,
-        }));
-
-        if (filters.onlineStatus === 'online') {
-          usersWithOnlineStatus = usersWithOnlineStatus.filter(u => u.is_online);
-        } else if (filters.onlineStatus === 'offline') {
-          usersWithOnlineStatus = usersWithOnlineStatus.filter(u => !u.is_online);
-        }
-
-        setUsers(usersWithOnlineStatus);
+        setUsers(data.users || []);
         setTotalUsers(data.total || 0);
       }
     } catch (error) {
@@ -614,10 +582,10 @@ export default function AdminCRM() {
   };
 
   const handleSelectAll = () => {
-    if (selectedUsers.size === users.length) {
+    if (selectedUsers.size === displayedUsers.length) {
       setSelectedUsers(new Set());
     } else {
-      setSelectedUsers(new Set(users.map(u => u.id)));
+      setSelectedUsers(new Set(displayedUsers.map(u => u.id)));
     }
   };
 
@@ -1060,13 +1028,14 @@ export default function AdminCRM() {
                 </button>
               </div>
             </div>
-            {totalUsers > pageSize && (
+            {displayedCount > pageSize && (
               <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Users className="w-5 h-5 text-blue-400" />
                   <div>
                     <p className="text-blue-400 font-medium">
-                      Showing {Math.min(pageSize, totalUsers)} of {totalUsers} users
+                      Showing {displayedUsers.length} of {displayedCount} users
+                      {filters.onlineStatus === 'online' && ` (${onlineUsers.length} online now)`}
                     </p>
                     <p className="text-blue-400/70 text-sm">
                       Use pagination controls below or change page size to view more users
@@ -1189,7 +1158,7 @@ export default function AdminCRM() {
                       <th className="px-4 py-3 text-left">
                         <input
                           type="checkbox"
-                          checked={selectedUsers.size === users.length && users.length > 0}
+                          checked={selectedUsers.size === displayedUsers.length && displayedUsers.length > 0}
                           onChange={handleSelectAll}
                           className="rounded border-gray-600"
                         />
@@ -1204,7 +1173,7 @@ export default function AdminCRM() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-800">
-                    {users.map((u) => (
+                    {displayedUsers.map((u) => (
                       <tr key={u.id} className="hover:bg-[#1a1d24]/50 transition-colors">
                         <td className="px-4 py-3">
                           <input

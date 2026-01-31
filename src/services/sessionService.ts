@@ -3,15 +3,47 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 
 type OnlineStatusCallback = (userId: string, isOnline: boolean) => void;
 
+function detectPlatform(): { platform: string; deviceInfo: Record<string, unknown> } {
+  const ua = navigator.userAgent.toLowerCase();
+  const isStandalone = (window.matchMedia('(display-mode: standalone)').matches) ||
+                       ((window.navigator as any).standalone === true);
+  const isIOS = /iphone|ipad|ipod/.test(ua);
+  const isAndroid = /android/.test(ua);
+  const isMobile = isIOS || isAndroid || /mobile/.test(ua);
+
+  let platform = 'web';
+  if (isStandalone || ua.includes('shark-app') || ua.includes('wv)')) {
+    platform = 'app';
+  } else if (isMobile) {
+    platform = 'mobile_web';
+  }
+
+  const deviceInfo = {
+    userAgent: navigator.userAgent,
+    platform: navigator.platform,
+    language: navigator.language,
+    screenWidth: window.screen.width,
+    screenHeight: window.screen.height,
+    isStandalone,
+    isMobile,
+    isIOS,
+    isAndroid,
+  };
+
+  return { platform, deviceInfo };
+}
+
 class SessionService {
   private updateInterval: NodeJS.Timeout | null = null;
   private userId: string | null = null;
   private channel: RealtimeChannel | null = null;
   private onlineStatusCallbacks: Set<OnlineStatusCallback> = new Set();
   private onlineUsers: Set<string> = new Set();
+  private platformInfo: { platform: string; deviceInfo: Record<string, unknown> } | null = null;
 
   start(userId: string) {
     this.userId = userId;
+    this.platformInfo = detectPlatform();
     this.updateSession(true);
 
     if (this.updateInterval) {
@@ -137,6 +169,8 @@ class SessionService {
       await supabase.rpc('update_user_session', {
         p_user_id: this.userId,
         p_is_online: isOnline,
+        p_platform: this.platformInfo?.platform || 'web',
+        p_device_info: this.platformInfo?.deviceInfo || {},
       });
     } catch (error) {
       console.error('Failed to update session:', error);

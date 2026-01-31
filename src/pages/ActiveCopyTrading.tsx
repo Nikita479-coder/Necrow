@@ -111,6 +111,15 @@ function ActiveCopyTrading() {
     profit: number;
     userProfit: number;
     platformFee: number;
+    hasOpenPositions: boolean;
+    openPositionsCount: number;
+    openPositions: Array<{
+      id: string;
+      symbol: string;
+      side: string;
+      allocated_amount: number;
+      entry_price: number;
+    }>;
   } | null>(null);
   const [respondingToTrade, setRespondingToTrade] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'positions' | 'history' | 'allocations'>('positions');
@@ -441,7 +450,10 @@ function ActiveCopyTrading() {
           userAllocation: data.user_allocation || 0,
           profit: data.profit || 0,
           userProfit: data.user_profit || 0,
-          platformFee: data.platform_fee || 0
+          platformFee: data.platform_fee || 0,
+          hasOpenPositions: data.has_open_positions || false,
+          openPositionsCount: data.open_positions_count || 0,
+          openPositions: data.open_positions || []
         });
       }
     } catch (error) {
@@ -467,6 +479,11 @@ function ActiveCopyTrading() {
       if (error) throw error;
 
       if (!data?.success) {
+        if (data?.error_code === 'OPEN_POSITIONS_EXIST') {
+          showError(`Cannot withdraw: You have ${data.open_positions_count} open position(s). Wait for positions to close.`);
+          await loadWithdrawalPreview();
+          return;
+        }
         throw new Error(data?.error || 'Failed to stop copy trading');
       }
 
@@ -1137,7 +1154,41 @@ function ActiveCopyTrading() {
             </div>
 
             <div className="p-6">
-              {selectedCopy.is_mock ? (
+              {withdrawalPreview?.hasOpenPositions ? (
+                <div className="space-y-4">
+                  <div className="bg-[#f6465d]/20 border-2 border-[#f6465d] rounded-xl p-5">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-12 h-12 bg-[#f6465d]/20 rounded-full flex items-center justify-center">
+                        <AlertTriangle className="w-6 h-6 text-[#f6465d]" />
+                      </div>
+                      <div>
+                        <h4 className="text-[#f6465d] font-bold text-lg">Cannot Withdraw Yet</h4>
+                        <p className="text-sm text-[#848e9c]">
+                          You have {withdrawalPreview.openPositionsCount} open position{withdrawalPreview.openPositionsCount !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-white mb-4">
+                      You cannot stop copy trading or withdraw funds while you have active positions. Please wait for all positions to be closed by the trader.
+                    </p>
+                    <div className="bg-[#0b0e11] rounded-lg p-3 space-y-2">
+                      <div className="text-xs text-[#848e9c] font-semibold uppercase mb-2">Open Positions</div>
+                      {withdrawalPreview.openPositions.map((pos, idx) => (
+                        <div key={pos.id || idx} className="flex items-center justify-between text-sm">
+                          <span className="text-white font-medium">{pos.symbol}</span>
+                          <span className="text-[#848e9c]">${pos.allocated_amount?.toFixed(2)} allocated</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="bg-[#f0b90b]/10 border border-[#f0b90b]/30 rounded-xl p-4 flex items-start gap-3">
+                    <Info className="w-5 h-5 text-[#f0b90b] flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-[#f0b90b]">
+                      Positions will be closed when the trader closes them. Check back once all positions are settled.
+                    </p>
+                  </div>
+                </div>
+              ) : selectedCopy.is_mock ? (
                 <div className="space-y-4">
                   <div className="bg-[#0b0e11] rounded-xl p-5">
                     <div className="flex items-center justify-between mb-3">
@@ -1388,20 +1439,29 @@ function ActiveCopyTrading() {
                 </div>
               )}
 
-              <button
-                onClick={handleWithdraw}
-                disabled={withdrawing}
-                className="w-full mt-6 bg-gradient-to-r from-[#f6465d] to-[#d93547] hover:from-[#ff4d63] hover:to-[#e03a4c] disabled:from-[#474d57] disabled:to-[#474d57] disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-all"
-              >
-                {withdrawing ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    Processing...
-                  </span>
-                ) : (
-                  selectedCopy.is_mock ? 'Stop Mock Copy Trading' : 'Confirm Withdrawal'
-                )}
-              </button>
+              {withdrawalPreview?.hasOpenPositions ? (
+                <button
+                  onClick={() => setShowWithdrawModal(false)}
+                  className="w-full mt-6 bg-[#2b3139] hover:bg-[#363d47] text-white font-bold py-4 rounded-xl transition-all"
+                >
+                  Close
+                </button>
+              ) : (
+                <button
+                  onClick={handleWithdraw}
+                  disabled={withdrawing}
+                  className="w-full mt-6 bg-gradient-to-r from-[#f6465d] to-[#d93547] hover:from-[#ff4d63] hover:to-[#e03a4c] disabled:from-[#474d57] disabled:to-[#474d57] disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-all"
+                >
+                  {withdrawing ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Processing...
+                    </span>
+                  ) : (
+                    selectedCopy.is_mock ? 'Stop Mock Copy Trading' : 'Confirm Withdrawal'
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>

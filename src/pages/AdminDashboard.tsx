@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
-import { Users, Search, TrendingUp, DollarSign, AlertTriangle, Activity, Shield, Filter, X, ArrowUpDown, LogIn, Copy, ExternalLink, AlertCircle, Check, Bot, UserPlus, Eye, Image, Megaphone, Send, RefreshCw, Gift } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Users, Search, TrendingUp, DollarSign, AlertTriangle, Activity, Shield, Filter, X, ArrowUpDown, LogIn, Copy, ExternalLink, AlertCircle, Check, Bot, UserPlus, Eye, Image, Megaphone, Send, RefreshCw, Gift, Smartphone, Monitor, Globe } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '../App';
+import { useAdminPresence } from '../hooks/usePresence';
 import Navbar from '../components/Navbar';
 
 interface UserSummary {
@@ -22,11 +23,19 @@ interface UserSummary {
   has_referrer?: boolean;
   referral_count?: number;
   total_deposits?: number;
+  platform?: string;
+}
+
+interface PlatformStats {
+  platform: string;
+  total_users: number;
+  online_users: number;
 }
 
 export default function AdminDashboard() {
   const { user, canAccessAdmin, hasPermission, staffInfo, profile, loading: authLoading } = useAuth();
   const { navigateTo } = useNavigation();
+  const { onlineUsers, isUserOnline } = useAdminPresence();
   const [users, setUsers] = useState<UserSummary[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
@@ -41,6 +50,32 @@ export default function AdminDashboard() {
   const [hasAccess, setHasAccess] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
+  const platformStats = useMemo(() => {
+    const stats: Record<string, { total: number; online: number }> = {
+      desktop: { total: 0, online: 0 },
+      ios: { total: 0, online: 0 },
+      android: { total: 0, online: 0 },
+      web: { total: 0, online: 0 },
+    };
+
+    onlineUsers.forEach(u => {
+      const platform = u.platform || 'web';
+      if (stats[platform]) {
+        stats[platform].online++;
+      } else {
+        stats.web.online++;
+      }
+    });
+
+    return Object.entries(stats)
+      .filter(([_, v]) => v.online > 0)
+      .map(([platform, v]) => ({
+        platform,
+        total_users: users.length,
+        online_users: v.online,
+      }));
+  }, [onlineUsers, users.length]);
+
   // Filter states
   const [filterVipTier, setFilterVipTier] = useState<string>('all');
   const [filterKycStatus, setFilterKycStatus] = useState<string>('all');
@@ -49,6 +84,7 @@ export default function AdminDashboard() {
   const [filterOnlineStatus, setFilterOnlineStatus] = useState<string>('all');
   const [filterReferralStatus, setFilterReferralStatus] = useState<string>('all');
   const [filterDepositStatus, setFilterDepositStatus] = useState<string>('all');
+  const [filterPlatform, setFilterPlatform] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('newest');
 
   const [loginAsModal, setLoginAsModal] = useState<{
@@ -202,24 +238,22 @@ export default function AdminDashboard() {
 
     const refreshOnlineStatus = async () => {
       try {
-        const { data: sessions } = await supabase
-          .from('user_sessions')
-          .select('user_id, is_online, last_activity, heartbeat');
+        const { data: sessions } = await supabase.rpc('get_admin_all_sessions');
 
         if (sessions) {
-          const now = Date.now();
           const sessionsMap = new Map(
-            sessions.map(s => {
-              const heartbeat = new Date(s.heartbeat || s.last_activity).getTime();
-              const isOnline = s.is_online && (now - heartbeat) < 2 * 60 * 1000;
-              return [s.user_id, { is_online: isOnline, last_activity: s.last_activity }];
-            })
+            sessions.map((s: any) => [s.user_id, {
+              is_online: s.is_online,
+              last_activity: s.last_activity,
+              platform: s.platform || 'web'
+            }])
           );
 
           setUsers(prevUsers => prevUsers.map(user => ({
             ...user,
             is_online: sessionsMap.get(user.id)?.is_online || false,
             last_activity: sessionsMap.get(user.id)?.last_activity || user.last_activity,
+            platform: sessionsMap.get(user.id)?.platform || user.platform || 'web',
           })));
         }
       } catch (error) {
@@ -271,10 +305,7 @@ export default function AdminDashboard() {
     }
 
     try {
-      const [totalCountResult, sessionsResult] = await Promise.all([
-        supabase.rpc('get_admin_users_total_count'),
-        supabase.from('user_sessions').select('user_id, is_online, last_activity, heartbeat')
-      ]);
+      const totalCountResult = await supabase.rpc('get_admin_users_total_count');
 
       const totalCount = totalCountResult.data || 0;
       const batchSize = 500;
@@ -306,22 +337,7 @@ export default function AdminDashboard() {
         return;
       }
 
-      const now = Date.now();
-      const sessionsMap = new Map(
-        sessionsResult.data?.map(s => {
-          const heartbeat = new Date(s.heartbeat || s.last_activity).getTime();
-          const isOnline = s.is_online && (now - heartbeat) < 2 * 60 * 1000;
-          return [s.user_id, { is_online: isOnline, last_activity: s.last_activity }];
-        }) || []
-      );
-
-      const usersWithOnlineStatus = allUsers.map(u => ({
-        ...u,
-        is_online: sessionsMap.get(u.id)?.is_online || false,
-        last_activity: sessionsMap.get(u.id)?.last_activity,
-      }));
-
-      setUsers(usersWithOnlineStatus);
+      setUsers(allUsers);
     } catch (err) {
       console.error('Failed to load users:', err);
       await loadUsersDirectly();
@@ -364,63 +380,56 @@ export default function AdminDashboard() {
 
     const profiles = allProfiles;
 
-    const [walletsRes, positionsRes, vipRes, referralRes, sessionsRes] = await Promise.all([
+    const [walletsRes, positionsRes, vipRes, referralRes] = await Promise.all([
       supabase.from('wallets').select('user_id, balance'),
       supabase.from('futures_positions').select('user_id, unrealized_pnl').eq('status', 'open'),
       supabase.from('user_vip_status').select('user_id, current_level'),
-      supabase.from('referral_stats').select('user_id, total_referrals'),
-      supabase.from('user_sessions').select('user_id, is_online, last_activity, heartbeat')
+      supabase.from('referral_stats').select('user_id, total_referrals')
     ]);
 
     const walletMap = new Map<string, number>();
     walletsRes.data?.forEach(w => {
-      const current = walletMap.get(w.user_id) || 0;
-      walletMap.set(w.user_id, current + parseFloat(w.balance || '0'));
+      const key = String(w.user_id);
+      const current = walletMap.get(key) || 0;
+      walletMap.set(key, current + parseFloat(w.balance || '0'));
     });
 
     const positionMap = new Map<string, { count: number; pnl: number }>();
     positionsRes.data?.forEach(p => {
-      const current = positionMap.get(p.user_id) || { count: 0, pnl: 0 };
-      positionMap.set(p.user_id, {
+      const key = String(p.user_id);
+      const current = positionMap.get(key) || { count: 0, pnl: 0 };
+      positionMap.set(key, {
         count: current.count + 1,
         pnl: current.pnl + parseFloat(p.unrealized_pnl || '0')
       });
     });
 
-    const vipMap = new Map(vipRes.data?.map(v => [v.user_id, v.current_level]) || []);
-    const referralMap = new Map(referralRes.data?.map(r => [r.user_id, r.total_referrals]) || []);
-
-    const now = Date.now();
-    const sessionsMap = new Map(
-      sessionsRes.data?.map(s => {
-        const heartbeat = new Date(s.heartbeat || s.last_activity).getTime();
-        const isOnline = s.is_online && (now - heartbeat) < 2 * 60 * 1000;
-        return [s.user_id, { is_online: isOnline, last_activity: s.last_activity }];
-      }) || []
-    );
+    const vipMap = new Map(vipRes.data?.map(v => [String(v.user_id), v.current_level]) || []);
+    const referralMap = new Map(referralRes.data?.map(r => [String(r.user_id), r.total_referrals]) || []);
 
     const emailMap = new Map<string, string>();
     const userIds = profiles.map(p => p.id);
     const { data: emailsData } = await supabase.rpc('get_user_emails_bulk', { user_ids: userIds });
-    emailsData?.forEach((e: { user_id: string; email: string }) => emailMap.set(e.user_id, e.email || 'N/A'));
+    emailsData?.forEach((e: { user_id: string; email: string }) => emailMap.set(String(e.user_id), e.email || 'N/A'));
 
-    const usersWithData = profiles.map(profile => ({
-      id: profile.id,
-      email: emailMap.get(profile.id) || 'N/A',
-      username: profile.username,
-      full_name: profile.full_name,
-      kyc_status: profile.kyc_status,
-      kyc_level: profile.kyc_level,
-      created_at: profile.created_at,
-      total_balance: walletMap.get(profile.id) || 0,
-      open_positions: positionMap.get(profile.id)?.count || 0,
-      unrealized_pnl: positionMap.get(profile.id)?.pnl || 0,
-      vip_tier: vipMap.get(profile.id) || 'None',
-      has_referrer: !!profile.referred_by,
-      referral_count: referralMap.get(profile.id) || 0,
-      is_online: sessionsMap.get(profile.id)?.is_online || false,
-      last_activity: sessionsMap.get(profile.id)?.last_activity
-    }));
+    const usersWithData = profiles.map(profile => {
+      const id = String(profile.id);
+      return {
+        id: profile.id,
+        email: emailMap.get(id) || 'N/A',
+        username: profile.username,
+        full_name: profile.full_name,
+        kyc_status: profile.kyc_status,
+        kyc_level: profile.kyc_level,
+        created_at: profile.created_at,
+        total_balance: walletMap.get(id) || 0,
+        open_positions: positionMap.get(id)?.count || 0,
+        unrealized_pnl: positionMap.get(id)?.pnl || 0,
+        vip_tier: vipMap.get(id) || 'None',
+        has_referrer: !!profile.referred_by,
+        referral_count: referralMap.get(id) || 0,
+      };
+    });
 
     setUsers(usersWithData);
   };
@@ -477,9 +486,10 @@ export default function AdminDashboard() {
       if (filterPositions === 'no_positions' && u.open_positions > 0) return false;
       if (filterPositions === 'multiple_positions' && u.open_positions < 2) return false;
 
-      // Online status filter
-      if (filterOnlineStatus === 'online' && !u.is_online) return false;
-      if (filterOnlineStatus === 'offline' && u.is_online) return false;
+      // Online status filter (using real-time presence)
+      const userIsOnline = isUserOnline(u.id);
+      if (filterOnlineStatus === 'online' && !userIsOnline) return false;
+      if (filterOnlineStatus === 'offline' && userIsOnline) return false;
 
       // Referral status filter
       if (filterReferralStatus === 'no_referrer' && u.has_referrer) return false;
@@ -490,6 +500,9 @@ export default function AdminDashboard() {
       // Deposit status filter
       if (filterDepositStatus === 'has_deposits' && (u.total_deposits || 0) <= 0) return false;
       if (filterDepositStatus === 'no_deposits' && (u.total_deposits || 0) > 0) return false;
+
+      // Platform filter
+      if (filterPlatform !== 'all' && u.platform !== filterPlatform) return false;
 
       return true;
     })
@@ -528,7 +541,7 @@ export default function AdminDashboard() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(0);
-  }, [searchTerm, filterVipTier, filterKycStatus, filterBalance, filterPositions, filterOnlineStatus, filterReferralStatus, filterDepositStatus, sortBy]);
+  }, [searchTerm, filterVipTier, filterKycStatus, filterBalance, filterPositions, filterOnlineStatus, filterReferralStatus, filterDepositStatus, filterPlatform, sortBy]);
 
   const clearFilters = () => {
     setFilterVipTier('all');
@@ -538,6 +551,7 @@ export default function AdminDashboard() {
     setFilterOnlineStatus('all');
     setFilterReferralStatus('all');
     setFilterDepositStatus('all');
+    setFilterPlatform('all');
     setSortBy('newest');
   };
 
@@ -549,8 +563,25 @@ export default function AdminDashboard() {
     filterOnlineStatus !== 'all',
     filterReferralStatus !== 'all',
     filterDepositStatus !== 'all',
+    filterPlatform !== 'all',
     sortBy !== 'newest'
   ].filter(Boolean).length;
+
+  const getPlatformIcon = (platform: string) => {
+    switch (platform) {
+      case 'app': return <Smartphone className="w-4 h-4" />;
+      case 'mobile_web': return <Globe className="w-4 h-4" />;
+      default: return <Monitor className="w-4 h-4" />;
+    }
+  };
+
+  const getPlatformLabel = (platform: string) => {
+    switch (platform) {
+      case 'app': return 'App';
+      case 'mobile_web': return 'Mobile';
+      default: return 'Desktop';
+    }
+  };
 
   const getKycBadgeColor = (status: string) => {
     switch (status) {
@@ -970,6 +1001,70 @@ export default function AdminDashboard() {
           )}
         </div>
 
+        {platformStats.length > 0 && (
+          <div className="bg-[#1a1d24] rounded-xl p-6 border border-gray-800 mb-8">
+            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <Activity className="w-5 h-5 text-[#f0b90b]" />
+              Platform Breakdown - Online Users
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {platformStats.map((stat) => (
+                <div
+                  key={stat.platform}
+                  className={`p-4 rounded-xl border ${
+                    stat.platform === 'app'
+                      ? 'bg-green-500/10 border-green-500/30'
+                      : stat.platform === 'mobile_web'
+                      ? 'bg-blue-500/10 border-blue-500/30'
+                      : 'bg-gray-500/10 border-gray-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      stat.platform === 'app'
+                        ? 'bg-green-500/20 text-green-400'
+                        : stat.platform === 'mobile_web'
+                        ? 'bg-blue-500/20 text-blue-400'
+                        : 'bg-gray-500/20 text-gray-400'
+                    }`}>
+                      {stat.platform === 'app' ? <Smartphone className="w-5 h-5" /> :
+                       stat.platform === 'mobile_web' ? <Globe className="w-5 h-5" /> :
+                       <Monitor className="w-5 h-5" />}
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold">
+                        {stat.platform === 'app' ? 'Mobile App' :
+                         stat.platform === 'mobile_web' ? 'Mobile Web' :
+                         'Desktop Web'}
+                      </h3>
+                      <p className="text-xs text-gray-400">
+                        {stat.platform === 'app' ? 'PWA / Native App' :
+                         stat.platform === 'mobile_web' ? 'Mobile Browser' :
+                         'Desktop Browser'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-2xl font-bold text-white">{stat.online_users}</p>
+                      <p className="text-xs text-gray-400">Online Now</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-medium text-gray-300">{stat.total_users}</p>
+                      <p className="text-xs text-gray-400">Total Sessions</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {platformStats.length === 0 && (
+                <div className="col-span-3 text-center py-4 text-gray-400">
+                  No session data available yet
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {hasPermission('view_users') && (
           <div className="bg-[#1a1d24] rounded-xl p-6 border border-gray-800">
             <div className="mb-6">
@@ -1135,6 +1230,21 @@ export default function AdminDashboard() {
                       </select>
                     </div>
 
+                    {/* Platform Filter */}
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-2">Platform</label>
+                      <select
+                        value={filterPlatform}
+                        onChange={(e) => setFilterPlatform(e.target.value)}
+                        className="w-full bg-[#1a1d24] border border-gray-700 rounded-lg px-3 py-2 text-white outline-none focus:border-[#f0b90b] transition-colors"
+                      >
+                        <option value="all">All Platforms</option>
+                        <option value="app">Mobile App (PWA)</option>
+                        <option value="mobile_web">Mobile Web</option>
+                        <option value="web">Desktop Web</option>
+                      </select>
+                    </div>
+
                     {/* Sort By */}
                     <div className="md:col-span-2">
                       <label className="block text-sm text-gray-400 mb-2 flex items-center gap-2">
@@ -1192,12 +1302,27 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredUsers.map((user) => (
+                    {filteredUsers.map((user) => {
+                      const userOnline = isUserOnline(user.id);
+                      const userPresence = onlineUsers.find(u => u.id === user.id);
+                      const userPlatform = userPresence?.platform || user.platform;
+                      return (
                       <tr key={user.id} className="border-b border-gray-800/50 hover:bg-[#0b0e11] transition-colors">
                         <td className="py-4 px-4">
                           <div>
                             <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${user.is_online ? 'bg-green-400' : 'bg-gray-600'}`} title={user.is_online ? 'Online' : 'Offline'}></div>
+                              <div className="flex items-center gap-1">
+                                <div className={`w-2 h-2 rounded-full ${userOnline ? 'bg-green-400' : 'bg-gray-600'}`} title={userOnline ? 'Online' : 'Offline'}></div>
+                                {userOnline && userPlatform && (
+                                  <span className={`${
+                                    userPlatform === 'app' ? 'text-green-400' :
+                                    userPlatform === 'mobile_web' ? 'text-blue-400' :
+                                    'text-gray-400'
+                                  }`} title={getPlatformLabel(userPlatform)}>
+                                    {getPlatformIcon(userPlatform)}
+                                  </span>
+                                )}
+                              </div>
                               <div>
                                 <div className="text-white font-medium">{user.full_name || 'No name'}</div>
                                 {user.username && (
@@ -1264,7 +1389,8 @@ export default function AdminDashboard() {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
 
