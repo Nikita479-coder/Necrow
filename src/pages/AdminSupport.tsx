@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageSquare, Clock, CheckCircle, User, Search, Filter, Wifi, WifiOff, Eye, EyeOff, Zap, FileText, Plus, Edit2, Trash2, Save, X, ToggleLeft, ToggleRight, Image, Download, Paperclip } from 'lucide-react';
+import { MessageSquare, Clock, CheckCircle, User, Search, Filter, Wifi, WifiOff, Eye, EyeOff, Zap, FileText, Plus, Edit2, Trash2, Save, X, ToggleLeft, ToggleRight, Image, Download, Paperclip, Gift, DollarSign, Lock, Unlock } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -53,6 +53,25 @@ interface Message {
   attachments?: Attachment[];
 }
 
+interface BonusType {
+  id: string;
+  name: string;
+  description: string;
+  default_amount: number;
+  is_locked_bonus: boolean;
+  category: string;
+}
+
+interface UserActiveBonus {
+  id: string;
+  bonus_type_name: string;
+  original_amount: number;
+  current_amount: number;
+  status: string;
+  expires_at: string | null;
+  created_at: string;
+}
+
 export default function AdminSupport() {
   const { user, profile, canAccessAdmin, hasPermission } = useAuth();
   const { navigateTo } = useNavigation();
@@ -89,6 +108,15 @@ export default function AdminSupport() {
   });
   const [loadedImages, setLoadedImages] = useState<Record<string, string>>({});
   const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
+
+  const [showBonusModal, setShowBonusModal] = useState(false);
+  const [bonusTypes, setBonusTypes] = useState<BonusType[]>([]);
+  const [selectedBonusType, setSelectedBonusType] = useState<string>('');
+  const [bonusAmount, setBonusAmount] = useState<string>('');
+  const [bonusReason, setBonusReason] = useState<string>('');
+  const [awardingBonus, setAwardingBonus] = useState(false);
+  const [userActiveBonuses, setUserActiveBonuses] = useState<UserActiveBonus[]>([]);
+  const [loadingUserBonuses, setLoadingUserBonuses] = useState(false);
 
   const loadImageAttachment = async (attachmentId: string) => {
     if (loadedImages[attachmentId] || loadingImages.has(attachmentId)) return;
@@ -182,6 +210,112 @@ export default function AdminSupport() {
       setAdminQuickReplies(data || []);
     } catch (error) {
       console.error('Error loading admin quick replies:', error);
+    }
+  };
+
+  const loadBonusTypes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('bonus_types')
+        .select('id, name, description, default_amount, is_locked_bonus, category')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setBonusTypes(data || []);
+    } catch (error) {
+      console.error('Error loading bonus types:', error);
+    }
+  };
+
+  const loadUserActiveBonuses = async (userId: string) => {
+    setLoadingUserBonuses(true);
+    try {
+      const { data, error } = await supabase
+        .from('locked_bonuses')
+        .select('id, bonus_type_name, original_amount, current_amount, status, expires_at, created_at')
+        .eq('user_id', userId)
+        .in('status', ['active', 'pending'])
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setUserActiveBonuses(data || []);
+    } catch (error) {
+      console.error('Error loading user bonuses:', error);
+      setUserActiveBonuses([]);
+    } finally {
+      setLoadingUserBonuses(false);
+    }
+  };
+
+  const handleOpenBonusModal = () => {
+    loadBonusTypes();
+    if (selectedTicketData?.user_id) {
+      loadUserActiveBonuses(selectedTicketData.user_id);
+    }
+    setSelectedBonusType('');
+    setBonusAmount('');
+    setBonusReason('');
+    setShowBonusModal(true);
+  };
+
+  const handleBonusTypeChange = (bonusTypeId: string) => {
+    setSelectedBonusType(bonusTypeId);
+    const bonusType = bonusTypes.find(b => b.id === bonusTypeId);
+    if (bonusType) {
+      setBonusAmount(bonusType.default_amount.toString());
+    }
+  };
+
+  const handleAwardBonus = async () => {
+    if (!selectedTicketData || !selectedBonusType || !bonusAmount) return;
+
+    setAwardingBonus(true);
+    try {
+      const bonusType = bonusTypes.find(b => b.id === selectedBonusType);
+      const amount = parseFloat(bonusAmount);
+
+      if (bonusType?.is_locked_bonus) {
+        const { error } = await supabase.rpc('award_locked_bonus', {
+          p_user_id: selectedTicketData.user_id,
+          p_bonus_type_id: selectedBonusType,
+          p_amount: amount,
+          p_reason: bonusReason || `Awarded via support ticket: ${selectedTicketData.subject}`,
+        });
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.rpc('award_user_bonus', {
+          p_user_id: selectedTicketData.user_id,
+          p_bonus_type_id: selectedBonusType,
+          p_amount: amount,
+          p_reason: bonusReason || `Awarded via support ticket: ${selectedTicketData.subject}`,
+        });
+
+        if (error) throw error;
+      }
+
+      await loggingService.logAdminActivity({
+        action_type: 'bonus_awarded',
+        action_description: `Awarded ${amount} USDT ${bonusType?.name} bonus via support chat`,
+        target_user_id: selectedTicketData.user_id,
+        metadata: {
+          ticket_id: selectedTicket,
+          bonus_type: bonusType?.name,
+          amount,
+          is_locked: bonusType?.is_locked_bonus,
+        },
+      });
+
+      setShowBonusModal(false);
+
+      const bonusMessage = `Bonus credited: ${amount} USDT (${bonusType?.name})${bonusType?.is_locked_bonus ? ' [Locked Bonus]' : ''}`;
+      setNewMessage(bonusMessage);
+    } catch (error) {
+      console.error('Error awarding bonus:', error);
+      alert('Failed to award bonus. Please try again.');
+    } finally {
+      setAwardingBonus(false);
     }
   };
 
@@ -1269,18 +1403,27 @@ export default function AdminSupport() {
                         )
                       </p>
                     </div>
-                    <select
-                      value={selectedTicketData.status}
-                      onChange={(e) => handleStatusChange(selectedTicket, e.target.value)}
-                      className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                    >
-                      <option value="open">Open</option>
-                      <option value="in_progress">In Progress</option>
-                      <option value="waiting_user">Waiting User</option>
-                      <option value="waiting_admin">Waiting Admin</option>
-                      <option value="resolved">Resolved</option>
-                      <option value="closed">Closed</option>
-                    </select>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={handleOpenBonusModal}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                      >
+                        <Gift className="w-4 h-4" />
+                        Credit Bonus
+                      </button>
+                      <select
+                        value={selectedTicketData.status}
+                        onChange={(e) => handleStatusChange(selectedTicket, e.target.value)}
+                        className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                      >
+                        <option value="open">Open</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="waiting_user">Waiting User</option>
+                        <option value="waiting_admin">Waiting Admin</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="closed">Closed</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
@@ -1479,6 +1622,180 @@ export default function AdminSupport() {
           </div>
         </div>
       </div>
+
+      {showBonusModal && selectedTicketData && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 border border-gray-700 rounded-xl w-full max-w-lg mx-4 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-600/20 flex items-center justify-center">
+                  <Gift className="w-5 h-5 text-green-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Credit Bonus</h3>
+                  <p className="text-sm text-gray-400">
+                    {selectedTicketData.user_profile?.username}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowBonusModal(false)}
+                className="p-1 text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {(loadingUserBonuses || userActiveBonuses.length > 0) && (
+              <div className="mb-6 p-4 bg-gray-700/30 border border-gray-600 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <Gift className="w-4 h-4 text-yellow-500" />
+                  <span className="text-sm font-medium text-white">Active Bonuses</span>
+                  {userActiveBonuses.length > 0 && (
+                    <span className="px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 text-xs">
+                      {userActiveBonuses.length}
+                    </span>
+                  )}
+                </div>
+                {loadingUserBonuses ? (
+                  <div className="flex items-center gap-2 text-gray-400 text-sm">
+                    <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                    Loading bonuses...
+                  </div>
+                ) : userActiveBonuses.length === 0 ? (
+                  <p className="text-sm text-gray-400">No active bonuses</p>
+                ) : (
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {userActiveBonuses.map((bonus) => (
+                      <div
+                        key={bonus.id}
+                        className="flex items-center justify-between p-2 bg-gray-800/50 rounded-lg"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-white truncate">{bonus.bonus_type_name}</span>
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                              bonus.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+                            }`}>
+                              {bonus.status}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
+                            <span>{bonus.current_amount.toFixed(2)} USDT</span>
+                            {bonus.expires_at && (
+                              <span>Exp: {new Date(bonus.expires_at).toLocaleDateString()}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-gray-400 mb-2 block">Bonus Type</label>
+                <select
+                  value={selectedBonusType}
+                  onChange={(e) => handleBonusTypeChange(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500"
+                >
+                  <option value="">Select a bonus type...</option>
+                  {bonusTypes.map((bonus) => (
+                    <option key={bonus.id} value={bonus.id}>
+                      {bonus.name} ({bonus.default_amount} USDT) {bonus.is_locked_bonus ? '[Locked]' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedBonusType && (
+                <>
+                  {(() => {
+                    const selectedBonus = bonusTypes.find(b => b.id === selectedBonusType);
+                    return selectedBonus ? (
+                      <div className={`p-3 rounded-lg border ${
+                        selectedBonus.is_locked_bonus
+                          ? 'bg-orange-500/10 border-orange-500/30'
+                          : 'bg-green-500/10 border-green-500/30'
+                      }`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          {selectedBonus.is_locked_bonus ? (
+                            <Lock className="w-4 h-4 text-orange-400" />
+                          ) : (
+                            <Unlock className="w-4 h-4 text-green-400" />
+                          )}
+                          <span className={`text-sm font-medium ${
+                            selectedBonus.is_locked_bonus ? 'text-orange-400' : 'text-green-400'
+                          }`}>
+                            {selectedBonus.is_locked_bonus ? 'Locked Bonus' : 'Instant Bonus'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-400">{selectedBonus.description}</p>
+                      </div>
+                    ) : null;
+                  })()}
+
+                  <div>
+                    <label className="text-sm text-gray-400 mb-2 block">Amount (USDT)</label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="number"
+                        value={bonusAmount}
+                        onChange={(e) => setBonusAmount(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500"
+                        placeholder="0.00"
+                        step="0.01"
+                        min="0"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm text-gray-400 mb-2 block">Reason (Optional)</label>
+                    <textarea
+                      value={bonusReason}
+                      onChange={(e) => setBonusReason(e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500 resize-none"
+                      rows={2}
+                      placeholder="e.g., Trustpilot review, App download reward..."
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  onClick={() => setShowBonusModal(false)}
+                  className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAwardBonus}
+                  disabled={!selectedBonusType || !bonusAmount || parseFloat(bonusAmount) <= 0 || awardingBonus}
+                  className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {awardingBonus ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Crediting...
+                    </>
+                  ) : (
+                    <>
+                      <Gift className="w-4 h-4" />
+                      Credit Bonus
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
