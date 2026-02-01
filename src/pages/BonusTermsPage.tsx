@@ -56,13 +56,13 @@ export default function BonusTermsPage() {
             <section>
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 <Gift className="w-5 h-5 text-emerald-400" />
-                2. Welcome Package Bonus (Up to $1,610)
+                2. Welcome Package Bonus (Up to $1,635)
               </h2>
               <div className="space-y-4">
                 <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4">
                   <h3 className="font-semibold text-emerald-400 mb-2">Deposit Match Bonuses</h3>
                   <p className="text-slate-300 text-sm mb-3">
-                    New users can receive up to $1,610 in deposit match bonuses across their first three deposits!
+                    New users can receive up to $1,635 in total bonuses including verification bonus and deposit matches!
                   </p>
                 </div>
 
@@ -113,8 +113,58 @@ export default function BonusTermsPage() {
 
             <section>
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <Shield className="w-5 h-5 text-emerald-400" />
+                3. Verification Bonus ($25 USDT)
+              </h2>
+              <div className="space-y-4">
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4">
+                  <h3 className="font-semibold text-emerald-400 mb-2">Combined KYC + TrustPilot Bonus</h3>
+                  <p className="text-slate-300 text-sm mb-3">
+                    Complete identity verification and share your experience to earn $25 USDT in locked trading bonus!
+                  </p>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="bg-slate-700/50 rounded-lg p-4 border-l-4 border-emerald-500">
+                    <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
+                      <span className="text-emerald-400">KYC Verification</span>
+                    </h3>
+                    <p className="text-slate-300 text-sm mb-2">
+                      <strong className="text-emerald-400">$20 USDT</strong> - Credited upon KYC approval
+                    </p>
+                    <p className="text-xs text-slate-400">Submit ID documents for verification</p>
+                  </div>
+
+                  <div className="bg-slate-700/50 rounded-lg p-4 border-l-4 border-blue-500">
+                    <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
+                      <span className="text-blue-400">TrustPilot Review</span>
+                    </h3>
+                    <p className="text-slate-300 text-sm mb-2">
+                      <strong className="text-blue-400">$5 USDT</strong> - Credited after review verification
+                    </p>
+                    <p className="text-xs text-slate-400">Leave a 5-star review on TrustPilot</p>
+                  </div>
+                </div>
+
+                <div className="bg-slate-700/50 rounded-lg p-4">
+                  <h3 className="font-semibold text-white mb-2">Verification Bonus Terms</h3>
+                  <ul className="list-disc list-inside text-slate-300 space-y-1 text-sm">
+                    <li>Combined bonus is awarded as locked trading credit</li>
+                    <li>KYC bonus ($20) credited immediately upon approval</li>
+                    <li>Review bonus ($5) credited within 24 hours of verification</li>
+                    <li>Must complete 30 consecutive trading days to unlock</li>
+                    <li>Required: 2+ trades per day, minimum 15 minutes each</li>
+                    <li>Trading volume requirement: $12,500 (500x bonus amount)</li>
+                    <li>Profits earned from trading are withdrawable</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 <Copy className="w-5 h-5 text-[#f0b90b]" />
-                3. Copy Trading Bonus ($100)
+                4. Copy Trading Bonus ($100)
               </h2>
               <div className="space-y-4">
                 <div className="bg-[#f0b90b]/10 border border-[#f0b90b]/30 rounded-lg p-4">
@@ -167,7 +217,7 @@ export default function BonusTermsPage() {
             <section>
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 <Zap className="w-5 h-5 text-green-400" />
-                4. Zero Trading Fees Promotion
+                5. Zero Trading Fees Promotion
               </h2>
               <div className="space-y-4">
                 <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
@@ -188,7 +238,7 @@ export default function BonusTermsPage() {
             <section>
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 <Users className="w-5 h-5 text-blue-400" />
-                5. Referral Bonuses
+                6. Referral Bonuses
               </h2>
               <div className="space-y-4">
                 <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
@@ -265,7 +315,7 @@ export default function BonusTermsPage() {
             <section>
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-[#f0b90b]" />
-                6. Performance & VIP Bonuses
+                7. Performance & VIP Bonuses
               </h2>
               <div className="space-y-4">
                 <div className="bg-slate-700/50 rounded-lg p-4">
@@ -291,7 +341,7 @@ export default function BonusTermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4">7. General Terms</h2>
+              <h2 className="text-xl font-bold text-white mb-4">8. General Terms</h2>
               <div className="space-y-4 text-slate-300">
                 <div className="bg-slate-700/50 rounded-lg p-4">
                   <h3 className="font-semibold text-white mb-2">Account Restrictions</h3>
@@ -323,7 +373,7 @@ export default function BonusTermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4">8. Unlock Requirements (General)</h2>
+              <h2 className="text-xl font-bold text-white mb-4">9. Unlock Requirements (General)</h2>
               <div className="bg-gradient-to-r from-blue-900/30 to-blue-800/20 border border-blue-600/40 rounded-xl p-6 space-y-4">
                 <div className="flex items-start gap-3">
                   <Shield className="w-6 h-6 text-blue-400 flex-shrink-0 mt-1" />
@@ -372,7 +422,7 @@ export default function BonusTermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4">9. Profit Calculation</h2>
+              <h2 className="text-xl font-bold text-white mb-4">10. Profit Calculation</h2>
               <div className="bg-slate-700/50 rounded-lg p-4 text-slate-300">
                 <p className="mb-3">Profits from bonus trading are calculated as:</p>
                 <div className="bg-slate-800 rounded p-3 font-mono text-sm text-center text-[#f0b90b]">
@@ -388,7 +438,7 @@ export default function BonusTermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4">10. Expiration Policy</h2>
+              <h2 className="text-xl font-bold text-white mb-4">11. Expiration Policy</h2>
               <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 text-slate-300">
                 <ul className="list-disc list-inside text-sm space-y-2">
                   <li>Each bonus has a specific validity period (7-30 days depending on type)</li>
@@ -402,7 +452,7 @@ export default function BonusTermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4">11. Modifications and Discontinuation</h2>
+              <h2 className="text-xl font-bold text-white mb-4">12. Modifications and Discontinuation</h2>
               <div className="text-slate-300 text-sm space-y-2">
                 <p>
                   Shark Trades reserves the right to modify, suspend, or discontinue these promotional
@@ -416,7 +466,7 @@ export default function BonusTermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-white mb-4">12. Acceptance</h2>
+              <h2 className="text-xl font-bold text-white mb-4">13. Acceptance</h2>
               <div className="bg-slate-700/50 rounded-lg p-4 text-slate-300">
                 <p className="text-sm">
                   By registering an account and participating in any promotional bonus program, you

@@ -87,15 +87,15 @@ function RewardsHub() {
       type: 'trade'
     },
     {
-      id: 'trustpilot_review',
-      title: 'Leave a Review',
-      description: 'Share your experience on Trustpilot and help others discover Shark Trades',
-      reward: 5,
+      id: 'kyc_trustpilot_bonus',
+      title: 'Verification Bonus',
+      description: 'Complete KYC verification ($20) + Leave a TrustPilot review ($5) for $25 total',
+      reward: 25,
       rewardType: 'locked_bonus',
       target: 1,
-      icon: '⭐',
+      icon: '🎁',
       type: 'external',
-      externalLink: 'https://www.trustpilot.com/review/shark-trades.com'
+      externalLink: '/review-bonus'
     },
     {
       id: 'mobile_app_download',

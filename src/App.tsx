@@ -243,8 +243,8 @@ function App() {
       legal: 'Legal Hub',
       privacy: 'Privacy Policy',
       lp: 'Copy Trading',
-      nodepositbonus: 'No Deposit Bonus - Get $20 Free USDT',
-      reviewbonus: 'Leave a Review & Earn $5 USDT',
+      nodepositbonus: 'Verification Bonus - Get $25 Free USDT',
+      reviewbonus: 'KYC + TrustPilot Bonus - Earn $25 USDT',
       referfriendsbonus: 'Refer Friends & Earn Up to 70% Commission'
     };
     return titles[page] || page;
