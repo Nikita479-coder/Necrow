@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -18,70 +18,160 @@ interface PresenceState {
 
 const CHANNEL_NAME = 'online-users';
 
-export function usePresence(currentUser: { id: string; email?: string; username?: string } | null): PresenceState {
-  const [onlineUsers, setOnlineUsers] = useState<PresenceUser[]>([]);
-  const channelRef = useRef<RealtimeChannel | null>(null);
+let globalChannel: RealtimeChannel | null = null;
+let globalOnlineUsers: PresenceUser[] = [];
+let globalListeners: Set<(users: PresenceUser[]) => void> = new Set();
+let currentTrackingUser: { id: string; email?: string; username?: string } | null = null;
+let isInitialized = false;
+let externalNotifyCallback: (() => void) | null = null;
 
-  const detectPlatform = useCallback(() => {
-    const userAgent = navigator.userAgent.toLowerCase();
-    if (/mobile|android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent)) {
-      return /iphone|ipad|ipod/i.test(userAgent) ? 'ios' : 'android';
+export function setExternalNotifyCallback(callback: () => void) {
+  externalNotifyCallback = callback;
+}
+
+function detectPlatform(): string {
+  const userAgent = navigator.userAgent.toLowerCase();
+  if (/mobile|android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent)) {
+    return /iphone|ipad|ipod/i.test(userAgent) ? 'ios' : 'android';
+  }
+  return 'desktop';
+}
+
+function notifyListeners() {
+  globalListeners.forEach(listener => listener([...globalOnlineUsers]));
+  if (externalNotifyCallback) {
+    externalNotifyCallback();
+  }
+}
+
+function parsePresenceState(channel: RealtimeChannel): PresenceUser[] {
+  const state = channel.presenceState();
+  const users: PresenceUser[] = [];
+
+  Object.entries(state).forEach(([key, presences]) => {
+    if (Array.isArray(presences) && presences.length > 0) {
+      const latestPresence = presences[presences.length - 1] as any;
+      if (!latestPresence.is_admin_observer && !key.startsWith('admin-observer-')) {
+        users.push({
+          id: latestPresence.user_id || key,
+          email: latestPresence.email,
+          username: latestPresence.username,
+          platform: latestPresence.platform,
+          online_at: latestPresence.online_at,
+        });
+      }
     }
-    return 'desktop';
-  }, []);
+  });
 
-  useEffect(() => {
-    if (!currentUser?.id) return;
+  return users;
+}
 
-    const channel = supabase.channel(CHANNEL_NAME, {
-      config: {
-        presence: {
-          key: currentUser.id,
-        },
+export function initializePresence(user: { id: string; email?: string; username?: string }) {
+  if (currentTrackingUser?.id === user.id && globalChannel && isInitialized) {
+    return;
+  }
+
+  cleanupPresence();
+
+  currentTrackingUser = user;
+
+  globalChannel = supabase.channel(CHANNEL_NAME, {
+    config: {
+      presence: {
+        key: user.id,
       },
+    },
+  });
+
+  globalChannel
+    .on('presence', { event: 'sync' }, () => {
+      if (globalChannel) {
+        globalOnlineUsers = parsePresenceState(globalChannel);
+        notifyListeners();
+      }
+    })
+    .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+      if (globalChannel) {
+        globalOnlineUsers = parsePresenceState(globalChannel);
+        notifyListeners();
+      }
+    })
+    .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+      if (globalChannel) {
+        globalOnlineUsers = parsePresenceState(globalChannel);
+        notifyListeners();
+      }
+    })
+    .subscribe(async (status) => {
+      if (status === 'SUBSCRIBED' && currentTrackingUser) {
+        isInitialized = true;
+        await globalChannel?.track({
+          user_id: currentTrackingUser.id,
+          email: currentTrackingUser.email,
+          username: currentTrackingUser.username,
+          platform: detectPlatform(),
+          online_at: new Date().toISOString(),
+        });
+      }
     });
 
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState();
-        const users: PresenceUser[] = [];
+  const handleVisibilityChange = async () => {
+    if (!globalChannel || !currentTrackingUser) return;
 
-        Object.entries(state).forEach(([key, presences]) => {
-          if (Array.isArray(presences) && presences.length > 0) {
-            const latestPresence = presences[presences.length - 1] as PresenceUser;
-            users.push({
-              id: key,
-              email: latestPresence.email,
-              username: latestPresence.username,
-              platform: latestPresence.platform,
-              online_at: latestPresence.online_at,
-            });
-          }
-        });
-
-        setOnlineUsers(users);
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({
-            id: currentUser.id,
-            email: currentUser.email,
-            username: currentUser.username,
-            platform: detectPlatform(),
-            online_at: new Date().toISOString(),
-          });
-        }
+    if (document.hidden) {
+      await globalChannel.untrack();
+    } else {
+      await globalChannel.track({
+        user_id: currentTrackingUser.id,
+        email: currentTrackingUser.email,
+        username: currentTrackingUser.username,
+        platform: detectPlatform(),
+        online_at: new Date().toISOString(),
       });
+    }
+  };
 
-    channelRef.current = channel;
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  (globalChannel as any)._visibilityHandler = handleVisibilityChange;
+}
+
+export function cleanupPresence() {
+  if (globalChannel) {
+    const handler = (globalChannel as any)._visibilityHandler;
+    if (handler) {
+      document.removeEventListener('visibilitychange', handler);
+    }
+    globalChannel.untrack();
+    supabase.removeChannel(globalChannel);
+    globalChannel = null;
+  }
+  currentTrackingUser = null;
+  globalOnlineUsers = [];
+  isInitialized = false;
+  notifyListeners();
+}
+
+export function usePresence(currentUser: { id: string; email?: string; username?: string } | null): PresenceState {
+  const [onlineUsers, setOnlineUsers] = useState<PresenceUser[]>(globalOnlineUsers);
+
+  useEffect(() => {
+    if (currentUser?.id) {
+      initializePresence(currentUser);
+    }
+  }, [currentUser?.id, currentUser?.email, currentUser?.username]);
+
+  useEffect(() => {
+    const listener = (users: PresenceUser[]) => {
+      setOnlineUsers(users);
+    };
+
+    globalListeners.add(listener);
+    setOnlineUsers([...globalOnlineUsers]);
 
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      globalListeners.delete(listener);
     };
-  }, [currentUser?.id, currentUser?.email, currentUser?.username, detectPlatform]);
+  }, []);
 
   const isUserOnline = useCallback((userId: string) => {
     return onlineUsers.some(u => u.id === userId);
@@ -95,82 +185,40 @@ export function usePresence(currentUser: { id: string; email?: string; username?
 }
 
 export function useAdminPresence(): PresenceState {
-  const [onlineUsers, setOnlineUsers] = useState<PresenceUser[]>([]);
-  const channelRef = useRef<RealtimeChannel | null>(null);
-
-  const updatePresenceState = useCallback((channel: RealtimeChannel) => {
-    const state = channel.presenceState();
-    const users: PresenceUser[] = [];
-
-    Object.entries(state).forEach(([key, presences]) => {
-      if (Array.isArray(presences) && presences.length > 0) {
-        const latestPresence = presences[presences.length - 1] as PresenceUser;
-        users.push({
-          id: key,
-          email: latestPresence.email,
-          username: latestPresence.username,
-          platform: latestPresence.platform,
-          online_at: latestPresence.online_at,
-        });
-      }
-    });
-
-    setOnlineUsers(users);
-  }, []);
+  const [onlineUsers, setOnlineUsers] = useState<PresenceUser[]>(globalOnlineUsers);
 
   useEffect(() => {
-    const adminId = `admin-observer-${Date.now()}`;
+    const listener = (users: PresenceUser[]) => {
+      setOnlineUsers(users);
+    };
 
-    const channel = supabase.channel(CHANNEL_NAME, {
-      config: {
-        presence: {
-          key: adminId,
-        },
-      },
-    });
-
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        updatePresenceState(channel);
-      })
-      .on('presence', { event: 'join' }, () => {
-        updatePresenceState(channel);
-      })
-      .on('presence', { event: 'leave' }, () => {
-        updatePresenceState(channel);
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({
-            id: adminId,
-            is_admin_observer: true,
-            online_at: new Date().toISOString(),
-          });
-          updatePresenceState(channel);
-        }
-      });
-
-    channelRef.current = channel;
+    globalListeners.add(listener);
+    setOnlineUsers([...globalOnlineUsers]);
 
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      globalListeners.delete(listener);
     };
-  }, [updatePresenceState]);
-
-  const filteredOnlineUsers = useMemo(() => {
-    return onlineUsers.filter(u => !(u as any).is_admin_observer);
-  }, [onlineUsers]);
+  }, []);
 
   const isUserOnline = useCallback((userId: string) => {
-    return filteredOnlineUsers.some(u => u.id === userId);
-  }, [filteredOnlineUsers]);
+    return onlineUsers.some(u => u.id === userId);
+  }, [onlineUsers]);
 
   return {
-    onlineUsers: filteredOnlineUsers,
-    onlineCount: filteredOnlineUsers.length,
+    onlineUsers,
+    onlineCount: onlineUsers.length,
     isUserOnline,
   };
+}
+
+export function getOnlineUserIds(): string[] {
+  return globalOnlineUsers.map(u => u.id);
+}
+
+export function isUserCurrentlyOnline(userId: string): boolean {
+  return globalOnlineUsers.some(u => u.id === userId);
+}
+
+export function getGlobalOnlineUsers(): PresenceUser[] {
+  return [...globalOnlineUsers];
 }

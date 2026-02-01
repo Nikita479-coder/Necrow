@@ -280,7 +280,9 @@ export default function AdminSupport() {
           p_user_id: selectedTicketData.user_id,
           p_bonus_type_id: selectedBonusType,
           p_amount: amount,
-          p_reason: bonusReason || `Awarded via support ticket: ${selectedTicketData.subject}`,
+          p_awarded_by: user?.id || null,
+          p_notes: bonusReason || `Awarded via support ticket: ${selectedTicketData.subject}`,
+          p_expiry_days: 7
         });
 
         if (error) throw error;
