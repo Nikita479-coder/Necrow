@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Gift, Check, ArrowRight, Shield, Clock, Users, Star, TrendingUp } from 'lucide-react';
+import { Gift, Check, ArrowRight, Shield, Clock, Users, Star, TrendingUp, BadgeCheck, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function NoDepositBonus() {
@@ -23,12 +23,12 @@ export default function NoDepositBonus() {
           </div>
 
           <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
-            Get Your <span className="text-green-400">$20 USDT</span> No Deposit Bonus
+            Get Your <span className="text-green-400">$25 USDT</span> Verification Bonus
           </h1>
 
           <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
-            Start trading completely free! Claim your $20 USDT bonus with zero deposit required.
-            Complete your KYC verification and start trading immediately.
+            Start trading completely free! Complete KYC verification and leave a TrustPilot review
+            to claim your full $25 USDT bonus with zero deposit required.
           </p>
 
           <div className="flex items-center justify-center gap-4 mb-8">
@@ -48,7 +48,7 @@ export default function NoDepositBonus() {
                 href="/signup"
                 className="inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
               >
-                Claim Your $20 Now
+                Claim Your $25 Now
                 <ArrowRight className="w-5 h-5" />
               </a>
               <a
@@ -63,42 +63,69 @@ export default function NoDepositBonus() {
               href="/kyc"
               className="inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
             >
-              Complete KYC to Claim Bonus
+              Complete Verification to Claim
               <ArrowRight className="w-5 h-5" />
             </a>
           )}
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 mb-16">
-          <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-xl p-6 text-center">
-            <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <Gift className="w-6 h-6 text-green-400" />
+        <div className="grid md:grid-cols-2 gap-6 mb-16">
+          <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-xl p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-14 h-14 bg-green-500/10 rounded-xl flex items-center justify-center">
+                <BadgeCheck className="w-7 h-7 text-green-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white">KYC Verification</h3>
+                <p className="text-green-400 font-bold text-lg">$20 USDT</p>
+              </div>
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">$20 Free USDT</h3>
-            <p className="text-gray-400">No deposit required to start</p>
+            <p className="text-gray-400">Verify your identity to unlock trading features and receive $20 USDT bonus instantly upon approval.</p>
           </div>
 
-          <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-xl p-6 text-center">
-            <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <Clock className="w-6 h-6 text-blue-400" />
+          <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-xl p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-14 h-14 bg-blue-500/10 rounded-xl flex items-center justify-center">
+                <MessageSquare className="w-7 h-7 text-blue-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white">TrustPilot Review</h3>
+                <p className="text-blue-400 font-bold text-lg">$5 USDT</p>
+              </div>
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">Instant Credit</h3>
-            <p className="text-gray-400">Bonus credited immediately after KYC</p>
+            <p className="text-gray-400">Share your experience on TrustPilot and earn an additional $5 USDT bonus credited to your account.</p>
           </div>
+        </div>
 
-          <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-xl p-6 text-center">
-            <div className="w-12 h-12 bg-purple-500/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <TrendingUp className="w-6 h-6 text-purple-400" />
+        <div className="bg-gradient-to-br from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-2xl p-8 text-center mb-16">
+          <h2 className="text-2xl font-bold text-white mb-4">Combined Verification Bonus</h2>
+          <div className="text-6xl font-bold text-green-400 mb-2">$25 USDT</div>
+          <p className="text-gray-400 mb-6">Complete both steps to maximize your bonus</p>
+          <div className="flex justify-center gap-8">
+            <div className="text-center">
+              <BadgeCheck className="w-8 h-8 text-green-400 mx-auto mb-2" />
+              <p className="text-white font-semibold">KYC</p>
+              <p className="text-green-400">$20</p>
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">Real Trading</h3>
-            <p className="text-gray-400">Trade on all markets with bonus funds</p>
+            <div className="text-2xl text-gray-500 self-center">+</div>
+            <div className="text-center">
+              <Star className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
+              <p className="text-white font-semibold">Review</p>
+              <p className="text-blue-400">$5</p>
+            </div>
+            <div className="text-2xl text-gray-500 self-center">=</div>
+            <div className="text-center">
+              <Gift className="w-8 h-8 text-green-400 mx-auto mb-2" />
+              <p className="text-white font-semibold">Total</p>
+              <p className="text-green-400 font-bold">$25</p>
+            </div>
           </div>
         </div>
 
         <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-2xl p-8 md:p-12 mb-16">
-          <h2 className="text-3xl font-bold text-white mb-8 text-center">How to Claim Your No Deposit Bonus</h2>
+          <h2 className="text-3xl font-bold text-white mb-8 text-center">How to Claim Your $25 Bonus</h2>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-4 gap-8">
             <div className="relative">
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0 w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
@@ -119,19 +146,32 @@ export default function NoDepositBonus() {
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold text-white mb-2">Complete KYC</h3>
-                  <p className="text-gray-400">Verify your identity quickly with our automated KYC process.</p>
+                  <p className="text-gray-400">Verify your identity and receive <span className="text-green-400 font-semibold">$20 USDT</span> instantly.</p>
                 </div>
               </div>
               <div className="hidden md:block absolute top-6 left-full w-full h-0.5 bg-gradient-to-r from-green-500 to-transparent -translate-x-6" />
             </div>
 
+            <div className="relative">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                  3
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-white mb-2">Leave Review</h3>
+                  <p className="text-gray-400">Share your experience on TrustPilot for <span className="text-blue-400 font-semibold">$5 USDT</span> more.</p>
+                </div>
+              </div>
+              <div className="hidden md:block absolute top-6 left-full w-full h-0.5 bg-gradient-to-r from-blue-500 to-transparent -translate-x-6" />
+            </div>
+
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0 w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                3
+                4
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-white mb-2">Start Trading</h3>
-                <p className="text-gray-400">Your $20 USDT bonus is instantly credited. Start trading now!</p>
+                <p className="text-gray-400">Your full <span className="text-green-400 font-semibold">$25 USDT</span> bonus is ready to trade!</p>
               </div>
             </div>
           </div>
@@ -140,7 +180,7 @@ export default function NoDepositBonus() {
         <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-2xl p-8 md:p-12 mb-16">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
-              <h2 className="text-3xl font-bold text-white mb-6">Why Choose Our No Deposit Bonus?</h2>
+              <h2 className="text-3xl font-bold text-white mb-6">Why Choose Our Verification Bonus?</h2>
 
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
@@ -171,7 +211,7 @@ export default function NoDepositBonus() {
                   <Check className="w-6 h-6 text-green-400 flex-shrink-0 mt-1" />
                   <div>
                     <h3 className="text-lg font-semibold text-white mb-1">Stack Additional Bonuses</h3>
-                    <p className="text-gray-400">Combine with deposit bonuses for up to $1,630 total</p>
+                    <p className="text-gray-400">Combine with deposit bonuses for up to $1,635 total</p>
                   </div>
                 </div>
 
@@ -191,14 +231,18 @@ export default function NoDepositBonus() {
                   <Gift className="w-10 h-10 text-green-400" />
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-2">Total Welcome Package</h3>
-                <div className="text-5xl font-bold text-green-400 mb-2">$1,630</div>
+                <div className="text-5xl font-bold text-green-400 mb-2">$1,635</div>
                 <p className="text-gray-400">When you combine all bonuses</p>
               </div>
 
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between items-center py-2 border-b border-gray-700">
-                  <span className="text-gray-400">No Deposit KYC Bonus</span>
+                  <span className="text-gray-400">KYC Verification Bonus</span>
                   <span className="text-white font-semibold">$20</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-700">
+                  <span className="text-gray-400">TrustPilot Review Bonus</span>
+                  <span className="text-white font-semibold">$5</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-gray-700">
                   <span className="text-gray-400">1st Deposit Match (100%)</span>
@@ -214,7 +258,7 @@ export default function NoDepositBonus() {
                 </div>
                 <div className="flex justify-between items-center py-3 bg-green-500/10 -mx-4 px-4 rounded-lg mt-4">
                   <span className="text-white font-bold">Total Bonus Value</span>
-                  <span className="text-green-400 font-bold text-xl">$1,630</span>
+                  <span className="text-green-400 font-bold text-xl">$1,635</span>
                 </div>
               </div>
             </div>
@@ -227,7 +271,7 @@ export default function NoDepositBonus() {
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">Is this really free?</h3>
-              <p className="text-gray-400">Yes! You get $20 USDT completely free after completing KYC verification. No deposit required.</p>
+              <p className="text-gray-400">Yes! You get $25 USDT completely free after completing KYC verification and leaving a TrustPilot review. No deposit required.</p>
             </div>
 
             <div>
@@ -237,12 +281,12 @@ export default function NoDepositBonus() {
 
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">How long does KYC take?</h3>
-              <p className="text-gray-400">Our automated KYC process typically takes 5-10 minutes. The bonus is credited immediately after approval.</p>
+              <p className="text-gray-400">Our KYC process typically takes 5-10 minutes. The $20 bonus is credited immediately after approval.</p>
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-white mb-2">What can I trade with it?</h3>
-              <p className="text-gray-400">Use your bonus on futures trading, spot trading, and copy trading. Full platform access included.</p>
+              <h3 className="text-lg font-semibold text-white mb-2">How do I get the review bonus?</h3>
+              <p className="text-gray-400">After KYC approval, leave a review on TrustPilot and submit the link in your rewards section. The $5 bonus is credited within 24 hours.</p>
             </div>
 
             <div>
@@ -259,9 +303,9 @@ export default function NoDepositBonus() {
 
         <div className="bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-2xl p-8 text-center">
           <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl font-bold text-white mb-4">Ready to Start Trading for Free?</h2>
+            <h2 className="text-3xl font-bold text-white mb-4">Ready to Claim Your $25 Bonus?</h2>
             <p className="text-xl text-gray-300 mb-8">
-              Join thousands of traders who started with our no deposit bonus. Zero risk, real profits.
+              Join thousands of traders who started with our verification bonus. Zero risk, real profits.
             </p>
 
             <div className="flex items-center justify-center gap-6 mb-8">
@@ -277,7 +321,7 @@ export default function NoDepositBonus() {
               <div className="w-px h-12 bg-gray-700" />
               <div className="text-center">
                 <div className="text-3xl font-bold text-green-400">4.9</div>
-                <div className="text-sm text-gray-400">User Rating</div>
+                <div className="text-sm text-gray-400">TrustPilot Rating</div>
               </div>
             </div>
 
@@ -286,7 +330,7 @@ export default function NoDepositBonus() {
                 href="/signup"
                 className="inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
               >
-                Claim Your $20 Bonus Now
+                Claim Your $25 Bonus Now
                 <ArrowRight className="w-5 h-5" />
               </a>
             ) : (
@@ -294,7 +338,7 @@ export default function NoDepositBonus() {
                 href="/kyc"
                 className="inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
               >
-                Complete KYC to Claim
+                Complete Verification to Claim
                 <ArrowRight className="w-5 h-5" />
               </a>
             )}
@@ -318,7 +362,7 @@ export default function NoDepositBonus() {
             <p className="text-xs text-gray-400">Excellent reviews</p>
           </div>
           <div className="text-center">
-            <Clock className="w-8 h-8 text-purple-400 mx-auto mb-2" />
+            <Clock className="w-8 h-8 text-cyan-400 mx-auto mb-2" />
             <h4 className="text-sm font-semibold text-white mb-1">24/7 Support</h4>
             <p className="text-xs text-gray-400">Always here to help</p>
           </div>

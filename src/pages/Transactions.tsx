@@ -3,6 +3,7 @@ import Navbar from '../components/Navbar';
 import { ArrowUpRight, ArrowDownRight, TrendingUp, Search, Filter, Calendar, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { usePrices } from '../hooks/usePrices';
 
 interface Transaction {
   id: string;
@@ -19,6 +20,7 @@ interface Transaction {
 
 function Transactions() {
   const { user } = useAuth();
+  const prices = usePrices();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,6 +28,15 @@ function Transactions() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterCurrency, setFilterCurrency] = useState('all');
   const [dateRange, setDateRange] = useState('all');
+
+  const getTokenPrice = (symbol: string): number => {
+    let priceData = prices.get(symbol);
+    if (!priceData) priceData = prices.get(`${symbol}/USDT`);
+    if (!priceData) priceData = prices.get(`${symbol}USDT`);
+    if (priceData) return priceData.price;
+    if (['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'GUSD', 'FDUSD'].includes(symbol)) return 1.0;
+    return 0;
+  };
 
   useEffect(() => {
     if (user) {
@@ -382,7 +393,7 @@ function Transactions() {
                             {isPositive ? '+' : '-'}{amount}
                           </div>
                           <div className="text-gray-400 text-sm">
-                            ${(amount * (tx.currency === 'USDT' ? 1 : 50000)).toLocaleString()}
+                            ${(amount * getTokenPrice(tx.currency)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </div>
                         </td>
                         <td className="py-4 px-4">

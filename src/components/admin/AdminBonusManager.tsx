@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Gift, Plus, Clock, CheckCircle, XCircle, Ban, Lock, Unlock } from 'lucide-react';
+import { Gift, Plus, Clock, CheckCircle, XCircle, Ban, Lock, Unlock, Calendar, AlertTriangle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../context/AuthContext';
@@ -44,6 +44,12 @@ interface LockedBonus {
   created_at: string;
   bonus_trading_volume_completed: number;
   bonus_trading_volume_required: number;
+  consecutive_trading_days_required: number | null;
+  current_consecutive_days: number;
+  daily_trades_required: number | null;
+  daily_trade_duration_minutes: number | null;
+  daily_trade_count_today: number;
+  last_qualifying_trade_date: string | null;
 }
 
 export default function AdminBonusManager({ userId, userData, onRefresh }: Props) {
@@ -399,6 +405,65 @@ export default function AdminBonusManager({ userId, userData, onRefresh }: Props
                       </p>
                     </div>
                   </div>
+
+                  {bonus.consecutive_trading_days_required && (
+                    <div className="mt-3 pt-3 border-t border-gray-800">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Calendar className="w-4 h-4 text-blue-400" />
+                        <span className="text-sm font-medium text-white">Consecutive Trading Progress</span>
+                        {bonus.daily_trade_count_today < (bonus.daily_trades_required || 2) && bonus.status === 'active' && (
+                          <span className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/10 border border-orange-500/30 rounded text-xs text-orange-400">
+                            <AlertTriangle className="w-3 h-3" />
+                            Needs trading today
+                          </span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-500 mb-1">Consecutive Days</p>
+                          <p className={`font-bold ${bonus.current_consecutive_days >= bonus.consecutive_trading_days_required ? 'text-green-400' : 'text-blue-400'}`}>
+                            {bonus.current_consecutive_days} / {bonus.consecutive_trading_days_required}
+                            <span className="text-xs text-gray-500 ml-1">
+                              ({((bonus.current_consecutive_days / bonus.consecutive_trading_days_required) * 100).toFixed(0)}%)
+                            </span>
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">Today's Trades</p>
+                          <p className={`font-medium ${bonus.daily_trade_count_today >= (bonus.daily_trades_required || 2) ? 'text-green-400' : 'text-yellow-400'}`}>
+                            {bonus.daily_trade_count_today} / {bonus.daily_trades_required || 2}
+                            {bonus.daily_trade_count_today >= (bonus.daily_trades_required || 2) && (
+                              <CheckCircle className="w-4 h-4 inline ml-1 text-green-400" />
+                            )}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">Min Trade Duration</p>
+                          <p className="text-white">{bonus.daily_trade_duration_minutes || 15} minutes</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">Last Qualifying Day</p>
+                          <p className={bonus.last_qualifying_trade_date ? 'text-white' : 'text-gray-500'}>
+                            {bonus.last_qualifying_trade_date
+                              ? new Date(bonus.last_qualifying_trade_date).toLocaleDateString()
+                              : 'No trades yet'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-2 bg-gray-900/50 rounded-lg p-2">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-gray-500">Day Progress</span>
+                          <span className="text-gray-400">{bonus.current_consecutive_days} / {bonus.consecutive_trading_days_required} days</span>
+                        </div>
+                        <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all ${bonus.current_consecutive_days >= bonus.consecutive_trading_days_required ? 'bg-green-500' : 'bg-blue-500'}`}
+                            style={{ width: `${Math.min(100, (bonus.current_consecutive_days / bonus.consecutive_trading_days_required) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
