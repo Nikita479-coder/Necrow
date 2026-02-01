@@ -1,7 +1,8 @@
 import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
-import type { User, RealtimeChannel } from '@supabase/supabase-js';
+import type { User } from '@supabase/supabase-js';
 import { sessionService } from '../services/sessionService';
+import { initializePresence, cleanupPresence } from '../hooks/usePresence';
 
 interface UserProfile {
   id: string;
@@ -73,14 +74,6 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-const detectPlatform = () => {
-  const userAgent = navigator.userAgent.toLowerCase();
-  if (/mobile|android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent)) {
-    return /iphone|ipad|ipod/i.test(userAgent) ? 'ios' : 'android';
-  }
-  return 'desktop';
-};
-
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -88,41 +81,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const [mfaPending, setMfaPending] = useState(false);
   const mfaPendingRef = useRef(false);
-  const presenceChannelRef = useRef<RealtimeChannel | null>(null);
 
-  const startPresenceTracking = async (userId: string, email?: string, username?: string | null) => {
-    if (presenceChannelRef.current) {
-      await supabase.removeChannel(presenceChannelRef.current);
-    }
-
-    const channel = supabase.channel('online-users', {
-      config: {
-        presence: {
-          key: userId,
-        },
-      },
+  const startPresenceTracking = (userId: string, email?: string, username?: string | null) => {
+    initializePresence({
+      id: userId,
+      email: email || undefined,
+      username: username || undefined,
     });
-
-    channel.subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
-        await channel.track({
-          id: userId,
-          email: email || '',
-          username: username || '',
-          platform: detectPlatform(),
-          online_at: new Date().toISOString(),
-        });
-      }
-    });
-
-    presenceChannelRef.current = channel;
   };
 
-  const stopPresenceTracking = async () => {
-    if (presenceChannelRef.current) {
-      await supabase.removeChannel(presenceChannelRef.current);
-      presenceChannelRef.current = null;
-    }
+  const stopPresenceTracking = () => {
+    cleanupPresence();
   };
 
   const fetchStaffInfo = async () => {
@@ -508,7 +477,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signOut = async () => {
     try {
-      await stopPresenceTracking();
+      stopPresenceTracking();
       await supabase.auth.signOut();
       setUser(null);
       setProfile(null);

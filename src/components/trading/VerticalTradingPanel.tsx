@@ -230,7 +230,9 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
   const handlePercentage = (percent: number) => {
     if (!priceData) return;
     setBalancePercentage(percent);
-    const maxAvailable = availableMargin * leverage;
+    const bufferFactor = percent >= 100 ? 0.995 : 1;
+    const effectiveMargin = availableMargin * bufferFactor;
+    const maxAvailable = effectiveMargin * leverage;
     const targetValue = maxAvailable * (percent / 100);
     const currentPrice = parseFloat(priceData.price) || 1;
 
@@ -324,11 +326,9 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
         p_order_type: 'market',
         p_leverage: leverage,
         p_margin: requiredMargin,
-        p_quantity: quantity,
         p_limit_price: null,
         p_take_profit: tpValue,
-        p_stop_loss: slValue,
-        p_current_price: currentMarketPrice
+        p_stop_loss: slValue
       });
 
       if (error) throw error;

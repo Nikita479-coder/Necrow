@@ -1,4 +1,5 @@
-import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { useState, useEffect } from 'react';
+import { getGlobalOnlineUsers } from '../hooks/usePresence';
 
 interface OnlineStatusIndicatorProps {
   userId: string;
@@ -13,22 +14,25 @@ export default function OnlineStatusIndicator({
   size = 'md',
   className = ''
 }: OnlineStatusIndicatorProps) {
-  const { isOnline, loading } = useOnlineStatus(userId);
+  const [isOnline, setIsOnline] = useState(false);
+
+  useEffect(() => {
+    const checkStatus = () => {
+      const users = getGlobalOnlineUsers();
+      setIsOnline(users.some(u => u.id === userId));
+    };
+
+    checkStatus();
+    const interval = setInterval(checkStatus, 1000);
+
+    return () => clearInterval(interval);
+  }, [userId]);
 
   const sizeClasses = {
     sm: 'w-2 h-2',
     md: 'w-3 h-3',
     lg: 'w-4 h-4'
   };
-
-  if (loading) {
-    return (
-      <div className={`flex items-center gap-2 ${className}`}>
-        <div className={`${sizeClasses[size]} rounded-full bg-gray-600 animate-pulse`} />
-        {showText && <span className="text-xs text-gray-500">Loading...</span>}
-      </div>
-    );
-  }
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>

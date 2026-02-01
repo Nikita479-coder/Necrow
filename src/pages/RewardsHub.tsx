@@ -363,7 +363,8 @@ function RewardsHub() {
           p_bonus_type_id: bonusType.id,
           p_amount: task.reward,
           p_awarded_by: null,
-          p_notes: task.title
+          p_notes: task.title,
+          p_expiry_days: 7
         });
 
         if (bonusError) {
