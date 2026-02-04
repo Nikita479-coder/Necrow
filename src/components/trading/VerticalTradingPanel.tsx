@@ -333,6 +333,11 @@ function VerticalTradingPanel({ pair, initialSide }: VerticalTradingPanelProps) 
 
       if (error) throw error;
 
+      if (data && !data.success) {
+        showError(data.error || 'Failed to place order');
+        return;
+      }
+
       showSuccess(`${orderSide === 'long' ? 'Long' : 'Short'} order placed successfully!`);
       setSize('');
       setTakeProfitPrice('');
