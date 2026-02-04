@@ -7,6 +7,7 @@ import { usePrices } from '../hooks/usePrices';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { getDailyPlatformVolume, formatPlatformVolume, getDailyVolumeChange } from '../utils/dailyVolume';
 
 function Markets() {
   const prices = usePrices();
@@ -297,8 +298,8 @@ function Markets() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="bg-[#0b0e11] rounded-lg p-5 border border-gray-800">
               <h3 className="text-gray-400 text-sm mb-2">24h Trading Volume</h3>
-              <p className="text-3xl font-bold text-white mb-1">$1.2B</p>
-              <p className="text-emerald-400 text-sm">+12.3% vs yesterday</p>
+              <p className="text-3xl font-bold text-white mb-1">{formatPlatformVolume(getDailyPlatformVolume())}</p>
+              <p className="text-emerald-400 text-sm">+{getDailyVolumeChange().toFixed(1)}% vs yesterday</p>
             </div>
             <div className="bg-[#0b0e11] rounded-lg p-5 border border-gray-800">
               <h3 className="text-gray-400 text-sm mb-2">Active Traders</h3>

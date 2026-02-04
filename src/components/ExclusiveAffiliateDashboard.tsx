@@ -93,8 +93,6 @@ function ExclusiveAffiliateDashboard() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'earnings' | 'withdraw'>('overview');
   const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [withdrawAddress, setWithdrawAddress] = useState('');
-  const [withdrawNetwork, setWithdrawNetwork] = useState('TRC20');
   const [withdrawing, setWithdrawing] = useState(false);
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
   const [withdrawSuccess, setWithdrawSuccess] = useState(false);
@@ -152,7 +150,7 @@ function ExclusiveAffiliateDashboard() {
   };
 
   const handleWithdraw = async () => {
-    if (!user || !withdrawAmount || !withdrawAddress) return;
+    if (!user || !withdrawAmount) return;
 
     const amount = parseFloat(withdrawAmount);
     if (isNaN(amount) || amount < 10) {
@@ -171,9 +169,7 @@ function ExclusiveAffiliateDashboard() {
     try {
       const { data, error } = await supabase.rpc('request_exclusive_affiliate_withdrawal', {
         p_user_id: user.id,
-        p_amount: amount,
-        p_wallet_address: withdrawAddress,
-        p_network: withdrawNetwork
+        p_amount: amount
       });
 
       if (error) throw error;
@@ -181,7 +177,6 @@ function ExclusiveAffiliateDashboard() {
       if (data?.success) {
         setWithdrawSuccess(true);
         setWithdrawAmount('');
-        setWithdrawAddress('');
         loadStats();
         setTimeout(() => setWithdrawSuccess(false), 3000);
       } else {
@@ -536,7 +531,7 @@ function ExclusiveAffiliateDashboard() {
         {withdrawSuccess && (
           <div className="mb-4 p-4 bg-green-500/20 border border-green-500/30 rounded-lg flex items-center gap-3">
             <CheckCircle className="w-5 h-5 text-green-400" />
-            <span className="text-green-400">Withdrawal request submitted successfully!</span>
+            <span className="text-green-400">Funds transferred to your main wallet successfully!</span>
           </div>
         )}
 
@@ -548,6 +543,16 @@ function ExclusiveAffiliateDashboard() {
         )}
 
         <div className="space-y-4">
+          <div className="bg-[#0b0e11] border border-gray-700 rounded-lg p-4 mb-4">
+            <div className="flex items-center gap-3 text-blue-400">
+              <Wallet className="w-5 h-5" />
+              <div>
+                <div className="font-semibold">Direct Transfer to Main Wallet</div>
+                <div className="text-sm text-gray-400">Funds will be instantly transferred to your main trading wallet</div>
+              </div>
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-semibold mb-2">Amount (USDT)</label>
             <div className="relative">
@@ -567,33 +572,9 @@ function ExclusiveAffiliateDashboard() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold mb-2">Network</label>
-            <select
-              value={withdrawNetwork}
-              onChange={(e) => setWithdrawNetwork(e.target.value)}
-              className="w-full bg-[#0b0e11] border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:border-[#fcd535]"
-            >
-              <option value="TRC20">USDT (TRC20)</option>
-              <option value="ERC20">USDT (ERC20)</option>
-              <option value="BEP20">USDT (BEP20)</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold mb-2">Wallet Address</label>
-            <input
-              type="text"
-              value={withdrawAddress}
-              onChange={(e) => setWithdrawAddress(e.target.value)}
-              placeholder="Enter your wallet address"
-              className="w-full bg-[#0b0e11] border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:border-[#fcd535]"
-            />
-          </div>
-
           <button
             onClick={handleWithdraw}
-            disabled={withdrawing || !withdrawAmount || !withdrawAddress || parseFloat(withdrawAmount) > balance.available}
+            disabled={withdrawing || !withdrawAmount || parseFloat(withdrawAmount) > balance.available}
             className="w-full py-4 bg-[#fcd535] hover:bg-[#fcd535]/90 disabled:bg-gray-600 disabled:cursor-not-allowed text-black font-bold rounded-lg transition-all flex items-center justify-center gap-2"
           >
             {withdrawing ? (
@@ -603,14 +584,14 @@ function ExclusiveAffiliateDashboard() {
               </>
             ) : (
               <>
-                <ArrowUpRight className="w-5 h-5" />
-                Request Withdrawal
+                <Wallet className="w-5 h-5" />
+                Transfer to Main Wallet
               </>
             )}
           </button>
 
           <p className="text-sm text-gray-400 text-center">
-            Minimum withdrawal: $10 USDT. Withdrawals are processed within 24-48 hours.
+            Minimum withdrawal: $10 USDT. Transfers are instant and go directly to your main wallet.
           </p>
         </div>
       </div>
@@ -623,10 +604,13 @@ function ExclusiveAffiliateDashboard() {
               <div key={w.id} className="flex justify-between items-center p-4 bg-[#0b0e11] rounded-lg">
                 <div>
                   <div className="font-semibold">${w.amount.toFixed(2)} USDT</div>
-                  <div className="text-sm text-gray-400">{w.network}</div>
-                  <div className="text-xs text-gray-500 font-mono truncate max-w-[200px]">
-                    {w.wallet_address}
+                  <div className="text-sm text-gray-400 flex items-center gap-2">
+                    <Wallet className="w-4 h-4" />
+                    {w.wallet_address === 'Main Wallet Transfer' ? 'Main Wallet Transfer' : w.wallet_address}
                   </div>
+                  {w.wallet_address !== 'Main Wallet Transfer' && (
+                    <div className="text-xs text-gray-500">{w.network}</div>
+                  )}
                 </div>
                 <div className="text-right">
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
