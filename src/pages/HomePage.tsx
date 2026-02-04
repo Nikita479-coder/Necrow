@@ -8,6 +8,7 @@ import { usePrices } from '../hooks/usePrices';
 import { useNavigation } from '../App';
 import { useAuth } from '../context/AuthContext';
 import { Star } from 'lucide-react';
+import { getDailyPlatformVolume, formatPlatformVolume } from '../utils/dailyVolume';
 
 interface NewsItem {
   id: string;
@@ -1173,7 +1174,7 @@ function HomePage() {
               <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
                 <LineChart className="w-6 h-6 text-blue-500" />
               </div>
-              <div className="text-2xl font-bold text-white mb-1">$1.2B</div>
+              <div className="text-2xl font-bold text-white mb-1">{formatPlatformVolume(getDailyPlatformVolume())}</div>
               <div className="text-gray-400 text-sm">24h Volume</div>
             </div>
             <div className="bg-[#181a20] rounded-xl p-5 border border-gray-800 text-center">

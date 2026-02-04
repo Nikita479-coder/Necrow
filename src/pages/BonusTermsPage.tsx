@@ -120,42 +120,47 @@ export default function BonusTermsPage() {
                 <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4">
                   <h3 className="font-semibold text-emerald-400 mb-2">Combined KYC + TrustPilot Bonus</h3>
                   <p className="text-slate-300 text-sm mb-3">
-                    Complete identity verification and share your experience to earn $25 USDT in locked trading bonus!
+                    Complete BOTH identity verification AND TrustPilot review to earn a single $25 USDT locked trading bonus!
                   </p>
+                  <div className="bg-[#f0b90b]/10 border-l-4 border-[#f0b90b] p-3 mt-3">
+                    <p className="text-slate-300 text-sm">
+                      <strong className="text-[#f0b90b]">Important:</strong> This is a single combined bonus. You must complete BOTH requirements before the bonus is awarded. No partial credit is given for completing only one requirement.
+                    </p>
+                  </div>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="bg-slate-700/50 rounded-lg p-4 border-l-4 border-emerald-500">
                     <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
-                      <span className="text-emerald-400">KYC Verification</span>
+                      <span className="text-emerald-400">Requirement 1: KYC Verification</span>
                     </h3>
                     <p className="text-slate-300 text-sm mb-2">
-                      <strong className="text-emerald-400">$20 USDT</strong> - Credited upon KYC approval
+                      Complete identity verification by submitting required documents
                     </p>
-                    <p className="text-xs text-slate-400">Submit ID documents for verification</p>
+                    <p className="text-xs text-slate-400">Upload ID and proof of address for verification</p>
                   </div>
 
                   <div className="bg-slate-700/50 rounded-lg p-4 border-l-4 border-blue-500">
                     <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
-                      <span className="text-blue-400">TrustPilot Review</span>
+                      <span className="text-blue-400">Requirement 2: TrustPilot Review</span>
                     </h3>
                     <p className="text-slate-300 text-sm mb-2">
-                      <strong className="text-blue-400">$5 USDT</strong> - Credited after review verification
+                      Leave a review on TrustPilot and submit for verification
                     </p>
-                    <p className="text-xs text-slate-400">Leave a 5-star review on TrustPilot</p>
+                    <p className="text-xs text-slate-400">Share your experience with our platform</p>
                   </div>
                 </div>
 
                 <div className="bg-slate-700/50 rounded-lg p-4">
                   <h3 className="font-semibold text-white mb-2">Verification Bonus Terms</h3>
                   <ul className="list-disc list-inside text-slate-300 space-y-1 text-sm">
-                    <li>Combined bonus is awarded as locked trading credit</li>
-                    <li>KYC bonus ($20) credited immediately upon approval</li>
-                    <li>Review bonus ($5) credited within 24 hours of verification</li>
-                    <li>Must complete 30 consecutive trading days to unlock</li>
+                    <li><strong className="text-[#f0b90b]">$25 USDT total bonus</strong> awarded only after BOTH requirements are completed and verified</li>
+                    <li>Bonus is awarded as locked trading credit after manual verification</li>
+                    <li>No automatic or immediate approval - admin review required</li>
+                    <li>Must complete 30 consecutive trading days to unlock the bonus</li>
                     <li>Required: 2+ trades per day, minimum 15 minutes each</li>
                     <li>Trading volume requirement: $12,500 (500x bonus amount)</li>
-                    <li>Profits earned from trading are withdrawable</li>
+                    <li>Profits earned from trading are withdrawable at any time</li>
                   </ul>
                 </div>
               </div>
