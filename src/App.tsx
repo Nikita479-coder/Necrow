@@ -36,6 +36,7 @@ import AdminLogs from './pages/AdminLogs';
 import AdminCRM from './pages/AdminCRM';
 import AdminEmailTemplates from './pages/AdminEmailTemplates';
 import AdminBonusTypes from './pages/AdminBonusTypes';
+import AdminRewardsDisplay from './pages/AdminRewardsDisplay';
 import AdminSupport from './pages/AdminSupport';
 import AdminVIPTracking from './pages/AdminVIPTracking';
 import AdminSharkCards from './pages/AdminSharkCards';
@@ -63,8 +64,9 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import NoDepositBonus from './pages/NoDepositBonus';
 import ReviewBonus from './pages/ReviewBonus';
 import ReferFriendsBonus from './pages/ReferFriendsBonus';
+import PromoterDashboard from './pages/PromoterDashboard';
 
-type PageType = 'home' | 'markets' | 'futures' | 'profile' | 'swap' | 'swaphistory' | 'copytrading' | 'mocktrading' | 'activecopying' | 'traderprofile' | 'deposit' | 'withdraw' | 'kyc' | 'kycdocuments' | 'adminkyc' | 'wallet' | 'referral' | 'affiliate' | 'vip' | 'rewardshub' | 'earn' | 'signin' | 'signup' | 'forgotpassword' | 'resetpassword' | 'transactions' | 'admindashboard' | 'adminuser' | 'adminuserdetail' | 'admintrader' | 'adminlogs' | 'admincrm' | 'adminemails' | 'adminbonuses' | 'adminsupport' | 'adminviptracking' | 'adminsharkcards' | 'adminstaff' | 'admintelegram' | 'adminwithdrawals' | 'admindeposits' | 'adminreferrals' | 'adminpopups' | 'admingiveaway' | 'adminacquisition' | 'adminexclusiveaffiliates' | 'adminphonereveals' | 'adminstafflogs' | 'giveaway' | 'event' | 'terms' | 'bonusterms' | 'support' | 'legal' | 'privacy' | 'lp' | 'nodepositbonus' | 'reviewbonus' | 'referfriendsbonus';
+type PageType = 'home' | 'markets' | 'futures' | 'profile' | 'swap' | 'swaphistory' | 'copytrading' | 'mocktrading' | 'activecopying' | 'traderprofile' | 'deposit' | 'withdraw' | 'kyc' | 'kycdocuments' | 'adminkyc' | 'wallet' | 'referral' | 'affiliate' | 'vip' | 'rewardshub' | 'earn' | 'signin' | 'signup' | 'forgotpassword' | 'resetpassword' | 'transactions' | 'admindashboard' | 'adminuser' | 'adminuserdetail' | 'admintrader' | 'adminlogs' | 'admincrm' | 'adminemails' | 'adminbonuses' | 'adminsupport' | 'adminviptracking' | 'adminsharkcards' | 'adminstaff' | 'admintelegram' | 'adminwithdrawals' | 'admindeposits' | 'adminreferrals' | 'adminpopups' | 'admingiveaway' | 'adminacquisition' | 'adminexclusiveaffiliates' | 'adminphonereveals' | 'adminstafflogs' | 'adminrewardsdisplay' | 'promoterdashboard' | 'giveaway' | 'event' | 'terms' | 'bonusterms' | 'support' | 'legal' | 'privacy' | 'lp' | 'nodepositbonus' | 'reviewbonus' | 'referfriendsbonus';
 
 interface NavigationContextType {
   currentPage: PageType;
@@ -221,6 +223,7 @@ function App() {
       admincrm: 'Admin CRM',
       adminemails: 'Admin Email Templates',
       adminbonuses: 'Admin Bonus Types',
+      adminrewardsdisplay: 'Admin Rewards Display',
       adminsupport: 'Admin Support',
       adminviptracking: 'Admin VIP Tracking',
       adminsharkcards: 'Admin Shark Cards',
@@ -235,6 +238,7 @@ function App() {
       adminexclusiveaffiliates: 'Admin Exclusive Affiliates',
       adminphonereveals: 'Admin Phone Reveals',
       adminstafflogs: 'Admin Staff Logs',
+      promoterdashboard: 'Promoter Dashboard',
       giveaway: 'Giveaway Hub',
       event: 'Event Details',
       terms: 'Terms & Conditions',
@@ -326,6 +330,8 @@ function App() {
         return wrapWithTracker(<AdminEmailTemplates />);
       case 'adminbonuses':
         return wrapWithTracker(<AdminBonusTypes />);
+      case 'adminrewardsdisplay':
+        return wrapWithTracker(<AdminRewardsDisplay />);
       case 'adminsupport':
         return wrapWithTracker(<AdminSupport />);
       case 'adminviptracking':
@@ -354,6 +360,8 @@ function App() {
         return wrapWithTracker(<AdminPhoneRevealRequests />);
       case 'adminstafflogs':
         return wrapWithTracker(<AdminStaffActivityLogs />);
+      case 'promoterdashboard':
+        return wrapWithTracker(<PromoterDashboard />);
       case 'giveaway':
         return wrapWithTracker(<GiveawayHub />);
       case 'event':

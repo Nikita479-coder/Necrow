@@ -101,7 +101,7 @@ export default function BonusTermsPage() {
                 <div className="bg-slate-700/50 rounded-lg p-4">
                   <h3 className="font-semibold text-white mb-2">Welcome Package Terms</h3>
                   <ul className="list-disc list-inside text-slate-300 space-y-1 text-sm">
-                    <li>Each deposit bonus is a locked bonus (30-day lock period)</li>
+                    <li>Each deposit bonus is a locked bonus (7-day lock period)</li>
                     <li>Bonuses can be used for futures trading immediately</li>
                     <li>Profits from trading with bonus are withdrawable after lock period</li>
                     <li>Each tier can only be claimed once per account</li>
@@ -114,17 +114,17 @@ export default function BonusTermsPage() {
             <section>
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 <Shield className="w-5 h-5 text-emerald-400" />
-                3. Verification Bonus ($25 USDT)
+                3. Verification Bonuses (Up to $25 USDT)
               </h2>
               <div className="space-y-4">
                 <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4">
-                  <h3 className="font-semibold text-emerald-400 mb-2">Combined KYC + TrustPilot Bonus</h3>
+                  <h3 className="font-semibold text-emerald-400 mb-2">KYC Verification Bonus + TrustPilot Review Bonus</h3>
                   <p className="text-slate-300 text-sm mb-3">
-                    Complete BOTH identity verification AND TrustPilot review to earn a single $25 USDT locked trading bonus!
+                    Earn up to $25 USDT in locked trading bonuses through two separate rewards: $20 for KYC verification and $5 for a TrustPilot review.
                   </p>
                   <div className="bg-[#f0b90b]/10 border-l-4 border-[#f0b90b] p-3 mt-3">
                     <p className="text-slate-300 text-sm">
-                      <strong className="text-[#f0b90b]">Important:</strong> This is a single combined bonus. You must complete BOTH requirements before the bonus is awarded. No partial credit is given for completing only one requirement.
+                      <strong className="text-[#f0b90b]">Important:</strong> These are two separate bonuses. The $20 KYC bonus is awarded automatically upon verification approval. The $5 TrustPilot bonus requires manual claim and admin review.
                     </p>
                   </div>
                 </div>
@@ -132,34 +132,34 @@ export default function BonusTermsPage() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="bg-slate-700/50 rounded-lg p-4 border-l-4 border-emerald-500">
                     <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
-                      <span className="text-emerald-400">Requirement 1: KYC Verification</span>
+                      <span className="text-emerald-400">KYC Verification Bonus - $20 USDT</span>
                     </h3>
                     <p className="text-slate-300 text-sm mb-2">
-                      Complete identity verification by submitting required documents
+                      Automatically credited as a 7-day locked bonus when your KYC is approved
                     </p>
-                    <p className="text-xs text-slate-400">Upload ID and proof of address for verification</p>
+                    <p className="text-xs text-slate-400">No manual claim required - bonus is awarded instantly on approval</p>
                   </div>
 
                   <div className="bg-slate-700/50 rounded-lg p-4 border-l-4 border-blue-500">
                     <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
-                      <span className="text-blue-400">Requirement 2: TrustPilot Review</span>
+                      <span className="text-blue-400">TrustPilot Review Bonus - $5 USDT</span>
                     </h3>
                     <p className="text-slate-300 text-sm mb-2">
-                      Leave a review on TrustPilot and submit for verification
+                      Submit your TrustPilot review via support for verification and receive a 7-day locked bonus
                     </p>
-                    <p className="text-xs text-slate-400">Share your experience with our platform</p>
+                    <p className="text-xs text-slate-400">Requires KYC verification + admin review of your TrustPilot submission</p>
                   </div>
                 </div>
 
                 <div className="bg-slate-700/50 rounded-lg p-4">
                   <h3 className="font-semibold text-white mb-2">Verification Bonus Terms</h3>
                   <ul className="list-disc list-inside text-slate-300 space-y-1 text-sm">
-                    <li><strong className="text-[#f0b90b]">$25 USDT total bonus</strong> awarded only after BOTH requirements are completed and verified</li>
-                    <li>Bonus is awarded as locked trading credit after manual verification</li>
-                    <li>No automatic or immediate approval - admin review required</li>
-                    <li>Must complete 30 consecutive trading days to unlock the bonus</li>
+                    <li><strong className="text-[#f0b90b]">$20 KYC Bonus:</strong> Automatically awarded as locked trading credit upon KYC approval (7-day expiry)</li>
+                    <li><strong className="text-[#f0b90b]">$5 Review Bonus:</strong> Awarded as locked trading credit after admin verification of TrustPilot review (7-day expiry)</li>
+                    <li>Both bonuses can be used for futures trading immediately</li>
+                    <li>Must complete consecutive trading days to unlock each bonus</li>
                     <li>Required: 2+ trades per day, minimum 15 minutes each</li>
-                    <li>Trading volume requirement: $12,500 (500x bonus amount)</li>
+                    <li>Trading volume requirement: 500x the bonus amount</li>
                     <li>Profits earned from trading are withdrawable at any time</li>
                   </ul>
                 </div>
