@@ -278,6 +278,11 @@ export default function AdminDashboard() {
     }
 
     if (canAccessAdmin()) {
+      const isPromoterOnly = hasPermission('promoter_access') && !profile?.is_admin && !staffInfo?.is_super_admin;
+      if (isPromoterOnly) {
+        navigateTo('promoterdashboard');
+        return;
+      }
       setHasAccess(true);
     } else {
       navigateTo('home');
@@ -797,6 +802,16 @@ export default function AdminDashboard() {
                 </button>
               )}
 
+              {hasPermission('manage_bonus_types') && (
+                <button
+                  onClick={() => navigateTo('adminrewardsdisplay')}
+                  className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 px-6 py-3 rounded-lg font-bold transition-all border border-amber-500/30 flex items-center gap-2"
+                >
+                  <Gift className="w-5 h-5" />
+                  Rewards Display
+                </button>
+              )}
+
               {hasPermission('view_vip') && (
                 <button
                   onClick={() => navigateTo('adminviptracking')}
@@ -917,6 +932,15 @@ export default function AdminDashboard() {
                 >
                   <Shield className="w-5 h-5" />
                   Exclusive Affiliates
+                </button>
+              )}
+              {hasPermission('promoter_access') && (
+                <button
+                  onClick={() => navigateTo('promoterdashboard')}
+                  className="bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 px-6 py-3 rounded-lg font-bold transition-all border border-teal-500/30 flex items-center gap-2"
+                >
+                  <Activity className="w-5 h-5" />
+                  Promoter Dashboard
                 </button>
               )}
             </div>

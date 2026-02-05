@@ -68,8 +68,8 @@ export default function ReviewBonus() {
         .from('support_tickets')
         .insert({
           user_id: user.id,
-          subject: 'KYC + TrustPilot Review Bonus Claim',
-          message: `I have completed KYC verification and left a 5-star review on Trustpilot.\n\nMy Trustpilot username is: ${trustpilotUsername}\n\nPlease verify and award the $25 USDT KYC + TrustPilot Review Bonus.`,
+          subject: 'TrustPilot Review Bonus Claim ($5)',
+          message: `I have completed KYC verification and left a 5-star review on Trustpilot.\n\nMy Trustpilot username is: ${trustpilotUsername}\n\nPlease verify and award the $5 USDT TrustPilot Review Bonus.`,
           status: 'open',
           priority: 'medium',
           category: 'other'
@@ -78,7 +78,7 @@ export default function ReviewBonus() {
       if (error) throw error;
 
       setHasSubmitted(true);
-      showToast('Bonus claim submitted! Our team will verify and credit your $25 bonus within 24 hours.', 'success');
+      showToast('Bonus claim submitted! Our team will verify and credit your $5 review bonus within 24 hours.', 'success');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to submit claim';
       showToast(errorMessage, 'error');
@@ -91,13 +91,13 @@ export default function ReviewBonus() {
     {
       name: 'Michael R.',
       rating: 5,
-      text: 'Amazing platform! Completed KYC in minutes and got my $25 bonus. The trading experience is excellent.',
+      text: 'Amazing platform! Completed KYC in minutes and got my bonus. The trading experience is excellent.',
       date: '2 days ago'
     },
     {
       name: 'Sarah L.',
       rating: 5,
-      text: 'Best crypto exchange I have used. The combined KYC + review bonus was a great incentive to try the platform.',
+      text: 'Best crypto exchange I have used. The review bonus was a great incentive to try the platform.',
       date: '1 week ago'
     },
     {
@@ -114,15 +114,15 @@ export default function ReviewBonus() {
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-full px-4 py-2 mb-6">
             <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-            <span className="text-yellow-400 text-sm font-semibold">COMBINED BONUS OFFER</span>
+            <span className="text-yellow-400 text-sm font-semibold">TRUSTPILOT REVIEW BONUS</span>
           </div>
 
           <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
-            KYC + TrustPilot Review<br />Earn <span className="text-yellow-400">$25 USDT</span>
+            Leave a Review &<br />Earn <span className="text-yellow-400">$5 USDT</span>
           </h1>
 
           <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
-            Complete your KYC verification and leave a 5-star review on Trustpilot to earn $25 USDT in locked trading bonus.
+            Share your experience on TrustPilot and earn a $5 USDT locked trading bonus. KYC verification required.
           </p>
 
           <div className="flex items-center justify-center gap-2 mb-8">
@@ -205,7 +205,7 @@ export default function ReviewBonus() {
             <div className="w-12 h-12 bg-emerald-500/10 rounded-lg flex items-center justify-center mx-auto mb-4">
               <Gift className="w-6 h-6 text-emerald-400" />
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">Get $25 USDT</h3>
+            <h3 className="text-xl font-bold text-white mb-2">Get $5 USDT</h3>
             <p className="text-gray-400">Bonus credited within 24h</p>
           </div>
         </div>
@@ -216,7 +216,7 @@ export default function ReviewBonus() {
             Unlock Requirements - Read Carefully!
           </h3>
           <p className="text-gray-300 mb-4">
-            This $25 bonus is awarded as a <span className="text-yellow-400 font-semibold">locked trading bonus</span>.
+            This $5 bonus is awarded as a <span className="text-yellow-400 font-semibold">locked trading bonus</span> (7-day expiry).
             To withdraw it, you must complete ALL of the following:
           </p>
           <div className="grid md:grid-cols-2 gap-4">
@@ -225,7 +225,7 @@ export default function ReviewBonus() {
                 <TrendingUp className="w-5 h-5 text-blue-400" />
                 <span className="font-semibold text-white">Trading Volume</span>
               </div>
-              <p className="text-gray-400 text-sm">Complete $12,500 in trading volume using the bonus funds (500x the bonus amount).</p>
+              <p className="text-gray-400 text-sm">Complete $2,500 in trading volume using the bonus funds (500x the bonus amount).</p>
             </div>
             <div className="bg-gray-900/50 rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
@@ -250,13 +250,13 @@ export default function ReviewBonus() {
             </div>
           </div>
           <p className="text-gray-400 text-sm mt-4">
-            <span className="text-yellow-400">Note:</span> Bonus expires in 30 days. Profits earned from trading with the locked bonus are yours to keep!
+            <span className="text-yellow-400">Note:</span> Bonus expires in 7 days. Profits earned from trading with the locked bonus are yours to keep!
           </p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8 mb-16">
           <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-2xl p-8">
-            <h2 className="text-2xl font-bold text-white mb-6">How to Claim Your $25 Bonus</h2>
+            <h2 className="text-2xl font-bold text-white mb-6">How to Claim Your $5 Review Bonus</h2>
 
             <div className="space-y-6">
               <div className="flex items-start gap-4">
@@ -311,7 +311,7 @@ export default function ReviewBonus() {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">Submit Your Claim</h3>
-                  <p className="text-gray-400">Fill out the form with your Trustpilot username. Our team will verify and credit your $25 bonus within 24 hours.</p>
+                  <p className="text-gray-400">Fill out the form with your Trustpilot username. Our team will verify and credit your $5 bonus within 24 hours.</p>
                 </div>
               </div>
             </div>
@@ -321,15 +321,15 @@ export default function ReviewBonus() {
               <ul className="text-sm text-gray-400 space-y-1">
                 <li>- Reviews must be genuine and 5 stars</li>
                 <li>- KYC must be fully verified before claiming</li>
-                <li>- One combined bonus per user account</li>
-                <li>- Bonus is credited as locked trading funds</li>
-                <li>- Complete volume + 30 consecutive days to unlock</li>
+                <li>- One review bonus per user account</li>
+                <li>- $5 bonus is credited as locked trading funds (7-day expiry)</li>
+                <li>- Complete volume + consecutive trading days to unlock</li>
               </ul>
             </div>
           </div>
 
           <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-2xl p-8">
-            <h2 className="text-2xl font-bold text-white mb-6">Claim Your $25 USDT Bonus</h2>
+            <h2 className="text-2xl font-bold text-white mb-6">Claim Your $5 USDT Review Bonus</h2>
 
             {!user ? (
               <div className="text-center py-12">
@@ -362,7 +362,7 @@ export default function ReviewBonus() {
                 <Check className="w-16 h-16 text-green-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-white mb-2">Claim Submitted!</h3>
                 <p className="text-gray-400 mb-6">
-                  Thank you! Our team will verify your KYC status and Trustpilot review, then credit your $25 USDT bonus within 24 hours.
+                  Thank you! Our team will verify your Trustpilot review and credit your $5 USDT bonus within 24 hours.
                 </p>
                 <a
                   href="/wallet"
@@ -477,7 +477,7 @@ export default function ReviewBonus() {
                     disabled={isSubmitting || !isKycVerified}
                     className="w-full bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-gray-900 font-semibold py-4 rounded-lg transition-colors flex items-center justify-center gap-2"
                   >
-                    {isSubmitting ? 'Submitting...' : !isKycVerified ? 'Complete KYC First' : 'Submit & Claim $25 USDT'}
+                    {isSubmitting ? 'Submitting...' : !isKycVerified ? 'Complete KYC First' : 'Submit & Claim $5 USDT'}
                     <ArrowRight className="w-5 h-5" />
                   </button>
                 </form>
@@ -553,7 +553,7 @@ export default function ReviewBonus() {
         <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20 rounded-2xl p-8 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">Your Opinion Matters</h2>
           <p className="text-xl text-gray-300 mb-8">
-            Complete KYC + leave a review and earn $25 USDT!
+            Leave a TrustPilot review and earn $5 USDT in locked trading bonus!
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {user && !isKycVerified && (

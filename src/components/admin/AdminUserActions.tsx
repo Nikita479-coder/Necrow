@@ -47,7 +47,7 @@ export default function AdminUserActions({ userId, userData, onRefresh }: Props)
       });
 
       if (status === 'verified' && oldStatus !== 'verified') {
-        await sendKYCApprovalEmailAndBonus(level || 1);
+        await sendKYCApprovalEmailAndNotification(level || 1);
       } else if (status === 'rejected') {
         await sendKYCRejectionEmail();
       }
@@ -62,29 +62,8 @@ export default function AdminUserActions({ userId, userData, onRefresh }: Props)
     }
   };
 
-  const sendKYCApprovalEmailAndBonus = async (level: number) => {
+  const sendKYCApprovalEmailAndNotification = async (level: number) => {
     try {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-
-      const { data: bonusType } = await supabase
-        .from('bonus_types')
-        .select('id, default_amount')
-        .ilike('name', '%KYC%Verification%Bonus%')
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (bonusType && currentUser) {
-        const { error: bonusError } = await supabase.rpc('award_user_bonus', {
-          p_user_id: userId,
-          p_bonus_type_id: bonusType.id,
-          p_amount: bonusType.default_amount,
-          p_awarded_by: currentUser.id,
-          p_notes: `KYC Level ${level} Verification Bonus`,
-          p_expiry_days: 7
-        });
-        if (bonusError) console.error('Bonus award error:', bonusError);
-      }
-
       const userEmail = userData?.email;
       const userName = userData?.profile?.full_name || 'Valued User';
 
@@ -121,11 +100,11 @@ export default function AdminUserActions({ userId, userData, onRefresh }: Props)
         user_id: userId,
         type: 'kyc_update',
         title: 'KYC Verification Approved',
-        message: `Congratulations! Your KYC verification (Level ${level}) has been approved. You have received a $20 trading bonus! Leave a TrustPilot review to earn an additional $5.`,
+        message: `Congratulations! Your KYC verification (Level ${level}) has been approved. Your $20 locked trading bonus has been credited automatically. Leave a TrustPilot review to earn an additional $5.`,
         read: false
       });
     } catch (error) {
-      console.error('Error sending KYC approval email/bonus:', error);
+      console.error('Error sending KYC approval notification:', error);
     }
   };
 
@@ -332,9 +311,9 @@ export default function AdminUserActions({ userId, userData, onRefresh }: Props)
 
         await supabase.from('notifications').insert({
           user_id: userId,
+          type: 'bonus',
           title: 'Account Reset Complete',
           message: `Your account has been reset and you have received a $${bonusAmount} bonus.`,
-          notification_type: 'bonus',
           read: false,
         });
       }
