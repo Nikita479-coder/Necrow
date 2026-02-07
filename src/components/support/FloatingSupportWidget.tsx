@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send } from 'lucide-react';
+import { MessageCircle, X, Send, AlertCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useNotificationSound } from '../../hooks/useNotificationSound';
@@ -12,6 +12,8 @@ export default function FloatingSupportWidget() {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [hasActiveTicket, setHasActiveTicket] = useState(false);
+  const [checkingTicket, setCheckingTicket] = useState(false);
   const subscriptionRef = useRef<any>(null);
   const { playSound } = useNotificationSound({ enabled: true, volume: 0.5 });
   const prevUnreadCountRef = useRef(0);
@@ -19,10 +21,38 @@ export default function FloatingSupportWidget() {
   useEffect(() => {
     if (user) {
       loadUnreadCount();
+      checkActiveTicket();
       const cleanup = subscribeToTickets();
       return cleanup;
     }
   }, [user]);
+
+  useEffect(() => {
+    if (isOpen && user) {
+      checkActiveTicket();
+    }
+  }, [isOpen, user]);
+
+  const checkActiveTicket = async () => {
+    if (!user) return;
+
+    setCheckingTicket(true);
+    try {
+      const { data, error } = await supabase
+        .from('support_tickets')
+        .select('id')
+        .eq('user_id', user.id)
+        .not('status', 'in', '("resolved","closed")')
+        .limit(1);
+
+      if (error) throw error;
+      setHasActiveTicket(data && data.length > 0);
+    } catch (error) {
+      console.error('Error checking active ticket:', error);
+    } finally {
+      setCheckingTicket(false);
+    }
+  };
 
   useEffect(() => {
     if (unreadCount > prevUnreadCountRef.current && prevUnreadCountRef.current !== 0) {
@@ -187,7 +217,23 @@ export default function FloatingSupportWidget() {
             <p className="text-blue-100 text-sm">Send us a message</p>
           </div>
 
-          {success ? (
+          {checkingTicket ? (
+            <div className="p-6 flex-1 flex items-center justify-center">
+              <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : hasActiveTicket ? (
+            <div className="p-6 flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="w-8 h-8 text-yellow-500" />
+                </div>
+                <h4 className="text-white font-medium mb-2">Active Ticket Exists</h4>
+                <p className="text-gray-400 text-sm">
+                  You already have an active support ticket. Please check your support page to view it.
+                </p>
+              </div>
+            </div>
+          ) : success ? (
             <div className="p-6 flex-1 flex items-center justify-center">
               <div className="text-center">
                 <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">

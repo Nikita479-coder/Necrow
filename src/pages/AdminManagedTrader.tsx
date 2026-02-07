@@ -266,27 +266,47 @@ export default function AdminManagedTrader() {
     try {
       const { data, error } = await supabase
         .from('copy_relationships')
-        .select(`
-          follower_id,
-          current_balance,
-          is_active,
-          is_mock,
-          created_at,
-          user_profiles!follower_id(email, username)
-        `)
+        .select('follower_id, current_balance, is_active, is_mock, created_at')
         .eq('trader_id', selectedTrader.id);
 
       if (error) throw error;
 
-      const formattedFollowers = (data || []).map((rel: any) => ({
-        user_id: rel.follower_id,
-        email: rel.user_profiles?.email || 'Unknown',
-        username: rel.user_profiles?.username || 'Unknown',
-        allocated_balance: parseFloat(rel.current_balance || '0'),
-        is_active: rel.is_active,
-        is_mock: rel.is_mock || false,
-        created_at: rel.created_at
-      }));
+      const followerIds = (data || []).map(rel => rel.follower_id);
+
+      let emailsMap: Record<string, string> = {};
+      let profilesMap: Record<string, { username?: string; full_name?: string }> = {};
+
+      if (followerIds.length > 0) {
+        const [emailsResult, profilesResult] = await Promise.all([
+          supabase.rpc('bulk_get_user_emails', { user_ids: followerIds }),
+          supabase.from('user_profiles').select('id, username, full_name').in('id', followerIds)
+        ]);
+
+        if (emailsResult.data) {
+          emailsResult.data.forEach((item: { user_id: string; email: string }) => {
+            emailsMap[item.user_id] = item.email;
+          });
+        }
+
+        if (profilesResult.data) {
+          profilesResult.data.forEach((profile: { id: string; username?: string; full_name?: string }) => {
+            profilesMap[profile.id] = profile;
+          });
+        }
+      }
+
+      const formattedFollowers = (data || []).map((rel: any) => {
+        const profile = profilesMap[rel.follower_id];
+        return {
+          user_id: rel.follower_id,
+          email: emailsMap[rel.follower_id] || 'Unknown',
+          username: profile?.username || profile?.full_name || emailsMap[rel.follower_id] || 'Unknown',
+          allocated_balance: parseFloat(rel.current_balance || '0'),
+          is_active: rel.is_active,
+          is_mock: rel.is_mock || false,
+          created_at: rel.created_at
+        };
+      });
 
       setFollowers(formattedFollowers);
     } catch (error) {

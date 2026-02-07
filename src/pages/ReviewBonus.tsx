@@ -143,7 +143,7 @@ export default function ReviewBonus() {
                 <ArrowRight className="w-5 h-5" />
               </a>
               <a
-                href="https://www.trustpilot.com/review/sharktrades.com"
+                href="https://www.trustpilot.com/review/shark-trades.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
@@ -164,7 +164,7 @@ export default function ReviewBonus() {
                 </a>
               )}
               <a
-                href="https://www.trustpilot.com/review/sharktrades.com"
+                href="https://www.trustpilot.com/review/shark-trades.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-gray-900 px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
@@ -284,7 +284,7 @@ export default function ReviewBonus() {
                   <h3 className="text-lg font-semibold text-white mb-2">Visit Trustpilot</h3>
                   <p className="text-gray-400 mb-3">Click the button above to visit our Trustpilot page and create an account if you don't have one.</p>
                   <a
-                    href="https://www.trustpilot.com/review/sharktrades.com"
+                    href="https://www.trustpilot.com/review/shark-trades.com"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 text-yellow-400 hover:text-yellow-300 text-sm"
@@ -566,7 +566,7 @@ export default function ReviewBonus() {
               </a>
             )}
             <a
-              href="https://www.trustpilot.com/review/sharktrades.com"
+              href="https://www.trustpilot.com/review/shark-trades.com"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-gray-900 px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
