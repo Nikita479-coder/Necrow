@@ -215,6 +215,27 @@ function RewardsHub() {
       if (kycBonusData && kycBonusData.length > 0) {
         setClaimedTaskIds(prev => new Set([...prev, 'kyc_verification_bonus']));
       }
+
+      const { data: profileData } = await supabase
+        .from('user_profiles')
+        .select('kyc_level')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileData && profileData.kyc_level >= 1) {
+        setClaimedTaskIds(prev => new Set([...prev, 'kyc_verification_bonus']));
+      }
+
+      const { data: kycDocsData } = await supabase
+        .from('kyc_documents')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('verification_status', 'verified')
+        .limit(1);
+
+      if (kycDocsData && kycDocsData.length > 0) {
+        setClaimedTaskIds(prev => new Set([...prev, 'kyc_verification_bonus']));
+      }
     } catch (error) {
       console.error('Error loading user stats:', error);
     } finally {

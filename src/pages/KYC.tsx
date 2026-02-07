@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
-import { Shield, CheckCircle2, Upload, User, MapPin, CreditCard, FileText, Camera, AlertCircle, Building2 } from 'lucide-react';
+import { Shield, CheckCircle2, Upload, User, MapPin, CreditCard, FileText, Camera, AlertCircle, Building2, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
@@ -28,6 +28,7 @@ interface KYCData {
   incorporation_date?: string;
   business_nature?: string;
   tax_id?: string;
+  rejection_reason?: string;
 }
 
 function KYC() {
@@ -79,16 +80,30 @@ function KYC() {
     if (!user) return;
 
     try {
+      const { data: profileData } = await supabase
+        .from('user_profiles')
+        .select('kyc_status')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileData?.kyc_status === 'rejected') {
+        setUploadedDocuments({});
+        return;
+      }
+
       const { data, error } = await supabase
         .from('kyc_documents')
-        .select('document_type')
+        .select('document_type, verified, verification_notes')
         .eq('user_id', user.id);
 
       if (error) throw error;
 
       const uploaded: {[key: string]: boolean} = {};
       data?.forEach(doc => {
-        uploaded[doc.document_type] = true;
+        const isRejected = doc.verification_notes?.toLowerCase().includes('rejected');
+        if (!isRejected) {
+          uploaded[doc.document_type] = true;
+        }
       });
       setUploadedDocuments(uploaded);
     } catch (error) {
@@ -121,34 +136,54 @@ function KYC() {
         else if (level === 3) setKycLevel('advanced');
         else if (level === 4) setKycLevel('entity');
 
-        setFormData({
-          firstName: data.first_name || '',
-          lastName: data.last_name || '',
-          dateOfBirth: data.date_of_birth || '',
-          nationality: data.nationality || '',
-          address: data.address || '',
-          city: data.city || '',
-          postalCode: data.postal_code || '',
-          country: data.country || '',
-          idType: data.id_type || 'passport',
-          companyName: data.company_name || '',
-          companyCountry: data.company_country || '',
-          incorporationDate: data.incorporation_date || '',
-          businessNature: data.business_nature || '',
-          taxId: data.tax_id || '',
-        });
+        if (data.kyc_status === 'rejected') {
+          setFormData({
+            firstName: '',
+            lastName: '',
+            dateOfBirth: '',
+            nationality: '',
+            address: '',
+            city: '',
+            postalCode: '',
+            country: '',
+            idType: 'passport',
+            companyName: '',
+            companyCountry: '',
+            incorporationDate: '',
+            businessNature: '',
+            taxId: '',
+          });
+          setCurrentStep(1);
+          setKycLevel('none');
+          setUploadedDocuments({});
+        } else {
+          setFormData({
+            firstName: data.first_name || '',
+            lastName: data.last_name || '',
+            dateOfBirth: data.date_of_birth || '',
+            nationality: data.nationality || '',
+            address: data.address || '',
+            city: data.city || '',
+            postalCode: data.postal_code || '',
+            country: data.country || '',
+            idType: data.id_type || 'passport',
+            companyName: data.company_name || '',
+            companyCountry: data.company_country || '',
+            incorporationDate: data.incorporation_date || '',
+            businessNature: data.business_nature || '',
+            taxId: data.tax_id || '',
+          });
 
-        if (data.kyc_status === 'verified') {
-          // Map verified levels to the next available step
-          // Level 0 (none) -> Step 1, Level 1 (basic) -> Step 2, Level 2 (intermediate) -> Step 4
-          if (level === 0) setCurrentStep(1);
-          else if (level === 1) setCurrentStep(2);
-          else if (level === 2) setCurrentStep(4); // Skip step 3, go to face verification
-          else if (level >= 3) setCurrentStep(4);
-        } else if (data.kyc_status === 'pending') {
-          if (level === 1) setCurrentStep(2);
-          else if (level === 2) setCurrentStep(4);
-          else if (level === 3) setCurrentStep(4);
+          if (data.kyc_status === 'verified') {
+            if (level === 0) setCurrentStep(1);
+            else if (level === 1) setCurrentStep(2);
+            else if (level === 2) setCurrentStep(4);
+            else if (level >= 3) setCurrentStep(4);
+          } else if (data.kyc_status === 'pending') {
+            if (level === 1) setCurrentStep(2);
+            else if (level === 2) setCurrentStep(4);
+            else if (level === 3) setCurrentStep(4);
+          }
         }
       }
     } catch (error) {
@@ -572,13 +607,24 @@ function KYC() {
     );
   }
 
+  const handleGoBack = () => {
+    window.dispatchEvent(new CustomEvent('app-navigate', { detail: { page: 'rewardshub' } }));
+  };
+
   return (
     <div className="min-h-screen bg-[#0b0e11] text-white">
       <Navbar />
       <ToastContainer toasts={toasts} removeToast={removeToast} />
 
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <button
+          onClick={handleGoBack}
+          className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition-colors group"
+        >
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          <span className="text-sm font-medium">Back</span>
+        </button>
+
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
             <Shield className="w-10 h-10 text-[#f0b90b]" />
@@ -605,7 +651,24 @@ function KYC() {
           </div>
         )}
 
-        {(!existingKYC || (existingKYC.kyc_status !== 'pending' && existingKYC.kyc_level === 0)) && (
+        {existingKYC && existingKYC.kyc_status === 'rejected' && (
+          <div className="bg-red-900/20 border border-red-800/30 rounded-xl p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-white font-semibold">KYC Verification Rejected</p>
+                <p className="text-gray-300 text-sm mt-1">
+                  {existingKYC.rejection_reason || 'Your KYC verification has been rejected. Please submit new documents.'}
+                </p>
+                <p className="text-gray-400 text-sm mt-2">
+                  Please fill in your information and upload new documents below to complete verification.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {(!existingKYC || existingKYC.kyc_status === 'rejected' || (existingKYC.kyc_status !== 'pending' && existingKYC.kyc_level === 0)) && (
           <div className="bg-[#181a20] border border-gray-800 rounded-2xl p-6 mb-6">
             <h2 className="text-xl font-bold text-white mb-4">Select Verification Type</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

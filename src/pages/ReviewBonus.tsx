@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Star, Gift, ArrowRight, Check, MessageSquare, Award, TrendingUp, ExternalLink, Shield, Calendar, Clock, AlertTriangle } from 'lucide-react';
+import { Star, Gift, ArrowRight, Check, MessageSquare, Award, TrendingUp, ExternalLink, Shield, Calendar, Clock, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../hooks/useToast';
+
+declare global {
+  interface WindowEventMap {
+    'app-navigate': CustomEvent<{ page: string; state?: any }>;
+  }
+}
 
 export default function ReviewBonus() {
   const { user, userProfile } = useAuth();
@@ -108,9 +114,21 @@ export default function ReviewBonus() {
     }
   ];
 
+  const handleGoBack = () => {
+    window.dispatchEvent(new CustomEvent('app-navigate', { detail: { page: 'rewardshub' } }));
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <button
+          onClick={handleGoBack}
+          className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-8 transition-colors group"
+        >
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          <span className="text-sm font-medium">Back</span>
+        </button>
+
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-full px-4 py-2 mb-6">
             <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
