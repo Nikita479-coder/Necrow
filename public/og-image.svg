@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f1116"/>
+      <stop offset="50%" style="stop-color:#181a20"/>
+      <stop offset="100%" style="stop-color:#12141a"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f0b90b"/>
+      <stop offset="50%" style="stop-color:#f8d12f"/>
+      <stop offset="100%" style="stop-color:#f0b90b"/>
+    </linearGradient>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#f0b90b"/>
+      <stop offset="100%" style="stop-color:#f8d12f"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="textGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#1e222d" stroke-width="1" opacity="0.3"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bgGrad)"/>
+  <rect width="1200" height="630" fill="url(#grid)" opacity="0.5"/>
+
+  <line x1="0" y1="200" x2="400" y2="180" stroke="#f0b90b" stroke-width="1" opacity="0.15"/>
+  <line x1="50" y1="250" x2="350" y2="220" stroke="#f0b90b" stroke-width="1" opacity="0.1"/>
+  <line x1="800" y1="400" x2="1200" y2="450" stroke="#f0b90b" stroke-width="1" opacity="0.15"/>
+  <line x1="850" y1="350" x2="1150" y2="380" stroke="#f0b90b" stroke-width="1" opacity="0.1"/>
+
+  <circle cx="100" cy="100" r="150" fill="#f0b90b" opacity="0.03"/>
+  <circle cx="1100" cy="530" r="200" fill="#f0b90b" opacity="0.03"/>
+
+  <g transform="translate(600, 240)">
+    <g transform="rotate(45)">
+      <rect x="-70" y="-70" width="140" height="140" rx="24" fill="url(#goldGrad)" filter="url(#glow)"/>
+    </g>
+    <path d="M25 -50 L-15 0 L15 0 L-15 50 L35 -10 L0 -10 L25 -50 Z" fill="#0b0e11" stroke="#0b0e11" stroke-width="2" stroke-linejoin="round"/>
+  </g>
+
+  <text x="600" y="420" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="72" font-weight="800" fill="url(#textGrad)" filter="url(#textGlow)" letter-spacing="8">SHARK TRADES</text>
+
+  <text x="600" y="480" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="28" font-weight="500" fill="#848e9c" letter-spacing="4">PROFESSIONAL CRYPTO FUTURES TRADING</text>
+
+  <g transform="translate(600, 550)">
+    <rect x="-280" y="-18" width="160" height="36" rx="4" fill="#1e222d" stroke="#2b3139" stroke-width="1"/>
+    <text x="-200" y="8" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600" fill="#f0b90b">200x LEVERAGE</text>
+
+    <rect x="-90" y="-18" width="180" height="36" rx="4" fill="#1e222d" stroke="#2b3139" stroke-width="1"/>
+    <text x="0" y="8" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600" fill="#f0b90b">COPY TRADING</text>
+
+    <rect x="120" y="-18" width="160" height="36" rx="4" fill="#1e222d" stroke="#2b3139" stroke-width="1"/>
+    <text x="200" y="8" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600" fill="#f0b90b">70% REFERRAL</text>
+  </g>
+
+  <rect x="0" y="0" width="1200" height="4" fill="url(#goldGrad)"/>
+  <rect x="0" y="626" width="1200" height="4" fill="url(#goldGrad)"/>
+</svg>

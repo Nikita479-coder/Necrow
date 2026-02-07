@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Upload, AlertCircle, Image as ImageIcon } from 'lucide-react';
+import { X, Upload, AlertCircle, MessageSquare } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 
@@ -29,10 +29,36 @@ export default function NewTicketModal({ onClose, onSuccess }: NewTicketModalPro
   const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [hasActiveTicket, setHasActiveTicket] = useState(false);
+  const [checkingActiveTicket, setCheckingActiveTicket] = useState(true);
 
   useEffect(() => {
+    checkActiveTicket();
     loadCategories();
-  }, []);
+  }, [user]);
+
+  const checkActiveTicket = async () => {
+    if (!user) {
+      setCheckingActiveTicket(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('support_tickets')
+        .select('id')
+        .eq('user_id', user.id)
+        .not('status', 'in', '("resolved","closed")')
+        .limit(1);
+
+      if (error) throw error;
+      setHasActiveTicket(data && data.length > 0);
+    } catch (error) {
+      console.error('Error checking active tickets:', error);
+    } finally {
+      setCheckingActiveTicket(false);
+    }
+  };
 
   const loadCategories = async () => {
     try {
@@ -144,6 +170,53 @@ export default function NewTicketModal({ onClose, onSuccess }: NewTicketModalPro
       setLoading(false);
     }
   };
+
+  if (checkingActiveTicket) {
+    return (
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-gray-900 rounded-xl border border-gray-800 w-full max-w-md p-8">
+          <div className="flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (hasActiveTicket) {
+    return (
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-gray-900 rounded-xl border border-gray-800 w-full max-w-md">
+          <div className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-white">Support</h2>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-400" />
+            </button>
+          </div>
+          <div className="p-6">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center mb-4">
+                <MessageSquare className="w-8 h-8 text-yellow-500" />
+              </div>
+              <h3 className="text-lg font-medium text-white mb-2">Active Ticket Exists</h3>
+              <p className="text-gray-400 mb-6">
+                You already have an active support ticket. Please check your support page to view and respond to your existing ticket before creating a new one.
+              </p>
+              <button
+                onClick={onClose}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">

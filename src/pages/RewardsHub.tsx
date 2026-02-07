@@ -204,6 +204,17 @@ function RewardsHub() {
       if (tradesCount !== null) {
         setTotalTrades(tradesCount);
       }
+
+      const { data: kycBonusData } = await supabase
+        .from('locked_bonuses')
+        .select('id, bonus_types!inner(name)')
+        .eq('user_id', user.id)
+        .in('bonus_types.name', ['KYC Verification Bonus', 'KYC + TrustPilot Bonus'])
+        .limit(1);
+
+      if (kycBonusData && kycBonusData.length > 0) {
+        setClaimedTaskIds(prev => new Set([...prev, 'kyc_verification_bonus']));
+      }
     } catch (error) {
       console.error('Error loading user stats:', error);
     } finally {
@@ -624,7 +635,7 @@ function RewardsHub() {
                           ? 'bg-[#848e9c]/10 text-[#848e9c]'
                           : 'bg-[#0ecb81]/10 text-[#0ecb81]'
                       }`}>
-                        {isForfeited ? 'Forfeited' : isClaimed ? 'Claimed' : `+$${task.reward} USDT`}
+                        {isForfeited ? 'Forfeited' : isClaimed ? (task.id === 'kyc_verification_bonus' ? 'Received' : 'Claimed') : `+$${task.reward} USDT`}
                       </div>
                       <div className="text-[10px] text-[#848e9c]">
                         {task.rewardType === 'fee_rebate' ? 'Fee Rebate' : task.rewardType === 'locked_bonus' ? 'Locked Bonus' : 'Instant Withdrawal'}
@@ -658,11 +669,11 @@ function RewardsHub() {
                     <div className="space-y-2">
                       <a
                         href={task.externalLink}
-                        target="_blank"
+                        target={task.externalLink?.startsWith('/') ? '_self' : '_blank'}
                         rel="noopener noreferrer"
                         className="w-full text-xs font-medium py-2 rounded transition-all bg-[#fcd535] hover:bg-[#f0b90b] text-[#0b0e11] flex items-center justify-center gap-2"
                       >
-                        <ExternalLink className="w-3.5 h-3.5" />
+                        {!task.externalLink?.startsWith('/') && <ExternalLink className="w-3.5 h-3.5" />}
                         {task.id === 'mobile_app_download' ? 'Download App' : task.id === 'kyc_verification_bonus' ? 'Verify Identity' : task.id === 'trustpilot_review_bonus' ? 'Leave a Review' : 'Get Started'}
                       </a>
                       <p className="text-[10px] text-[#848e9c] text-center">
@@ -687,7 +698,7 @@ function RewardsHub() {
                           : 'bg-[#2b3139] text-[#848e9c] cursor-not-allowed'
                       }`}
                     >
-                      {isForfeited ? 'Bonus Forfeited' : isClaimed ? 'Claimed' : isCompleted ? 'Claim Reward' : `${percentage.toFixed(0)}% Complete`}
+                      {isForfeited ? 'Bonus Forfeited' : isClaimed ? (task.id === 'kyc_verification_bonus' ? 'Received' : 'Claimed') : isCompleted ? 'Claim Reward' : `${percentage.toFixed(0)}% Complete`}
                     </button>
                   )}
                 </div>
