@@ -184,54 +184,45 @@ export default function AdminKYC() {
         return;
       }
 
-      const { error } = await supabase
-        .from('kyc_documents')
-        .update({
-          verified,
-          verification_notes: notes || (verified ? 'Approved by admin' : 'Rejected by admin'),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', docId);
-
-      if (error) {
-        console.error('Error updating document:', error);
-        alert(`Failed to update document: ${error.message}`);
-        return;
-      }
-
-      // The database trigger will automatically upgrade KYC levels
-      // Level 2: ID document verified
-      // Level 3: ID document + selfie verified
-
-      if (!verified) {
-        const { error: profileError } = await supabase
-          .from('user_profiles')
+      if (verified) {
+        const { error } = await supabase
+          .from('kyc_documents')
           .update({
-            kyc_status: 'rejected',
+            verified: true,
+            verification_notes: notes || 'Approved by admin',
             updated_at: new Date().toISOString()
           })
-          .eq('id', doc.user_id);
+          .eq('id', docId);
 
-        if (profileError) {
-          console.error('Error updating user profile to rejected:', profileError);
-        } else {
-          console.log('User KYC status set to rejected');
+        if (error) {
+          console.error('Error updating document:', error);
+          alert(`Failed to update document: ${error.message}`);
+          return;
+        }
+      } else {
+        const rejectionReason = notes || 'Your KYC has been rejected. Please submit new documents with clearer images.';
+        const { data, error } = await supabase.rpc('admin_reject_kyc_full_reset', {
+          p_user_id: doc.user_id,
+          p_rejection_reason: rejectionReason
+        });
+
+        if (error) {
+          console.error('Error performing full KYC reset:', error);
+          alert(`Failed to reject KYC: ${error.message}`);
+          return;
         }
 
-        await supabase.from('notifications').insert({
-          user_id: doc.user_id,
-          type: 'system',
-          title: 'KYC Document Rejected',
-          message: notes || 'Your KYC document has been rejected. Please upload a clearer document.',
-          read: false
-        });
+        if (data && !data.success) {
+          alert(`Failed to reject KYC: ${data.error}`);
+          return;
+        }
       }
 
       await loadData();
       setImageUrl(null);
       setSelectedDoc(null);
       setVerificationNotes('');
-      alert(verified ? 'Document approved successfully' : 'Document rejected successfully');
+      alert(verified ? 'Document approved successfully' : 'KYC rejected and reset - user can now submit fresh documents');
     } catch (error: any) {
       console.error('Error updating verification:', error);
       alert(`Error: ${error.message || 'Failed to update verification'}`);
