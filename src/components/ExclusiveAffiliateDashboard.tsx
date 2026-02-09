@@ -3,7 +3,6 @@ import {
   DollarSign,
   TrendingUp,
   Users,
-  Download,
   Copy,
   CheckCircle,
   RefreshCw,
@@ -11,7 +10,12 @@ import {
   Wallet,
   ArrowUpRight,
   Gift,
-  Percent
+  Percent,
+  Zap,
+  Info,
+  Lock,
+  ChevronUp,
+  BookOpen
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -55,6 +59,25 @@ interface NetworkStats {
   [key: string]: number | undefined;
 }
 
+interface BoostTier {
+  min_ftds: number;
+  max_ftds: number | null;
+  multiplier: number;
+  label: string;
+  boost_pct: number;
+}
+
+interface BoostInfo {
+  ftd_count: number;
+  multiplier: number;
+  boost_percentage: number;
+  tier_label: string;
+  next_tier_threshold: number;
+  ftds_to_next_tier: number;
+  eligible: boolean;
+  all_tiers: BoostTier[];
+}
+
 interface ExclusiveStats {
   enrolled: boolean;
   referral_code?: string;
@@ -70,6 +93,7 @@ interface ExclusiveStats {
     copy_profit: number;
   };
   copy_profit_rates?: LevelRates;
+  boost?: BoostInfo;
   network?: NetworkStats;
   recent_commissions?: any[];
 }
@@ -91,11 +115,12 @@ function ExclusiveAffiliateDashboard() {
   const [stats, setStats] = useState<ExclusiveStats | null>(null);
   const [withdrawals, setWithdrawals] = useState<WithdrawalHistory[]>([]);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'earnings' | 'withdraw'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'earnings' | 'withdraw' | 'boost-guide'>('overview');
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawing, setWithdrawing] = useState(false);
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
   const [withdrawSuccess, setWithdrawSuccess] = useState(false);
+  const [showBoostInfo, setShowBoostInfo] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -235,6 +260,18 @@ function ExclusiveAffiliateDashboard() {
   const copyProfitRates = stats.copy_profit_rates || { level_1: 0, level_2: 0, level_3: 0, level_4: 0, level_5: 0, level_6: 0, level_7: 0, level_8: 0, level_9: 0, level_10: 0 };
   const balance = stats.balance || { available: 0, pending: 0, total_earned: 0, total_withdrawn: 0, deposit_commissions: 0, fee_share: 0, copy_profit: 0 };
   const network = stats.network || { level_1_count: 0, level_2_count: 0, level_3_count: 0, level_4_count: 0, level_5_count: 0, level_6_count: 0, level_7_count: 0, level_8_count: 0, level_9_count: 0, level_10_count: 0, level_1_earnings: 0, level_2_earnings: 0, level_3_earnings: 0, level_4_earnings: 0, level_5_earnings: 0, level_6_earnings: 0, level_7_earnings: 0, level_8_earnings: 0, level_9_earnings: 0, level_10_earnings: 0, this_month: 0 };
+  const boost: BoostInfo = stats.boost || { ftd_count: 0, multiplier: 1.0, boost_percentage: 0, tier_label: 'No boost', next_tier_threshold: 5, ftds_to_next_tier: 5, eligible: true, all_tiers: [] };
+  const hasActiveBoost = boost.multiplier > 1.0;
+
+  const getBoostTierColor = (boostPct: number) => {
+    if (boostPct >= 100) return { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30', ring: 'ring-red-500/40' };
+    if (boostPct >= 50) return { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30', ring: 'ring-orange-500/40' };
+    if (boostPct >= 35) return { bg: 'bg-amber-500/20', text: 'text-amber-400', border: 'border-amber-500/30', ring: 'ring-amber-500/40' };
+    if (boostPct >= 20) return { bg: 'bg-teal-500/20', text: 'text-teal-400', border: 'border-teal-500/30', ring: 'ring-teal-500/40' };
+    return { bg: 'bg-gray-500/20', text: 'text-gray-400', border: 'border-gray-500/30', ring: 'ring-gray-500/40' };
+  };
+
+  const boostColors = getBoostTierColor(boost.boost_percentage);
 
   const getActiveLevels = () => {
     const levels: number[] = [];
@@ -339,16 +376,165 @@ function ExclusiveAffiliateDashboard() {
         </div>
       </div>
 
+      {boost.eligible ? (
+        <div className={`rounded-2xl border ${boostColors.border} overflow-hidden`}>
+          <div className={`${boostColors.bg} p-6`}>
+            <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`w-10 h-10 rounded-xl ${boostColors.bg} border ${boostColors.border} flex items-center justify-center`}>
+                    <Zap className={`w-5 h-5 ${boostColors.text}`} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                      Recruitment Boost
+                      <button
+                        onClick={() => setShowBoostInfo(!showBoostInfo)}
+                        className="text-gray-400 hover:text-white transition-colors"
+                      >
+                        <Info className="w-4 h-4" />
+                      </button>
+                    </h3>
+                    <p className="text-sm text-gray-400">Based on your Level-1 FTDs in the last 30 days</p>
+                  </div>
+                </div>
+
+                {showBoostInfo && (
+                  <div className="mb-4 p-3 bg-black/20 rounded-lg text-sm text-gray-300 space-y-1">
+                    <p>- A qualifying FTD is a first deposit of $100+ from a KYC-verified direct referral</p>
+                    <p>- Only deposits made in the last 30 days count (rolling window)</p>
+                    <p>- Boost applies to deposit and copy trading commissions only</p>
+                    <p>- Fee revenue share is not affected by the boost</p>
+                    <p>- Your boost tier updates daily</p>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-4 mb-4">
+                  <div>
+                    <div className="text-sm text-gray-400 mb-1">Current Boost</div>
+                    <div className={`text-3xl font-bold ${hasActiveBoost ? boostColors.text : 'text-gray-500'}`}>
+                      {hasActiveBoost ? `+${boost.boost_percentage}%` : 'None'}
+                    </div>
+                  </div>
+                  <div className="h-12 w-px bg-gray-700" />
+                  <div>
+                    <div className="text-sm text-gray-400 mb-1">Multiplier</div>
+                    <div className={`text-3xl font-bold ${hasActiveBoost ? 'text-white' : 'text-gray-500'}`}>
+                      x{boost.multiplier.toFixed(2)}
+                    </div>
+                  </div>
+                  <div className="h-12 w-px bg-gray-700" />
+                  <div>
+                    <div className="text-sm text-gray-400 mb-1">30-Day FTDs</div>
+                    <div className="text-3xl font-bold text-white">{boost.ftd_count}</div>
+                  </div>
+                </div>
+
+                {boost.ftds_to_next_tier > 0 && (
+                  <div>
+                    <div className="flex justify-between text-sm mb-1.5">
+                      <span className="text-gray-400">
+                        {boost.ftd_count} / {boost.next_tier_threshold} FTDs for next tier
+                      </span>
+                      <span className={boostColors.text}>
+                        {boost.ftds_to_next_tier} more needed
+                      </span>
+                    </div>
+                    <div className="h-2.5 bg-black/30 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          hasActiveBoost ? 'bg-gradient-to-r from-teal-500 to-amber-500' : 'bg-gray-600'
+                        }`}
+                        style={{ width: `${Math.min((boost.ftd_count / boost.next_tier_threshold) * 100, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+                {boost.ftds_to_next_tier === 0 && boost.next_tier_threshold === 0 && (
+                  <div className="flex items-center gap-2 text-sm text-amber-400">
+                    <ChevronUp className="w-4 h-4" />
+                    Maximum tier reached!
+                  </div>
+                )}
+                {!hasActiveBoost && boost.ftds_to_next_tier > 0 && (
+                  <p className="text-sm text-gray-400 mt-2">
+                    Refer {boost.ftds_to_next_tier} qualified traders to unlock your first boost (+20%)
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {boost.all_tiers && boost.all_tiers.length > 0 && (
+            <div className="bg-[#1a1d24] p-4">
+              <div className="grid grid-cols-5 gap-2">
+                {boost.all_tiers.map((tier) => {
+                  const isCurrent = boost.boost_percentage === tier.boost_pct && (tier.boost_pct > 0 || boost.ftd_count <= 4);
+                  const isAchieved = boost.ftd_count >= tier.min_ftds;
+                  const tierColor = getBoostTierColor(tier.boost_pct);
+                  return (
+                    <div
+                      key={tier.label}
+                      className={`p-3 rounded-lg text-center transition-all ${
+                        isCurrent
+                          ? `${tierColor.bg} border-2 ${tierColor.border}`
+                          : isAchieved
+                            ? 'bg-[#0b0e11] border border-gray-700'
+                            : 'bg-[#0b0e11] border border-gray-800 opacity-50'
+                      }`}
+                    >
+                      <div className={`text-lg font-bold mb-0.5 ${
+                        isCurrent ? tierColor.text : isAchieved ? 'text-white' : 'text-gray-500'
+                      }`}>
+                        {tier.boost_pct > 0 ? `+${tier.boost_pct}%` : '--'}
+                      </div>
+                      <div className="text-xs text-gray-400">{tier.label}</div>
+                      <div className="mt-1">
+                        {isCurrent ? (
+                          <span className={`text-xs font-semibold ${tierColor.text}`}>CURRENT</span>
+                        ) : isAchieved ? (
+                          <CheckCircle className="w-3.5 h-3.5 text-green-400 mx-auto" />
+                        ) : (
+                          <Lock className="w-3.5 h-3.5 text-gray-600 mx-auto" />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="bg-[#1a1d24] rounded-xl p-6 border border-gray-800">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gray-500/20 flex items-center justify-center">
+              <Zap className="w-5 h-5 text-gray-500" />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-400">Recruitment Boost</h3>
+              <p className="text-sm text-gray-500">Boost not active for this account</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-[#1a1d24] rounded-xl p-6 border border-gray-800">
           <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
             <Gift className="w-5 h-5 text-green-400" />
             Deposit Commission Rates
+            {hasActiveBoost && (
+              <span className={`ml-2 px-2 py-0.5 text-xs font-semibold rounded-full ${boostColors.bg} ${boostColors.text}`}>
+                +{boost.boost_percentage}% boost
+              </span>
+            )}
           </h3>
           <div className="space-y-2 max-h-[400px] overflow-y-auto">
             {activeLevels.map((level) => {
               const rate = depositRates[`level_${level}`] || 0;
               const count = network[`level_${level}_count`] || 0;
+              const boostedRate = hasActiveBoost ? +(rate * boost.multiplier).toFixed(2) : rate;
               return (
                 <div key={level} className="flex items-center justify-between p-3 bg-[#0b0e11] rounded-lg">
                   <div className="flex items-center gap-3">
@@ -360,7 +546,14 @@ function ExclusiveAffiliateDashboard() {
                       <div className="text-xs text-gray-400">{count} members</div>
                     </div>
                   </div>
-                  <div className="text-xl font-bold text-green-400">{rate}%</div>
+                  {hasActiveBoost && rate > 0 ? (
+                    <div className="text-right">
+                      <div className={`text-xl font-bold ${boostColors.text}`}>{boostedRate}%</div>
+                      <div className="text-xs text-gray-500 line-through">{rate}%</div>
+                    </div>
+                  ) : (
+                    <div className="text-xl font-bold text-green-400">{rate}%</div>
+                  )}
                 </div>
               );
             })}
@@ -372,6 +565,9 @@ function ExclusiveAffiliateDashboard() {
             <Percent className="w-5 h-5 text-blue-400" />
             Trading Fee Revenue Share
           </h3>
+          {hasActiveBoost && (
+            <p className="text-xs text-gray-500 -mt-2 mb-4">Fee revenue share is not affected by the recruitment boost</p>
+          )}
           <div className="space-y-2 max-h-[400px] overflow-y-auto">
             {activeLevels.map((level) => {
               const rate = feeRates[`level_${level}`] || 0;
@@ -400,6 +596,11 @@ function ExclusiveAffiliateDashboard() {
           <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-cyan-400" />
             Copy Trading Profit Commissions
+            {hasActiveBoost && (
+              <span className={`ml-2 px-2 py-0.5 text-xs font-semibold rounded-full ${boostColors.bg} ${boostColors.text}`}>
+                +{boost.boost_percentage}% boost
+              </span>
+            )}
           </h3>
           <p className="text-sm text-gray-400 mb-4">
             Earn commission when your referred users make profits from copy trading.
@@ -407,10 +608,18 @@ function ExclusiveAffiliateDashboard() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {activeLevels.map((level) => {
               const rate = copyProfitRates[`level_${level}`] || 0;
+              const boostedRate = hasActiveBoost ? +(rate * boost.multiplier).toFixed(2) : rate;
               return (
                 <div key={level} className="p-3 bg-[#0b0e11] rounded-lg text-center">
                   <div className="text-xs text-gray-400 mb-1">Level {level}</div>
-                  <div className="text-xl font-bold text-cyan-400">{rate}%</div>
+                  {hasActiveBoost && rate > 0 ? (
+                    <>
+                      <div className={`text-xl font-bold ${boostColors.text}`}>{boostedRate}%</div>
+                      <div className="text-xs text-gray-500 line-through">{rate}%</div>
+                    </>
+                  ) : (
+                    <div className="text-xl font-bold text-cyan-400">{rate}%</div>
+                  )}
                 </div>
               );
             })}
@@ -437,11 +646,18 @@ function ExclusiveAffiliateDashboard() {
                   default: return 'text-blue-400';
                 }
               };
+              const wasBoosted = commission.boost_multiplier && commission.boost_multiplier > 1;
               return (
                 <div key={commission.id} className="flex justify-between items-center p-3 bg-[#0b0e11] rounded-lg">
                   <div>
-                    <div className="font-semibold text-sm">
+                    <div className="font-semibold text-sm flex items-center gap-2">
                       {getTypeLabel()} - Level {commission.tier_level}
+                      {wasBoosted && (
+                        <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-amber-500/20 text-amber-400 flex items-center gap-0.5">
+                          <Zap className="w-2.5 h-2.5" />
+                          x{commission.boost_multiplier}
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs text-gray-400">
                       {new Date(commission.created_at).toLocaleString()}
@@ -451,7 +667,13 @@ function ExclusiveAffiliateDashboard() {
                     <div className={`font-bold ${getTypeColor()}`}>
                       +${commission.commission_amount.toFixed(2)}
                     </div>
-                    <div className="text-xs text-gray-400">{commission.commission_rate}%</div>
+                    {wasBoosted ? (
+                      <div className="text-xs text-gray-500">
+                        base ${commission.base_commission_amount?.toFixed(2)}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-gray-400">{commission.commission_rate}%</div>
+                    )}
                   </div>
                 </div>
               );
@@ -483,24 +705,55 @@ function ExclusiveAffiliateDashboard() {
         <h3 className="text-xl font-bold mb-4">All Commissions</h3>
         <div className="space-y-3 max-h-[500px] overflow-y-auto">
           {stats.recent_commissions && stats.recent_commissions.length > 0 ? (
-            stats.recent_commissions.map((commission: any) => (
-              <div key={commission.id} className="flex justify-between items-center p-4 bg-[#0b0e11] rounded-lg">
-                <div>
-                  <div className="font-semibold">
-                    {commission.commission_type === 'deposit' ? 'Deposit Commission' : 'Trading Fee Share'}
+            stats.recent_commissions.map((commission: any) => {
+              const typeLabel = commission.commission_type === 'deposit'
+                ? 'Deposit Commission'
+                : commission.commission_type === 'copy_profit'
+                  ? 'Copy Trading Profit'
+                  : 'Trading Fee Share';
+              const typeColor = commission.commission_type === 'deposit'
+                ? 'text-green-400'
+                : commission.commission_type === 'copy_profit'
+                  ? 'text-cyan-400'
+                  : 'text-blue-400';
+              const wasBoosted = commission.boost_multiplier && commission.boost_multiplier > 1;
+              return (
+                <div key={commission.id} className="flex justify-between items-center p-4 bg-[#0b0e11] rounded-lg">
+                  <div>
+                    <div className="font-semibold flex items-center gap-2">
+                      {typeLabel}
+                      {wasBoosted && (
+                        <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-amber-500/20 text-amber-400 flex items-center gap-0.5">
+                          <Zap className="w-2.5 h-2.5" />
+                          {commission.boost_tier}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      Level {commission.tier_level} - {commission.commission_rate}% of ${commission.source_amount.toFixed(2)}
+                      {wasBoosted && (
+                        <span className="text-amber-400/70 ml-1">
+                          (x{commission.boost_multiplier} boost)
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {new Date(commission.created_at).toLocaleString()}
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-400">
-                    Level {commission.tier_level} - {commission.commission_rate}% of ${commission.source_amount.toFixed(2)}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {new Date(commission.created_at).toLocaleString()}
+                  <div className="text-right">
+                    <div className={`text-xl font-bold ${typeColor}`}>
+                      +${commission.commission_amount.toFixed(2)}
+                    </div>
+                    {wasBoosted && (
+                      <div className="text-xs text-gray-500">
+                        base ${commission.base_commission_amount?.toFixed(2)}
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className={`text-xl font-bold ${commission.commission_type === 'deposit' ? 'text-green-400' : 'text-blue-400'}`}>
-                  +${commission.commission_amount.toFixed(2)}
-                </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="text-center py-12 text-gray-400">
               <DollarSign className="w-12 h-12 mx-auto mb-2 opacity-50" />
@@ -633,13 +886,256 @@ function ExclusiveAffiliateDashboard() {
     </div>
   );
 
+  const boostTiers = boost.all_tiers && boost.all_tiers.length > 0
+    ? boost.all_tiers
+    : [
+        { min_ftds: 0, max_ftds: 4, multiplier: 1.0, label: 'Base', boost_pct: 0 },
+        { min_ftds: 5, max_ftds: 10, multiplier: 1.2, label: 'Silver', boost_pct: 20 },
+        { min_ftds: 11, max_ftds: 20, multiplier: 1.35, label: 'Gold', boost_pct: 35 },
+        { min_ftds: 21, max_ftds: 50, multiplier: 1.5, label: 'Diamond', boost_pct: 50 },
+        { min_ftds: 51, max_ftds: null, multiplier: 2.0, label: 'Elite', boost_pct: 100 },
+      ];
+
+  const renderBoostGuide = () => (
+    <div className="space-y-6">
+      <div className="bg-gradient-to-br from-amber-500/10 to-orange-600/10 rounded-2xl p-8 border border-amber-500/20">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+            <Zap className="w-7 h-7 text-amber-400" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-white">Recruitment Boost</h2>
+            <p className="text-gray-400">Earn more by referring active traders</p>
+          </div>
+        </div>
+        <p className="text-gray-300 leading-relaxed">
+          The Recruitment Boost rewards you for bringing in new traders who make their first deposit.
+          The more qualified referrals you generate in a rolling 30-day window, the higher your
+          commission multiplier climbs -- up to 2x on deposit and copy trading commissions.
+        </p>
+      </div>
+
+      <div className="bg-[#1a1d24] rounded-xl p-6 border border-gray-800">
+        <h3 className="text-xl font-bold text-white mb-2">What counts as a qualifying FTD?</h3>
+        <p className="text-gray-400 mb-5 text-sm">
+          A qualifying First-Time Deposit (FTD) is counted when ALL of these conditions are met:
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 bg-[#0b0e11] rounded-xl border border-gray-800">
+            <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center mb-3">
+              <Users className="w-5 h-5 text-green-400" />
+            </div>
+            <div className="font-semibold text-white mb-1">Direct Referral</div>
+            <p className="text-sm text-gray-400">
+              The user signed up using your referral link (Level 1 only).
+            </p>
+          </div>
+          <div className="p-4 bg-[#0b0e11] rounded-xl border border-gray-800">
+            <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center mb-3">
+              <DollarSign className="w-5 h-5 text-blue-400" />
+            </div>
+            <div className="font-semibold text-white mb-1">$100+ First Deposit</div>
+            <p className="text-sm text-gray-400">
+              Their first deposit must be at least $100 USD equivalent.
+            </p>
+          </div>
+          <div className="p-4 bg-[#0b0e11] rounded-xl border border-gray-800">
+            <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center mb-3">
+              <CheckCircle className="w-5 h-5 text-amber-400" />
+            </div>
+            <div className="font-semibold text-white mb-1">KYC Verified</div>
+            <p className="text-sm text-gray-400">
+              The referred user must have completed KYC verification.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-[#1a1d24] rounded-xl p-6 border border-gray-800">
+        <h3 className="text-xl font-bold text-white mb-5">Boost Tiers</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-700">
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Tier</th>
+                <th className="text-center py-3 px-4 text-sm font-semibold text-gray-400">FTDs Required</th>
+                <th className="text-center py-3 px-4 text-sm font-semibold text-gray-400">Multiplier</th>
+                <th className="text-center py-3 px-4 text-sm font-semibold text-gray-400">Boost</th>
+                <th className="text-right py-3 px-4 text-sm font-semibold text-gray-400">Example (5% base)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {boostTiers.map((tier) => {
+                const isCurrent = boost.boost_percentage === tier.boost_pct && (tier.boost_pct > 0 || boost.ftd_count <= 4);
+                const tierColor = getBoostTierColor(tier.boost_pct);
+                const exampleRate = +(5 * tier.multiplier).toFixed(2);
+                return (
+                  <tr
+                    key={tier.label}
+                    className={`border-b border-gray-800 transition-colors ${
+                      isCurrent ? `${tierColor.bg}` : 'hover:bg-[#0b0e11]/50'
+                    }`}
+                  >
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-2">
+                        <span className={`font-bold ${isCurrent ? tierColor.text : 'text-white'}`}>
+                          {tier.label}
+                        </span>
+                        {isCurrent && (
+                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${tierColor.bg} ${tierColor.text} border ${tierColor.border}`}>
+                            YOU
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-4 px-4 text-center text-gray-300">
+                      {tier.max_ftds ? `${tier.min_ftds} - ${tier.max_ftds}` : `${tier.min_ftds}+`}
+                    </td>
+                    <td className="py-4 px-4 text-center">
+                      <span className={`font-bold ${tier.multiplier > 1 ? tierColor.text : 'text-gray-500'}`}>
+                        x{tier.multiplier}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4 text-center">
+                      <span className={`font-semibold ${tier.boost_pct > 0 ? tierColor.text : 'text-gray-500'}`}>
+                        {tier.boost_pct > 0 ? `+${tier.boost_pct}%` : '--'}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4 text-right">
+                      <span className={`font-bold ${tier.multiplier > 1 ? 'text-white' : 'text-gray-400'}`}>
+                        {exampleRate}%
+                      </span>
+                      {tier.multiplier > 1 && (
+                        <span className="text-gray-500 text-xs ml-1">
+                          (was 5%)
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-[#1a1d24] rounded-xl p-6 border border-gray-800">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <Zap className="w-5 h-5 text-green-400" />
+            What gets boosted
+          </h3>
+          <ul className="space-y-3">
+            <li className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 shrink-0" />
+              <div>
+                <div className="text-white font-medium">Deposit Commissions</div>
+                <p className="text-sm text-gray-400">All levels of deposit commission earnings are multiplied</p>
+              </div>
+            </li>
+            <li className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 shrink-0" />
+              <div>
+                <div className="text-white font-medium">Copy Trading Profit Commissions</div>
+                <p className="text-sm text-gray-400">Earnings from copy trading profits across all levels</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div className="bg-[#1a1d24] rounded-xl p-6 border border-gray-800">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <Info className="w-5 h-5 text-blue-400" />
+            What is NOT boosted
+          </h3>
+          <ul className="space-y-3">
+            <li className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-gray-500 mt-0.5 shrink-0" />
+              <div>
+                <div className="text-white font-medium">Trading Fee Revenue Share</div>
+                <p className="text-sm text-gray-400">Fee revenue share rates remain at their configured base rates regardless of boost tier</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div className="bg-[#1a1d24] rounded-xl p-6 border border-gray-800">
+        <h3 className="text-lg font-bold text-white mb-4">How the rolling window works</h3>
+        <div className="space-y-4">
+          <div className="flex items-start gap-4 p-4 bg-[#0b0e11] rounded-xl">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
+              <span className="text-amber-400 font-bold text-sm">1</span>
+            </div>
+            <div>
+              <div className="font-semibold text-white">30-Day Rolling Count</div>
+              <p className="text-sm text-gray-400">
+                Only FTDs from the past 30 days count toward your tier. If a referral deposited 31 days ago,
+                they no longer count -- but any new FTDs immediately raise your count.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-4 p-4 bg-[#0b0e11] rounded-xl">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
+              <span className="text-amber-400 font-bold text-sm">2</span>
+            </div>
+            <div>
+              <div className="font-semibold text-white">Daily Tier Updates</div>
+              <p className="text-sm text-gray-400">
+                Your boost tier is recalculated daily. When your tier changes, you will receive a notification.
+                Upgrades take effect on the next commission calculation.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-4 p-4 bg-[#0b0e11] rounded-xl">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
+              <span className="text-amber-400 font-bold text-sm">3</span>
+            </div>
+            <div>
+              <div className="font-semibold text-white">Boost Applied at Commission Time</div>
+              <p className="text-sm text-gray-400">
+                The multiplier is applied the moment a commission is calculated, not retroactively.
+                Each commission entry records the exact multiplier that was used for full transparency.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-r from-amber-500/10 to-orange-600/10 rounded-xl p-6 border border-amber-500/20">
+        <h3 className="text-lg font-bold text-white mb-3">Quick Example</h3>
+        <div className="text-gray-300 text-sm leading-relaxed space-y-2">
+          <p>
+            Suppose your Level-1 deposit commission rate is <span className="text-white font-semibold">5%</span> and you bring in
+            <span className="text-amber-400 font-semibold"> 12 qualifying FTDs</span> this month.
+          </p>
+          <p>
+            That puts you in the <span className="text-amber-400 font-semibold">Gold tier (x1.35)</span>.
+            When a Level-1 referral deposits $1,000, instead of earning $50 (5%), you earn:
+          </p>
+          <div className="bg-black/20 rounded-lg p-4 font-mono text-center">
+            <span className="text-gray-400">$1,000</span>
+            <span className="text-gray-500 mx-2">x</span>
+            <span className="text-white">5%</span>
+            <span className="text-gray-500 mx-2">x</span>
+            <span className="text-amber-400">1.35</span>
+            <span className="text-gray-500 mx-2">=</span>
+            <span className="text-green-400 text-lg font-bold">$67.50</span>
+            <span className="text-gray-500 text-xs ml-2">(+$17.50 bonus)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex gap-2 overflow-x-auto pb-2">
         {[
           { id: 'overview', label: 'Overview', icon: TrendingUp },
           { id: 'earnings', label: 'Earnings', icon: DollarSign },
-          { id: 'withdraw', label: 'Withdraw', icon: Wallet }
+          { id: 'withdraw', label: 'Withdraw', icon: Wallet },
+          { id: 'boost-guide', label: 'How Boost Works', icon: BookOpen }
         ].map((tab) => (
           <button
             key={tab.id}
@@ -666,6 +1162,7 @@ function ExclusiveAffiliateDashboard() {
       {activeTab === 'overview' && renderOverview()}
       {activeTab === 'earnings' && renderEarnings()}
       {activeTab === 'withdraw' && renderWithdraw()}
+      {activeTab === 'boost-guide' && renderBoostGuide()}
     </div>
   );
 }
