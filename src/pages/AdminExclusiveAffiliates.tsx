@@ -19,7 +19,10 @@ import {
   Network,
   X,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Zap,
+  Shield,
+  Settings
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -61,6 +64,11 @@ interface ExclusiveAffiliate {
   fee_share_earned: number;
   network_size: number;
   this_month_earnings: number;
+  is_boost_eligible: boolean;
+  boost_override_multiplier: number | null;
+  ftd_count_30d: number;
+  current_boost_tier: string;
+  current_boost_multiplier: number;
 }
 
 interface Withdrawal {
@@ -138,6 +146,13 @@ export default function AdminExclusiveAffiliates() {
   const [depositRates, setDepositRates] = useState<LevelRates>({ level_1: 5, level_2: 4, level_3: 3, level_4: 2, level_5: 1, level_6: 0, level_7: 0, level_8: 0, level_9: 0, level_10: 0 });
   const [feeRates, setFeeRates] = useState<LevelRates>({ level_1: 50, level_2: 40, level_3: 30, level_4: 20, level_5: 10, level_6: 0, level_7: 0, level_8: 0, level_9: 0, level_10: 0 });
   const [copyProfitRates, setCopyProfitRates] = useState<LevelRates>({ level_1: 10, level_2: 5, level_3: 4, level_4: 3, level_5: 2, level_6: 0, level_7: 0, level_8: 0, level_9: 0, level_10: 0 });
+
+  const [showBoostModal, setShowBoostModal] = useState(false);
+  const [selectedAffiliateForBoost, setSelectedAffiliateForBoost] = useState<ExclusiveAffiliate | null>(null);
+  const [boostEligible, setBoostEligible] = useState(true);
+  const [boostOverride, setBoostOverride] = useState('');
+  const [savingBoost, setSavingBoost] = useState(false);
+  const [boostError, setBoostError] = useState<string | null>(null);
 
   const [showNetworkModal, setShowNetworkModal] = useState(false);
   const [selectedAffiliateForNetwork, setSelectedAffiliateForNetwork] = useState<ExclusiveAffiliate | null>(null);
@@ -282,6 +297,61 @@ export default function AdminExclusiveAffiliates() {
       setNetworkMembers([]);
     } finally {
       setLoadingNetwork(false);
+    }
+  };
+
+  const openBoostSettings = (affiliate: ExclusiveAffiliate) => {
+    setSelectedAffiliateForBoost(affiliate);
+    setBoostEligible(affiliate.is_boost_eligible ?? true);
+    setBoostOverride(affiliate.boost_override_multiplier ? affiliate.boost_override_multiplier.toString() : '');
+    setBoostError(null);
+    setShowBoostModal(true);
+  };
+
+  const handleSaveBoostSettings = async () => {
+    if (!selectedAffiliateForBoost || !user) return;
+
+    setSavingBoost(true);
+    setBoostError(null);
+
+    try {
+      const overrideVal = boostOverride.trim() ? parseFloat(boostOverride) : null;
+      if (overrideVal !== null && (isNaN(overrideVal) || overrideVal < 1 || overrideVal > 5)) {
+        setBoostError('Override multiplier must be between 1.0 and 5.0');
+        setSavingBoost(false);
+        return;
+      }
+
+      const { data, error } = await supabase.rpc('admin_update_affiliate_boost_settings', {
+        p_admin_id: user.id,
+        p_affiliate_user_id: selectedAffiliateForBoost.user_id,
+        p_is_boost_eligible: boostEligible,
+        p_boost_override_multiplier: overrideVal
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        setShowBoostModal(false);
+        setSelectedAffiliateForBoost(null);
+        loadData();
+      } else {
+        setBoostError(data?.error || 'Failed to update boost settings');
+      }
+    } catch (err: any) {
+      setBoostError(err.message || 'Failed to update boost settings');
+    } finally {
+      setSavingBoost(false);
+    }
+  };
+
+  const getBoostTierColor = (tier: string) => {
+    switch (tier) {
+      case 'elite': return { bg: 'bg-red-500/20', text: 'text-red-400' };
+      case 'diamond': return { bg: 'bg-orange-500/20', text: 'text-orange-400' };
+      case 'gold': return { bg: 'bg-amber-500/20', text: 'text-amber-400' };
+      case 'silver': return { bg: 'bg-teal-500/20', text: 'text-teal-400' };
+      default: return { bg: 'bg-gray-500/20', text: 'text-gray-400' };
     }
   };
 
@@ -476,7 +546,7 @@ export default function AdminExclusiveAffiliates() {
                     >
                       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                         <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
+                          <div className="flex items-center gap-3 mb-2 flex-wrap">
                             <h3 className="text-xl font-bold text-white">
                               {affiliate.full_name || affiliate.username || 'No Name'}
                             </h3>
@@ -489,6 +559,28 @@ export default function AdminExclusiveAffiliates() {
                                 INACTIVE
                               </span>
                             )}
+                            {(() => {
+                              const mult = affiliate.current_boost_multiplier || 1;
+                              const tier = affiliate.current_boost_tier || 'none';
+                              const tierColor = getBoostTierColor(tier);
+                              if (mult > 1) {
+                                return (
+                                  <span className={`px-2 py-1 ${tierColor.bg} ${tierColor.text} text-xs font-semibold rounded-full flex items-center gap-1`}>
+                                    <Zap className="w-3 h-3" />
+                                    x{mult} boost ({affiliate.ftd_count_30d || 0} FTDs)
+                                  </span>
+                                );
+                              }
+                              if (!affiliate.is_boost_eligible) {
+                                return (
+                                  <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs font-semibold rounded-full flex items-center gap-1">
+                                    <Shield className="w-3 h-3" />
+                                    Boost disabled
+                                  </span>
+                                );
+                              }
+                              return null;
+                            })()}
                           </div>
                           <p className="text-gray-400 text-sm">{affiliate.email}</p>
                           <p className="text-[#fcd535] text-sm mt-1">Code: {affiliate.referral_code || 'N/A'}</p>
@@ -525,14 +617,23 @@ export default function AdminExclusiveAffiliates() {
                           </div>
                         </div>
 
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                           <button
                             onClick={() => handleViewNetwork(affiliate)}
                             className="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 rounded-lg transition-all flex items-center gap-2"
                           >
                             <Network className="w-4 h-4" />
-                            View Network
+                            Network
                           </button>
+                          {affiliate.is_active && (
+                            <button
+                              onClick={() => openBoostSettings(affiliate)}
+                              className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded-lg transition-all flex items-center gap-2"
+                            >
+                              <Zap className="w-4 h-4" />
+                              Boost
+                            </button>
+                          )}
                           {affiliate.is_active && (
                             <button
                               onClick={() => handleRemove(affiliate.email)}
@@ -949,6 +1050,141 @@ export default function AdminExclusiveAffiliates() {
                   <>
                     <CheckCircle className="w-5 h-5" />
                     Approve
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBoostModal && selectedAffiliateForBoost && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1a1d24] rounded-2xl p-8 w-full max-w-lg border border-gray-800">
+            <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-3">
+              <Zap className="w-6 h-6 text-amber-400" />
+              Boost Settings
+            </h2>
+            <p className="text-gray-400 mb-6">
+              {selectedAffiliateForBoost.full_name || selectedAffiliateForBoost.email}
+            </p>
+
+            {boostError && (
+              <div className="mb-4 p-4 bg-red-500/20 border border-red-500/30 rounded-lg flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-red-400" />
+                <span className="text-red-400">{boostError}</span>
+              </div>
+            )}
+
+            <div className="space-y-5">
+              <div className="p-4 bg-[#0b0e11] rounded-xl">
+                <div className="text-sm text-gray-400 mb-2">Current Status</div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-white">{selectedAffiliateForBoost.ftd_count_30d || 0}</div>
+                    <div className="text-xs text-gray-400">30d FTDs</div>
+                  </div>
+                  <div className="text-center">
+                    {(() => {
+                      const mult = selectedAffiliateForBoost.current_boost_multiplier || 1;
+                      const tier = selectedAffiliateForBoost.current_boost_tier || 'none';
+                      const tierColor = getBoostTierColor(tier);
+                      return (
+                        <>
+                          <div className={`text-2xl font-bold ${mult > 1 ? tierColor.text : 'text-gray-500'}`}>
+                            x{mult}
+                          </div>
+                          <div className="text-xs text-gray-400">Multiplier</div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-white capitalize">
+                      {selectedAffiliateForBoost.current_boost_tier || 'none'}
+                    </div>
+                    <div className="text-xs text-gray-400">Tier</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-[#0b0e11] rounded-xl">
+                <div>
+                  <div className="font-semibold text-white">Boost Eligible</div>
+                  <div className="text-sm text-gray-400">
+                    {boostEligible ? 'Affiliate can earn boosted commissions' : 'Boost is disabled for this affiliate'}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setBoostEligible(!boostEligible)}
+                  className={`relative w-14 h-7 rounded-full transition-colors ${
+                    boostEligible ? 'bg-green-500' : 'bg-gray-600'
+                  }`}
+                >
+                  <div className={`absolute top-0.5 w-6 h-6 rounded-full bg-white transition-transform ${
+                    boostEligible ? 'translate-x-7' : 'translate-x-0.5'
+                  }`} />
+                </button>
+              </div>
+
+              <div className="p-4 bg-[#0b0e11] rounded-xl">
+                <label className="block font-semibold text-white mb-1">Override Multiplier</label>
+                <p className="text-sm text-gray-400 mb-3">
+                  Set a custom multiplier that overrides the FTD-based calculation. Leave empty to use automatic tiers.
+                </p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min="1"
+                    max="5"
+                    step="0.05"
+                    value={boostOverride}
+                    onChange={(e) => setBoostOverride(e.target.value)}
+                    placeholder="Auto (FTD-based)"
+                    className="flex-1 bg-[#1a1d24] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-amber-500"
+                  />
+                  {boostOverride && (
+                    <button
+                      onClick={() => setBoostOverride('')}
+                      className="px-3 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-300 text-sm"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                {boostOverride && (
+                  <div className="mt-2 text-sm text-amber-400">
+                    Manual override: x{boostOverride} will be applied instead of automatic FTD tier
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowBoostModal(false);
+                  setSelectedAffiliateForBoost(null);
+                  setBoostError(null);
+                }}
+                className="flex-1 py-3 bg-[#2b3139] hover:bg-[#363e47] text-white rounded-lg font-semibold transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveBoostSettings}
+                disabled={savingBoost}
+                className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 disabled:bg-gray-600 text-black font-bold rounded-lg transition-all flex items-center justify-center gap-2"
+              >
+                {savingBoost ? (
+                  <>
+                    <RefreshCw className="w-5 h-5 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Settings className="w-5 h-5" />
+                    Save Settings
                   </>
                 )}
               </button>
