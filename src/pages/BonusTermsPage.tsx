@@ -56,13 +56,13 @@ export default function BonusTermsPage() {
             <section>
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 <Gift className="w-5 h-5 text-emerald-400" />
-                2. Welcome Package Bonus (Up to $1,635)
+                2. Welcome Package Bonus (Up to $1,615)
               </h2>
               <div className="space-y-4">
                 <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4">
                   <h3 className="font-semibold text-emerald-400 mb-2">Deposit Match Bonuses</h3>
                   <p className="text-slate-300 text-sm mb-3">
-                    New users can receive up to $1,635 in total bonuses including verification bonus and deposit matches!
+                    New users can receive up to $1,615 in total bonuses including review bonus and deposit matches!
                   </p>
                 </div>
 
@@ -114,32 +114,17 @@ export default function BonusTermsPage() {
             <section>
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 <Shield className="w-5 h-5 text-emerald-400" />
-                3. Verification Bonuses (Up to $25 USDT)
+                3. TrustPilot Review Bonus ($5 USDT)
               </h2>
               <div className="space-y-4">
                 <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4">
-                  <h3 className="font-semibold text-emerald-400 mb-2">KYC Verification Bonus + TrustPilot Review Bonus</h3>
+                  <h3 className="font-semibold text-emerald-400 mb-2">TrustPilot Review Bonus</h3>
                   <p className="text-slate-300 text-sm mb-3">
-                    Earn up to $25 USDT in locked trading bonuses through two separate rewards: $20 for KYC verification and $5 for a TrustPilot review.
+                    Earn $5 USDT in locked trading bonus by leaving a TrustPilot review after completing KYC verification.
                   </p>
-                  <div className="bg-[#f0b90b]/10 border-l-4 border-[#f0b90b] p-3 mt-3">
-                    <p className="text-slate-300 text-sm">
-                      <strong className="text-[#f0b90b]">Important:</strong> These are two separate bonuses. The $20 KYC bonus is awarded automatically upon verification approval. The $5 TrustPilot bonus requires manual claim and admin review.
-                    </p>
-                  </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="bg-slate-700/50 rounded-lg p-4 border-l-4 border-emerald-500">
-                    <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
-                      <span className="text-emerald-400">KYC Verification Bonus - $20 USDT</span>
-                    </h3>
-                    <p className="text-slate-300 text-sm mb-2">
-                      Automatically credited as a 7-day locked bonus when your KYC is approved
-                    </p>
-                    <p className="text-xs text-slate-400">No manual claim required - bonus is awarded instantly on approval</p>
-                  </div>
-
+                <div className="grid md:grid-cols-1 gap-4 max-w-lg">
                   <div className="bg-slate-700/50 rounded-lg p-4 border-l-4 border-blue-500">
                     <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
                       <span className="text-blue-400">TrustPilot Review Bonus - $5 USDT</span>
@@ -152,12 +137,11 @@ export default function BonusTermsPage() {
                 </div>
 
                 <div className="bg-slate-700/50 rounded-lg p-4">
-                  <h3 className="font-semibold text-white mb-2">Verification Bonus Terms</h3>
+                  <h3 className="font-semibold text-white mb-2">Review Bonus Terms</h3>
                   <ul className="list-disc list-inside text-slate-300 space-y-1 text-sm">
-                    <li><strong className="text-[#f0b90b]">$20 KYC Bonus:</strong> Automatically awarded as locked trading credit upon KYC approval (7-day expiry)</li>
                     <li><strong className="text-[#f0b90b]">$5 Review Bonus:</strong> Awarded as locked trading credit after admin verification of TrustPilot review (7-day expiry)</li>
-                    <li>Both bonuses can be used for futures trading immediately</li>
-                    <li>Must complete consecutive trading days to unlock each bonus</li>
+                    <li>Bonus can be used for futures trading immediately</li>
+                    <li>Must complete consecutive trading days to unlock</li>
                     <li>Required: 2+ trades per day, minimum 15 minutes each</li>
                     <li>Trading volume requirement: 500x the bonus amount</li>
                     <li>Profits earned from trading are withdrawable at any time</li>

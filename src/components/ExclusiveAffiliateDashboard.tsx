@@ -378,15 +378,15 @@ function ExclusiveAffiliateDashboard() {
 
       {boost.eligible ? (
         <div className={`rounded-2xl border ${boostColors.border} overflow-hidden`}>
-          <div className={`${boostColors.bg} p-6`}>
+          <div className={`${boostColors.bg} p-4 sm:p-6`}>
             <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
-              <div className="flex-1">
+              <div className="flex-1 w-full">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className={`w-10 h-10 rounded-xl ${boostColors.bg} border ${boostColors.border} flex items-center justify-center`}>
-                    <Zap className={`w-5 h-5 ${boostColors.text}`} />
+                  <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl ${boostColors.bg} border ${boostColors.border} flex items-center justify-center shrink-0`}>
+                    <Zap className={`w-4 h-4 sm:w-5 sm:h-5 ${boostColors.text}`} />
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <div className="min-w-0">
+                    <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
                       Recruitment Boost
                       <button
                         onClick={() => setShowBoostInfo(!showBoostInfo)}
@@ -409,34 +409,32 @@ function ExclusiveAffiliateDashboard() {
                   </div>
                 )}
 
-                <div className="flex items-center gap-4 mb-4">
-                  <div>
-                    <div className="text-sm text-gray-400 mb-1">Current Boost</div>
-                    <div className={`text-3xl font-bold ${hasActiveBoost ? boostColors.text : 'text-gray-500'}`}>
+                <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-4">
+                  <div className="min-w-0">
+                    <div className="text-xs sm:text-sm text-gray-400 mb-1">Current Boost</div>
+                    <div className={`text-2xl sm:text-3xl font-bold ${hasActiveBoost ? boostColors.text : 'text-gray-500'}`}>
                       {hasActiveBoost ? `+${boost.boost_percentage}%` : 'None'}
                     </div>
                   </div>
-                  <div className="h-12 w-px bg-gray-700" />
-                  <div>
-                    <div className="text-sm text-gray-400 mb-1">Multiplier</div>
-                    <div className={`text-3xl font-bold ${hasActiveBoost ? 'text-white' : 'text-gray-500'}`}>
+                  <div className="min-w-0 border-l border-gray-700 pl-3 sm:pl-4">
+                    <div className="text-xs sm:text-sm text-gray-400 mb-1">Multiplier</div>
+                    <div className={`text-2xl sm:text-3xl font-bold ${hasActiveBoost ? 'text-white' : 'text-gray-500'}`}>
                       x{boost.multiplier.toFixed(2)}
                     </div>
                   </div>
-                  <div className="h-12 w-px bg-gray-700" />
-                  <div>
-                    <div className="text-sm text-gray-400 mb-1">30-Day FTDs</div>
-                    <div className="text-3xl font-bold text-white">{boost.ftd_count}</div>
+                  <div className="min-w-0 border-l border-gray-700 pl-3 sm:pl-4">
+                    <div className="text-xs sm:text-sm text-gray-400 mb-1">30-Day FTDs</div>
+                    <div className="text-2xl sm:text-3xl font-bold text-white">{boost.ftd_count}</div>
                   </div>
                 </div>
 
                 {boost.ftds_to_next_tier > 0 && (
                   <div>
-                    <div className="flex justify-between text-sm mb-1.5">
-                      <span className="text-gray-400">
+                    <div className="flex justify-between text-xs sm:text-sm mb-1.5 gap-2">
+                      <span className="text-gray-400 whitespace-nowrap">
                         {boost.ftd_count} / {boost.next_tier_threshold} FTDs for next tier
                       </span>
-                      <span className={boostColors.text}>
+                      <span className={`${boostColors.text} whitespace-nowrap`}>
                         {boost.ftds_to_next_tier} more needed
                       </span>
                     </div>
@@ -466,8 +464,8 @@ function ExclusiveAffiliateDashboard() {
           </div>
 
           {boost.all_tiers && boost.all_tiers.length > 0 && (
-            <div className="bg-[#1a1d24] p-4">
-              <div className="grid grid-cols-5 gap-2">
+            <div className="bg-[#1a1d24] p-3 sm:p-4">
+              <div className="flex sm:grid sm:grid-cols-5 gap-2 overflow-x-auto pb-1 sm:pb-0 snap-x snap-mandatory">
                 {boost.all_tiers.map((tier) => {
                   const isCurrent = boost.boost_percentage === tier.boost_pct && (tier.boost_pct > 0 || boost.ftd_count <= 4);
                   const isAchieved = boost.ftd_count >= tier.min_ftds;
@@ -475,7 +473,7 @@ function ExclusiveAffiliateDashboard() {
                   return (
                     <div
                       key={tier.label}
-                      className={`p-3 rounded-lg text-center transition-all ${
+                      className={`flex-shrink-0 w-[calc(33%-4px)] sm:w-auto snap-start p-2.5 sm:p-3 rounded-lg text-center transition-all ${
                         isCurrent
                           ? `${tierColor.bg} border-2 ${tierColor.border}`
                           : isAchieved
@@ -483,19 +481,19 @@ function ExclusiveAffiliateDashboard() {
                             : 'bg-[#0b0e11] border border-gray-800 opacity-50'
                       }`}
                     >
-                      <div className={`text-lg font-bold mb-0.5 ${
+                      <div className={`text-base sm:text-lg font-bold mb-0.5 ${
                         isCurrent ? tierColor.text : isAchieved ? 'text-white' : 'text-gray-500'
                       }`}>
                         {tier.boost_pct > 0 ? `+${tier.boost_pct}%` : '--'}
                       </div>
-                      <div className="text-xs text-gray-400">{tier.label}</div>
+                      <div className="text-[10px] sm:text-xs text-gray-400">{tier.label}</div>
                       <div className="mt-1">
                         {isCurrent ? (
-                          <span className={`text-xs font-semibold ${tierColor.text}`}>CURRENT</span>
+                          <span className={`text-[10px] sm:text-xs font-semibold ${tierColor.text}`}>CURRENT</span>
                         ) : isAchieved ? (
-                          <CheckCircle className="w-3.5 h-3.5 text-green-400 mx-auto" />
+                          <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-green-400 mx-auto" />
                         ) : (
-                          <Lock className="w-3.5 h-3.5 text-gray-600 mx-auto" />
+                          <Lock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-600 mx-auto" />
                         )}
                       </div>
                     </div>

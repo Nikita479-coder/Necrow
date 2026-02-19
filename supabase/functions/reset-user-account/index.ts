@@ -44,7 +44,7 @@ Deno.serve(async (req: Request) => {
       throw new Error('Only super admins can reset accounts');
     }
 
-    const { email, keepKyc = true, bonusAmount = 20 }: ResetRequest = await req.json();
+    const { email, keepKyc = true, bonusAmount = 0 }: ResetRequest = await req.json();
 
     if (!email) {
       throw new Error('Email is required');

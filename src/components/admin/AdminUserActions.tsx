@@ -100,7 +100,7 @@ export default function AdminUserActions({ userId, userData, onRefresh }: Props)
         user_id: userId,
         type: 'kyc_update',
         title: 'KYC Verification Approved',
-        message: `Congratulations! Your KYC verification (Level ${level}) has been approved. Your $20 locked trading bonus has been credited automatically. Leave a TrustPilot review to earn an additional $5.`,
+        message: `Congratulations! Your KYC verification (Level ${level}) has been approved. You now have access to all trading features. Leave a TrustPilot review to earn a $5 bonus.`,
         read: false
       });
     } catch (error) {
@@ -440,7 +440,7 @@ export default function AdminUserActions({ userId, userData, onRefresh }: Props)
           </div>
           <div className="mt-4 pt-4 border-t border-gray-700">
             <p className="text-sm text-gray-500">
-              Reset Account: Removes all trades, transactions, and balances. KYC status is preserved. User receives a fresh $20 KYC bonus (TrustPilot review bonus requires new claim).
+              Reset Account: Removes all trades, transactions, and balances. KYC status is preserved.
             </p>
           </div>
         </div>
@@ -493,7 +493,7 @@ export default function AdminUserActions({ userId, userData, onRefresh }: Props)
                   <li>All bonuses and rewards</li>
                 </ul>
                 <p className="mt-3 text-sm text-yellow-400 font-medium">
-                  The user will receive a fresh $20 KYC bonus and their KYC status will be preserved. TrustPilot review bonus requires a new claim.
+                  The user's KYC status will be preserved. All balances and trading history will be reset.
                 </p>
               </div>
             </div>

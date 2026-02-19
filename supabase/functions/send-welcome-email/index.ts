@@ -239,31 +239,6 @@ function generateWelcomeEmailHtml(firstName: string): string {
             </td>
           </tr>
 
-          <!-- KYC Bonus -->
-          <tr>
-            <td style="padding: 0 40px 20px;">
-              <table width="100%" cellspacing="0" cellpadding="0" style="background: #1a1a2e; border-radius: 12px; border: 1px solid #22c55e40;">
-                <tr>
-                  <td style="padding: 20px;">
-                    <table width="100%" cellspacing="0" cellpadding="0">
-                      <tr>
-                        <td width="50" valign="top">
-                          <div style="width: 40px; height: 40px; background: #22c55e20; border-radius: 10px; text-align: center; line-height: 40px;">
-                            <span style="font-size: 20px;">&#10003;</span>
-                          </div>
-                        </td>
-                        <td style="padding-left: 12px;">
-                          <h3 style="margin: 0 0 4px; font-size: 16px; font-weight: 600; color: #22c55e;">KYC Bonus</h3>
-                          <p style="margin: 0; font-size: 14px; color: #9ca3af;">Complete KYC verification and receive <span style="color: #22c55e; font-weight: 700;">$20 USDT</span> instantly</p>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
           <!-- Deposit Bonuses -->
           <tr>
             <td style="padding: 0 40px 20px;">
@@ -364,7 +339,7 @@ function generateWelcomeEmailHtml(firstName: string): string {
                     <table cellspacing="0" cellpadding="0">
                       <tr>
                         <td width="30"><span style="display: inline-block; width: 24px; height: 24px; background: #22c55e; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 700; color: #0a0a0f;">1</span></td>
-                        <td style="padding-left: 12px; color: #ffffff; font-size: 14px;">Complete KYC verification <span style="color: #22c55e;">($20 bonus)</span></td>
+                        <td style="padding-left: 12px; color: #ffffff; font-size: 14px;">Complete KYC verification <span style="color: #22c55e;">(unlock all features)</span></td>
                       </tr>
                     </table>
                   </td>

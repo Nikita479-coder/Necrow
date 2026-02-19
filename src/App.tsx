@@ -125,16 +125,23 @@ function App() {
       return;
     }
 
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const type = hashParams.get('type');
-    const accessToken = hashParams.get('access_token');
+    const urlParams = new URLSearchParams(window.location.search);
 
-    if (type === 'recovery' && accessToken) {
+    const tokenHash = urlParams.get('token_hash');
+    const tokenType = urlParams.get('type');
+    if (tokenType === 'recovery' && tokenHash) {
       setCurrentPage('resetpassword');
       return;
     }
 
-    const urlParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const hashType = hashParams.get('type');
+    const accessToken = hashParams.get('access_token');
+
+    if (hashType === 'recovery' && accessToken) {
+      setCurrentPage('resetpassword');
+      return;
+    }
 
     const pageParam = urlParams.get('page');
     if (pageParam) {
@@ -247,8 +254,8 @@ function App() {
       legal: 'Legal Hub',
       privacy: 'Privacy Policy',
       lp: 'Copy Trading',
-      nodepositbonus: 'Verification Bonus - Get $25 Free USDT',
-      reviewbonus: 'KYC + TrustPilot Bonus - Earn $25 USDT',
+      nodepositbonus: 'TrustPilot Review Bonus - Get $5 Free USDT',
+      reviewbonus: 'TrustPilot Review Bonus - Earn $5 USDT',
       referfriendsbonus: 'Refer Friends & Earn Up to 70% Commission'
     };
     return titles[page] || page;

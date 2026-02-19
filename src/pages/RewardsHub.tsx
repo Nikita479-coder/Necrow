@@ -52,7 +52,6 @@ function RewardsHub() {
     'Growing Network Bonus': { id: 'referral_5', target: 5, type: 'referral' },
     'Network Champion Bonus': { id: 'referral_10', target: 10, type: 'referral' },
     'First Trade Welcome': { id: 'first_trade', target: 1, type: 'trade' },
-    'KYC Verification Bonus': { id: 'kyc_verification_bonus', target: 1, type: 'external' },
     'TrustPilot Review Bonus': { id: 'trustpilot_review_bonus', target: 1, type: 'external' },
     'Download Mobile App': { id: 'mobile_app_download', target: 1, type: 'external' },
     'Copy Trading Bonus': { id: 'copy_trading_allocation_v2', target: 500, type: 'volume' },
@@ -205,37 +204,6 @@ function RewardsHub() {
         setTotalTrades(tradesCount);
       }
 
-      const { data: kycBonusData } = await supabase
-        .from('locked_bonuses')
-        .select('id, bonus_types!inner(name)')
-        .eq('user_id', user.id)
-        .in('bonus_types.name', ['KYC Verification Bonus', 'KYC + TrustPilot Bonus'])
-        .limit(1);
-
-      if (kycBonusData && kycBonusData.length > 0) {
-        setClaimedTaskIds(prev => new Set([...prev, 'kyc_verification_bonus']));
-      }
-
-      const { data: profileData } = await supabase
-        .from('user_profiles')
-        .select('kyc_level')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (profileData && profileData.kyc_level >= 1) {
-        setClaimedTaskIds(prev => new Set([...prev, 'kyc_verification_bonus']));
-      }
-
-      const { data: kycDocsData } = await supabase
-        .from('kyc_documents')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('verification_status', 'verified')
-        .limit(1);
-
-      if (kycDocsData && kycDocsData.length > 0) {
-        setClaimedTaskIds(prev => new Set([...prev, 'kyc_verification_bonus']));
-      }
     } catch (error) {
       console.error('Error loading user stats:', error);
     } finally {
@@ -342,7 +310,6 @@ function RewardsHub() {
           'referral_5': 'Growing Network Bonus',
           'referral_10': 'Network Champion Bonus',
           'trustpilot_review': 'Reward Task Bonus',
-          'kyc_verification_bonus': 'KYC Verification Bonus',
           'trustpilot_review_bonus': 'Trustpilot Review Bonus'
         };
         const bonusTypeName = bonusTypeMap[task.id] || 'Reward Task Bonus';
@@ -656,7 +623,7 @@ function RewardsHub() {
                           ? 'bg-[#848e9c]/10 text-[#848e9c]'
                           : 'bg-[#0ecb81]/10 text-[#0ecb81]'
                       }`}>
-                        {isForfeited ? 'Forfeited' : isClaimed ? (task.id === 'kyc_verification_bonus' ? 'Received' : 'Claimed') : `+$${task.reward} USDT`}
+                        {isForfeited ? 'Forfeited' : isClaimed ? 'Claimed' : `+$${task.reward} USDT`}
                       </div>
                       <div className="text-[10px] text-[#848e9c]">
                         {task.rewardType === 'fee_rebate' ? 'Fee Rebate' : task.rewardType === 'locked_bonus' ? 'Locked Bonus' : 'Instant Withdrawal'}
@@ -695,13 +662,11 @@ function RewardsHub() {
                         className="w-full text-xs font-medium py-2 rounded transition-all bg-[#fcd535] hover:bg-[#f0b90b] text-[#0b0e11] flex items-center justify-center gap-2"
                       >
                         {!task.externalLink?.startsWith('/') && <ExternalLink className="w-3.5 h-3.5" />}
-                        {task.id === 'mobile_app_download' ? 'Download App' : task.id === 'kyc_verification_bonus' ? 'Verify Identity' : task.id === 'trustpilot_review_bonus' ? 'Leave a Review' : 'Get Started'}
+                        {task.id === 'mobile_app_download' ? 'Download App' : task.id === 'trustpilot_review_bonus' ? 'Leave a Review' : 'Get Started'}
                       </a>
                       <p className="text-[10px] text-[#848e9c] text-center">
                         {task.id === 'mobile_app_download'
                           ? 'After downloading, contact support with a screenshot to claim your bonus'
-                          : task.id === 'kyc_verification_bonus'
-                          ? 'Complete KYC verification - bonus is automatically credited upon approval'
                           : task.id === 'trustpilot_review_bonus'
                           ? 'After leaving your review, contact support with your Trustpilot username to claim your bonus'
                           : 'Complete the required action, then contact support to claim your bonus'}
@@ -719,7 +684,7 @@ function RewardsHub() {
                           : 'bg-[#2b3139] text-[#848e9c] cursor-not-allowed'
                       }`}
                     >
-                      {isForfeited ? 'Bonus Forfeited' : isClaimed ? (task.id === 'kyc_verification_bonus' ? 'Received' : 'Claimed') : isCompleted ? 'Claim Reward' : `${percentage.toFixed(0)}% Complete`}
+                      {isForfeited ? 'Bonus Forfeited' : isClaimed ? 'Claimed' : isCompleted ? 'Claim Reward' : `${percentage.toFixed(0)}% Complete`}
                     </button>
                   )}
                 </div>

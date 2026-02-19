@@ -23,12 +23,12 @@ export default function NoDepositBonus() {
           </div>
 
           <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
-            Get Up to <span className="text-green-400">$25 USDT</span> in Verification Bonuses
+            Get <span className="text-green-400">$5 USDT</span> TrustPilot Review Bonus
           </h1>
 
           <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
-            Start trading completely free! Earn a $20 USDT locked bonus instantly when your KYC is approved,
-            plus an additional $5 USDT for leaving a TrustPilot review. No deposit required.
+            Start trading completely free! Earn a $5 USDT locked bonus by leaving a TrustPilot review. No deposit required.
+            Plus, get up to $1,610 in deposit match bonuses!
           </p>
 
           <div className="flex items-center justify-center gap-4 mb-8">
@@ -69,55 +69,30 @@ export default function NoDepositBonus() {
           )}
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6 mb-16">
-          <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-xl p-6">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-14 h-14 bg-green-500/10 rounded-xl flex items-center justify-center">
-                <BadgeCheck className="w-7 h-7 text-green-400" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-white">KYC Verification</h3>
-                <p className="text-green-400 font-bold text-lg">$20 USDT</p>
-              </div>
-            </div>
-            <p className="text-gray-400">Verify your identity to unlock trading features. Your $20 USDT locked bonus is credited automatically upon approval.</p>
-          </div>
-
+        <div className="grid md:grid-cols-1 gap-6 mb-16 max-w-xl mx-auto">
           <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-xl p-6">
             <div className="flex items-center gap-4 mb-4">
               <div className="w-14 h-14 bg-blue-500/10 rounded-xl flex items-center justify-center">
                 <MessageSquare className="w-7 h-7 text-blue-400" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-white">TrustPilot Review</h3>
+                <h3 className="text-xl font-bold text-white">TrustPilot Review Bonus</h3>
                 <p className="text-blue-400 font-bold text-lg">$5 USDT</p>
               </div>
             </div>
-            <p className="text-gray-400">Share your experience on TrustPilot and claim an additional $5 USDT locked bonus. Submit your review link via support.</p>
+            <p className="text-gray-400">Share your experience on TrustPilot and claim a $5 USDT locked bonus. Complete KYC verification first, then submit your review link via support.</p>
           </div>
         </div>
 
         <div className="bg-gradient-to-br from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-2xl p-8 text-center mb-16">
-          <h2 className="text-2xl font-bold text-white mb-4">Total Verification Bonuses</h2>
-          <div className="text-6xl font-bold text-green-400 mb-2">$25 USDT</div>
-          <p className="text-gray-400 mb-6">Complete both steps to maximize your earnings - each bonus is awarded separately</p>
+          <h2 className="text-2xl font-bold text-white mb-4">No-Deposit Bonus</h2>
+          <div className="text-6xl font-bold text-green-400 mb-2">$5 USDT</div>
+          <p className="text-gray-400 mb-6">Leave a TrustPilot review and earn a locked trading bonus - no deposit required</p>
           <div className="flex justify-center gap-8">
-            <div className="text-center">
-              <BadgeCheck className="w-8 h-8 text-green-400 mx-auto mb-2" />
-              <p className="text-white font-semibold">KYC</p>
-              <p className="text-green-400">$20</p>
-            </div>
-            <div className="text-2xl text-gray-500 self-center">+</div>
             <div className="text-center">
               <Star className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
               <p className="text-white font-semibold">Review</p>
               <p className="text-blue-400">$5</p>
-            </div>
-            <div className="text-2xl text-gray-500 self-center">=</div>
-            <div className="text-center">
-              <Gift className="w-8 h-8 text-green-400 mx-auto mb-2" />
-              <p className="text-white font-semibold">Total</p>
-              <p className="text-green-400 font-bold">$25</p>
             </div>
           </div>
         </div>
@@ -146,7 +121,7 @@ export default function NoDepositBonus() {
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold text-white mb-2">Complete KYC</h3>
-                  <p className="text-gray-400">Verify your identity and receive <span className="text-green-400 font-semibold">$20 USDT</span> locked bonus automatically.</p>
+                  <p className="text-gray-400">Verify your identity to unlock trading features and withdrawals.</p>
                 </div>
               </div>
               <div className="hidden md:block absolute top-6 left-full w-full h-0.5 bg-gradient-to-r from-green-500 to-transparent -translate-x-6" />
@@ -159,7 +134,7 @@ export default function NoDepositBonus() {
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold text-white mb-2">Leave Review</h3>
-                  <p className="text-gray-400">Share your experience on TrustPilot for <span className="text-blue-400 font-semibold">$5 USDT</span> more.</p>
+                  <p className="text-gray-400">Share your experience on TrustPilot and earn <span className="text-blue-400 font-semibold">$5 USDT</span> locked bonus.</p>
                 </div>
               </div>
               <div className="hidden md:block absolute top-6 left-full w-full h-0.5 bg-gradient-to-r from-blue-500 to-transparent -translate-x-6" />
@@ -180,7 +155,7 @@ export default function NoDepositBonus() {
         <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-2xl p-8 md:p-12 mb-16">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
-              <h2 className="text-3xl font-bold text-white mb-6">Why Choose Our Verification Bonus?</h2>
+              <h2 className="text-3xl font-bold text-white mb-6">Why Choose Our Review Bonus?</h2>
 
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
@@ -231,15 +206,11 @@ export default function NoDepositBonus() {
                   <Gift className="w-10 h-10 text-green-400" />
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-2">Total Welcome Package</h3>
-                <div className="text-5xl font-bold text-green-400 mb-2">$1,635</div>
+                <div className="text-5xl font-bold text-green-400 mb-2">$1,615</div>
                 <p className="text-gray-400">When you combine all bonuses</p>
               </div>
 
               <div className="space-y-3 text-sm">
-                <div className="flex justify-between items-center py-2 border-b border-gray-700">
-                  <span className="text-gray-400">KYC Verification Bonus</span>
-                  <span className="text-white font-semibold">$20</span>
-                </div>
                 <div className="flex justify-between items-center py-2 border-b border-gray-700">
                   <span className="text-gray-400">TrustPilot Review Bonus</span>
                   <span className="text-white font-semibold">$5</span>
@@ -258,7 +229,7 @@ export default function NoDepositBonus() {
                 </div>
                 <div className="flex justify-between items-center py-3 bg-green-500/10 -mx-4 px-4 rounded-lg mt-4">
                   <span className="text-white font-bold">Total Bonus Value</span>
-                  <span className="text-green-400 font-bold text-xl">$1,635</span>
+                  <span className="text-green-400 font-bold text-xl">$1,615</span>
                 </div>
               </div>
             </div>
@@ -271,7 +242,7 @@ export default function NoDepositBonus() {
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">Is this really free?</h3>
-              <p className="text-gray-400">Yes! You get $20 USDT automatically when your KYC is approved, plus $5 more for a TrustPilot review. No deposit required.</p>
+              <p className="text-gray-400">Yes! Leave a TrustPilot review after completing KYC and earn $5 USDT locked bonus. No deposit required.</p>
             </div>
 
             <div>
@@ -281,12 +252,12 @@ export default function NoDepositBonus() {
 
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">How long does KYC take?</h3>
-              <p className="text-gray-400">Our KYC process typically takes 5-10 minutes. The $20 bonus is credited immediately after approval.</p>
+              <p className="text-gray-400">Our KYC process typically takes 5-10 minutes. KYC verification is required before claiming the review bonus.</p>
             </div>
 
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">How do I get the review bonus?</h3>
-              <p className="text-gray-400">After KYC approval, leave a review on TrustPilot and submit the link in your rewards section. The $5 bonus is credited within 24 hours.</p>
+              <p className="text-gray-400">Complete KYC verification, leave a review on TrustPilot and submit the link in your rewards section. The $5 bonus is credited within 24 hours.</p>
             </div>
 
             <div>
@@ -303,9 +274,9 @@ export default function NoDepositBonus() {
 
         <div className="bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-2xl p-8 text-center">
           <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl font-bold text-white mb-4">Ready to Claim Your Verification Bonuses?</h2>
+            <h2 className="text-3xl font-bold text-white mb-4">Ready to Claim Your Review Bonus?</h2>
             <p className="text-xl text-gray-300 mb-8">
-              Join thousands of traders who started with our verification bonuses. Zero risk, real profits.
+              Join thousands of traders who started with our bonuses. Zero risk, real profits.
             </p>
 
             <div className="flex items-center justify-center gap-6 mb-8">

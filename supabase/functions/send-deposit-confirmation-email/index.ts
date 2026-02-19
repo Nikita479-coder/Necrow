@@ -256,7 +256,7 @@ Deno.serve(async (req: Request) => {
       const zeroFeeSection = `
       <div style="background: linear-gradient(135deg, #065f46 0%, #064e3b 100%); border-radius: 12px; padding: 20px; margin-bottom: 30px; border: 1px solid #10b981; text-align: center;">
         <p style="color: #10b981; font-weight: 700; font-size: 16px; margin: 0 0 5px;">0% TRADING FEES ACTIVE!</p>
-        <p style="color: #a7f3d0; font-size: 14px; margin: 0;">Your KYC verification bonus is still active. Trade with zero fees for maximum profits!</p>
+        <p style="color: #a7f3d0; font-size: 14px; margin: 0;">Your zero-fee promotion is still active. Trade with zero fees for maximum profits!</p>
       </div>`;
 
       emailBody = emailBody.replace(

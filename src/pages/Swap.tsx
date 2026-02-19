@@ -176,7 +176,8 @@ function Swap() {
       const { data, error } = await supabase
         .from('wallets')
         .select('currency, balance, locked_balance')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .eq('wallet_type', 'main');
 
       if (error) {
         console.error('Error loading balances:', error);

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import Navbar from '../components/Navbar';
-import { ArrowRight, AlertTriangle, Shield, Clock, CheckCircle2, Search, Info, Send, Users, Zap, RefreshCw } from 'lucide-react';
+import { ArrowRight, AlertTriangle, Shield, Clock, CheckCircle2, Search, Info, Send, Users, Zap, RefreshCw, Lock, MessageCircle, TrendingUp } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import CryptoIcon from '../components/CryptoIcon';
@@ -47,6 +47,22 @@ function Withdraw() {
   const [walletBalances, setWalletBalances] = useState<Record<string, number>>({});
   const [lockedBalances, setLockedBalances] = useState<Record<string, number>>({});
   const [isLoadingBalances, setIsLoadingBalances] = useState(true);
+  const [bonusStatus, setBonusStatus] = useState<{
+    has_any_bonus: boolean;
+    has_real_deposits: boolean;
+    total_real_deposits: number;
+    withdrawal_blocked: boolean;
+    block_reason: string;
+    active_bonus_count: number;
+    active_bonus_total: number;
+    unlocked_bonus_count: number;
+    unlocked_bonus_total: number;
+    volume_required: number;
+    volume_completed: number;
+    volume_remaining: number;
+    volume_percentage: number;
+  } | null>(null);
+  const [isLoadingBonusStatus, setIsLoadingBonusStatus] = useState(true);
 
   const cryptos = [
     { symbol: 'USDT', name: 'Tether', balance: '10000', networks: ['TRC20', 'ERC20', 'BEP20', 'Polygon', 'Solana'], fee: '1', minWithdraw: '10' },
@@ -85,8 +101,25 @@ function Withdraw() {
     if (user) {
       loadRecentWithdrawals();
       loadWalletBalances();
+      loadBonusStatus();
     }
   }, [user]);
+
+  const loadBonusStatus = async () => {
+    if (!user) return;
+    setIsLoadingBonusStatus(true);
+    try {
+      const { data, error } = await supabase.rpc('get_user_bonus_withdrawal_status', {
+        p_user_id: user.id
+      });
+      if (error) throw error;
+      if (data) setBonusStatus(data);
+    } catch (error) {
+      console.error('Error loading bonus status:', error);
+    } finally {
+      setIsLoadingBonusStatus(false);
+    }
+  };
 
   const isExternalFormValid = useMemo(() => {
     const addressValid = address.trim().length >= 10;
@@ -179,6 +212,13 @@ function Withdraw() {
     if (!user) {
       console.error('No user logged in');
       showToast('Please sign in to withdraw', 'error');
+      return;
+    }
+
+    if (bonusStatus?.withdrawal_blocked) {
+      showToast(bonusStatus.active_bonus_count > 0
+        ? 'Complete your bonus trading volume requirements before withdrawing'
+        : 'Please contact support to process your withdrawal', 'error');
       return;
     }
 
@@ -401,11 +441,125 @@ function Withdraw() {
           </button>
         </div>
 
+        {withdrawTab === 'external' && !isLoadingBonusStatus && bonusStatus?.withdrawal_blocked && (
+          <div className="mb-6">
+            {bonusStatus.active_bonus_count > 0 ? (
+              <div className="bg-gradient-to-br from-[#181a20] to-[#1a1d24] border border-amber-700/40 rounded-2xl overflow-hidden">
+                <div className="bg-gradient-to-r from-amber-900/30 to-amber-800/10 border-b border-amber-700/30 px-6 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center">
+                      <Lock className="w-6 h-6 text-amber-400" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-white">Withdrawals Temporarily Locked</h2>
+                      <p className="text-amber-400/80 text-sm">Complete your bonus requirements to enable withdrawals</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6 space-y-5">
+                  <p className="text-gray-300 text-sm leading-relaxed">
+                    You have {bonusStatus.active_bonus_count} active trading bonus{bonusStatus.active_bonus_count > 1 ? 'es' : ''} totaling <span className="text-white font-semibold">${bonusStatus.active_bonus_total.toLocaleString()}</span>. Withdrawals are disabled until the required trading volume is completed.
+                  </p>
+
+                  <div className="bg-[#0b0e11] rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-400">Volume Progress</span>
+                      <span className="text-white font-semibold">{bonusStatus.volume_percentage}%</span>
+                    </div>
+                    <div className="w-full bg-gray-700/50 rounded-full h-3 overflow-hidden">
+                      <div
+                        className="bg-gradient-to-r from-amber-500 to-amber-400 h-3 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(bonusStatus.volume_percentage, 100)}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>${bonusStatus.volume_completed.toLocaleString()} completed</span>
+                      <span>${bonusStatus.volume_required.toLocaleString()} required</span>
+                    </div>
+                    {bonusStatus.volume_remaining > 0 && (
+                      <div className="flex items-center gap-2 text-sm mt-1">
+                        <TrendingUp className="w-4 h-4 text-amber-400" />
+                        <span className="text-gray-300"><span className="text-amber-400 font-semibold">${bonusStatus.volume_remaining.toLocaleString()}</span> remaining to unlock</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bg-amber-900/20 border border-amber-700/20 rounded-xl p-4">
+                    <div className="flex items-start gap-3">
+                      <Info className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm text-gray-300 space-y-1">
+                        <p>Continue trading futures to build up your volume. Once the volume requirement is met, contact support to process your withdrawal.</p>
+                        <p className="text-gray-500 text-xs">Positions must be held for at least 60 minutes to count toward volume.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-gradient-to-br from-[#181a20] to-[#1a1d24] border border-blue-700/40 rounded-2xl overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-900/30 to-blue-800/10 border-b border-blue-700/30 px-6 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                      <MessageCircle className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-white">Contact Support to Withdraw</h2>
+                      <p className="text-blue-400/80 text-sm">Your bonus has been unlocked successfully</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6 space-y-5">
+                  <p className="text-gray-300 text-sm leading-relaxed">
+                    Congratulations on unlocking your trading bonus! To process your withdrawal, please reach out to our support team. They will verify your account and assist with the withdrawal.
+                  </p>
+
+                  <div className="bg-[#0b0e11] rounded-xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-gray-400 text-xs mb-1">Unlocked Bonus</div>
+                        <div className="text-white font-bold text-lg">${bonusStatus.unlocked_bonus_total.toLocaleString()} USDT</div>
+                      </div>
+                      <div className="px-3 py-1.5 bg-emerald-500/20 rounded-full">
+                        <span className="text-emerald-400 text-sm font-semibold">Unlocked</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const event = new CustomEvent('navigateTo', { detail: 'support' });
+                      window.dispatchEvent(event);
+                    }}
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20"
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                    Contact Support
+                  </a>
+
+                  <p className="text-gray-500 text-xs text-center">
+                    Our support team typically responds within a few hours during business hours.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {withdrawTab === 'external' ? (
             <>
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-[#181a20] border border-gray-800 rounded-2xl overflow-hidden">
+            {bonusStatus?.withdrawal_blocked && (
+              <div className="bg-red-900/20 border border-red-700/30 rounded-2xl p-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-300">Withdrawal form is disabled. {bonusStatus.active_bonus_count > 0 ? 'Complete your trading volume requirements first.' : 'Please contact support to process your withdrawal.'}</p>
+                </div>
+              </div>
+            )}
+            <div className={`bg-[#181a20] border border-gray-800 rounded-2xl overflow-hidden ${bonusStatus?.withdrawal_blocked ? 'opacity-40 pointer-events-none select-none' : ''}`}>
               <div className="bg-gradient-to-r from-[#f0b90b]/10 to-[#f8d12f]/5 border-b border-gray-800 p-6">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-[#f0b90b] rounded-full flex items-center justify-center text-black font-bold">1</div>
@@ -455,7 +609,7 @@ function Withdraw() {
               </div>
             </div>
 
-            <div className="bg-[#181a20] border border-gray-800 rounded-2xl overflow-hidden">
+            <div className={`bg-[#181a20] border border-gray-800 rounded-2xl overflow-hidden ${bonusStatus?.withdrawal_blocked ? 'opacity-40 pointer-events-none select-none' : ''}`}>
               <div className="bg-gradient-to-r from-[#f0b90b]/10 to-[#f8d12f]/5 border-b border-gray-800 p-6">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-[#f0b90b] rounded-full flex items-center justify-center text-black font-bold">2</div>
@@ -493,7 +647,7 @@ function Withdraw() {
               </div>
             </div>
 
-            <div className="bg-[#181a20] border border-gray-800 rounded-2xl overflow-hidden">
+            <div className={`bg-[#181a20] border border-gray-800 rounded-2xl overflow-hidden ${bonusStatus?.withdrawal_blocked ? 'opacity-40 pointer-events-none select-none' : ''}`}>
               <div className="bg-gradient-to-r from-[#f0b90b]/10 to-[#f8d12f]/5 border-b border-gray-800 p-6">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-[#f0b90b] rounded-full flex items-center justify-center text-black font-bold">3</div>

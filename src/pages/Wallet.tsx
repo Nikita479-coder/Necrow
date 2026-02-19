@@ -186,7 +186,6 @@ function Wallet() {
       loadCardData();
       loadPastTrades();
       loadStakes();
-      loadLockedBonuses();
       loadPendingDeposits();
       loadCopyRelationshipsTotal();
     }
@@ -221,7 +220,7 @@ function Wallet() {
       calculateWalletValues();
       calculateFuturesValues();
     }
-  }, [prices, rawWallets, rawPositions, rawFuturesWallet]);
+  }, [prices, rawWallets, rawPositions, rawFuturesWallet, lockedBonusTotal]);
 
   const getTokenPrice = (symbol: string): number => {
     let priceData = prices.get(symbol);
@@ -254,7 +253,7 @@ function Wallet() {
     if (!user) return;
 
     try {
-      const [walletsResult, futuresWalletResult, positionsResult] = await Promise.all([
+      const [walletsResult, futuresWalletResult, positionsResult, lockedBonusResult] = await Promise.all([
         supabase
           .from('wallets')
           .select('currency, balance, locked_balance, wallet_type')
@@ -268,8 +267,18 @@ function Wallet() {
           .from('futures_positions')
           .select('position_id, pair, side, quantity, entry_price, leverage, margin_allocated')
           .eq('user_id', user.id)
-          .eq('status', 'open')
+          .eq('status', 'open'),
+        supabase.rpc('get_user_locked_bonuses', { p_user_id: user.id })
       ]);
+
+      let bonusTotal = 0;
+      if (lockedBonusResult.data) {
+        setLockedBonuses(lockedBonusResult.data);
+        bonusTotal = lockedBonusResult.data
+          .filter((b: LockedBonus) => b.status === 'active')
+          .reduce((sum: number, b: LockedBonus) => sum + b.current_amount + (b.margin_in_positions || 0), 0);
+        setLockedBonusTotal(bonusTotal);
+      }
 
       if (walletsResult.data) {
         setRawWallets(walletsResult.data.map(w => ({
@@ -281,8 +290,10 @@ function Wallet() {
       }
 
       if (futuresWalletResult.data) {
+        const rawAvailable = parseFloat(futuresWalletResult.data.available_balance || '0');
+        const adjustedAvailable = Math.max(rawAvailable - bonusTotal, 0);
         setRawFuturesWallet({
-          available: parseFloat(futuresWalletResult.data.available_balance || '0'),
+          available: adjustedAvailable,
           locked: parseFloat(futuresWalletResult.data.locked_balance || '0')
         });
       }
@@ -435,28 +446,6 @@ function Wallet() {
     setFuturesAvailableBalance(rawFuturesWallet.available);
     setFuturesLockedBalance(rawFuturesWallet.locked);
     setFuturesWalletBalance(total);
-  };
-
-  const loadLockedBonuses = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase.rpc('get_user_locked_bonuses', {
-        p_user_id: user.id
-      });
-
-      if (error) throw error;
-
-      if (data) {
-        setLockedBonuses(data);
-        const activeTotal = data
-          .filter((b: LockedBonus) => b.status === 'active')
-          .reduce((sum: number, b: LockedBonus) => sum + b.current_amount + (b.margin_in_positions || 0), 0);
-        setLockedBonusTotal(activeTotal);
-      }
-    } catch (error) {
-      console.error('Error loading locked bonuses:', error);
-    }
   };
 
   const loadPastTrades = async () => {
@@ -1099,9 +1088,9 @@ function Wallet() {
                     </div>
                   </div>
                   <div className="bg-[#0b0e11] border border-gray-800 rounded-lg p-3 sm:p-4">
-                    <div className="text-gray-400 text-xs sm:text-sm mb-1">Total Deposited</div>
+                    <div className="text-gray-400 text-xs sm:text-sm mb-1">Total Equity</div>
                     <div className="text-base sm:text-xl font-bold text-white">
-                      ${futuresWalletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ${(futuresAvailableBalance + futuresLockedBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   </div>
                   <div className="bg-[#0b0e11] border border-[#f0b90b]/30 rounded-lg p-3 sm:p-4">
