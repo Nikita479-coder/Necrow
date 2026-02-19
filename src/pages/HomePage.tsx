@@ -49,17 +49,6 @@ function HomePage() {
 
   const heroSlides = [
     {
-      id: 'welcome-bonus',
-      title: 'Welcome Package',
-      subtitle: 'Up to $2,135 USDT',
-      description: 'Start your trading journey with exclusive rewards! Get $20 KYC bonus + $5 TrustPilot review bonus, up to $1,610 in deposit bonuses, and earn from referrals. New users only.',
-      cta: 'Claim Now',
-      ctaAction: () => user ? navigateTo('deposit') : navigateTo('signup'),
-      visual: 'welcome',
-      reward: 'Limited Time',
-      status: 'available',
-    },
-    {
       id: 'shark-card',
       title: 'Introducing Shark Card',
       subtitle: 'Your Crypto-Backed Credit',
@@ -68,6 +57,17 @@ function HomePage() {
       ctaAction: () => setShowSharkCardModal(true),
       visual: 'sharkcard',
       reward: 'Zero Interest',
+      status: 'available',
+    },
+    {
+      id: 'welcome-bonus',
+      title: 'Welcome Package',
+      subtitle: 'Up to $2,115 USDT',
+      description: 'Start your trading journey with exclusive rewards! Get up to $1,610 in deposit bonuses, $5 TrustPilot review bonus, and earn from referrals. New users only.',
+      cta: 'Claim Now',
+      ctaAction: () => user ? navigateTo('deposit') : navigateTo('signup'),
+      visual: 'welcome',
+      reward: 'Limited Time',
       status: 'available',
     },
     {
@@ -91,18 +91,18 @@ function HomePage() {
 
   const verificationBonusSlide = {
     id: 'verification-bonus',
-    title: 'Verification Bonus',
-    subtitle: 'Up to $25 USDT Free',
-    description: 'Get $20 USDT for completing KYC verification + $5 USDT for leaving a TrustPilot review. No deposit required!',
-    cta: user ? 'Complete KYC' : 'Sign Up & Verify',
-    ctaAction: () => user ? navigateTo('kyc') : navigateTo('signup'),
+    title: 'Review Bonus',
+    subtitle: '$5 USDT Free',
+    description: 'Leave a TrustPilot review after completing KYC verification and earn $5 USDT in trading bonus. No deposit required!',
+    cta: user ? 'Claim Bonus' : 'Sign Up & Verify',
+    ctaAction: () => user ? navigateTo('reviewbonus') : navigateTo('signup'),
     visual: 'verification',
     reward: 'No Deposit',
     status: 'available',
   };
 
   const filteredSlides = showVerificationSlide
-    ? [verificationBonusSlide, ...heroSlides]
+    ? [heroSlides[0], verificationBonusSlide, ...heroSlides.slice(1)]
     : heroSlides;
 
   useEffect(() => {
@@ -430,8 +430,8 @@ function HomePage() {
                                   <div className="space-y-3 flex-1">
                                     <div className="flex items-center gap-3 bg-emerald-500/10 rounded-lg px-3 py-2">
                                       <BadgeCheck className="w-5 h-5 text-emerald-400" />
-                                      <span className="text-white/80 text-sm">Verification Bonus</span>
-                                      <span className="ml-auto text-emerald-400 font-bold">$25</span>
+                                      <span className="text-white/80 text-sm">Review Bonus</span>
+                                      <span className="ml-auto text-emerald-400 font-bold">$5</span>
                                     </div>
                                     <div className="flex items-center gap-3 bg-amber-500/10 rounded-lg px-3 py-2">
                                       <Wallet className="w-5 h-5 text-amber-400" />
@@ -518,24 +518,19 @@ function HomePage() {
                           </div>
                         )}
 
-                        {/* Verification Bonus Visual */}
+                        {/* Review Bonus Visual */}
                         {slide.visual === 'verification' && (
                           <div className="relative scale-[0.55] sm:scale-75 lg:scale-90 xl:scale-100 origin-center">
                             <div className="transform hover:scale-105 transition-transform duration-500">
-                              <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-black rounded-2xl p-6 shadow-2xl border border-emerald-500/30" style={{ width: '340px', height: '280px' }}>
+                              <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-black rounded-2xl p-6 shadow-2xl border border-emerald-500/30" style={{ width: '340px', height: '240px' }}>
                                 <div className="flex justify-between items-start mb-4">
-                                  <div className="text-emerald-400 font-bold text-lg">VERIFICATION BONUS</div>
+                                  <div className="text-emerald-400 font-bold text-lg">REVIEW BONUS</div>
                                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-                                    <BadgeCheck className="w-7 h-7 text-white" />
+                                    <Star className="w-7 h-7 text-white" />
                                   </div>
                                 </div>
 
                                 <div className="space-y-3 flex-1">
-                                  <div className="flex items-center gap-3 bg-emerald-500/10 rounded-lg px-3 py-2">
-                                    <BadgeCheck className="w-5 h-5 text-emerald-400" />
-                                    <span className="text-white/80 text-sm">Complete KYC</span>
-                                    <span className="ml-auto text-emerald-400 font-bold">$20</span>
-                                  </div>
                                   <div className="flex items-center gap-3 bg-yellow-500/10 rounded-lg px-3 py-2">
                                     <Star className="w-5 h-5 text-yellow-400" />
                                     <span className="text-white/80 text-sm">TrustPilot Review</span>
@@ -545,8 +540,8 @@ function HomePage() {
 
                                 <div className="pt-3 border-t border-white/10 mt-4">
                                   <div className="flex justify-between items-center">
-                                    <span className="text-white/60 text-sm">Total Bonus</span>
-                                    <span className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">$25</span>
+                                    <span className="text-white/60 text-sm">Review Bonus</span>
+                                    <span className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">$5</span>
                                   </div>
                                 </div>
                               </div>
@@ -655,37 +650,33 @@ function HomePage() {
                 </div>
                 <div className="flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-full px-5 py-2.5">
                   <Sparkles className="w-5 h-5 text-amber-400" />
-                  <span className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">Up to $2,135 USDT</span>
+                  <span className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">Up to $2,115 USDT</span>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-                {/* Verification Bonus */}
+                {/* Review Bonus */}
                 <div className="bg-[#0b0e11]/80 backdrop-blur-sm rounded-xl p-5 border border-gray-800 hover:border-emerald-500/30 transition-all group">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <BadgeCheck className="w-5 h-5 text-emerald-400" />
+                      <Star className="w-5 h-5 text-yellow-400" />
                     </div>
                     <div>
-                      <h3 className="text-white font-semibold">Verification Bonus</h3>
-                      <p className="text-emerald-400 text-sm font-bold">$25 USDT</p>
+                      <h3 className="text-white font-semibold">TrustPilot Review Bonus</h3>
+                      <p className="text-emerald-400 text-sm font-bold">$5 USDT</p>
                     </div>
                   </div>
                   <div className="space-y-1.5 mb-4">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-400">KYC Verification</span>
-                      <span className="text-white font-medium">$20</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-400">TrustPilot Review</span>
+                      <span className="text-gray-400">Leave a TrustPilot Review</span>
                       <span className="text-white font-medium">$5</span>
                     </div>
                   </div>
                   <button
-                    onClick={() => navigateTo('kyc')}
+                    onClick={() => navigateTo('reviewbonus')}
                     className="w-full py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-medium rounded-lg transition-all text-sm flex items-center justify-center gap-2"
                   >
-                    <BadgeCheck className="w-4 h-4" />
+                    <Star className="w-4 h-4" />
                     Get Started
                   </button>
                 </div>

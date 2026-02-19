@@ -20,22 +20,23 @@ function ResetPassword() {
     const checkSession = async () => {
       setCheckingToken(true);
 
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const accessToken = hashParams.get('access_token');
-      const type = hashParams.get('type');
+      const urlParams = new URLSearchParams(window.location.search);
+      const tokenHash = urlParams.get('token_hash');
+      const type = urlParams.get('type');
 
-      if (type === 'recovery' && accessToken) {
+      if (type === 'recovery' && tokenHash) {
         try {
-          const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: hashParams.get('refresh_token') || '',
+          const { data, error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: 'recovery',
           });
 
           if (error) {
-            console.error('Session error:', error);
+            console.error('Token verification error:', error);
             setTokenValid(false);
           } else if (data.session) {
             setTokenValid(true);
+            window.history.replaceState({}, document.title, window.location.pathname);
           } else {
             setTokenValid(false);
           }
@@ -44,11 +45,31 @@ function ResetPassword() {
           setTokenValid(false);
         }
       } else {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          setTokenValid(true);
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const hashType = hashParams.get('type');
+
+        if (hashType === 'recovery' && accessToken) {
+          try {
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: hashParams.get('refresh_token') || '',
+            });
+
+            if (error) {
+              setTokenValid(false);
+            } else if (data.session) {
+              setTokenValid(true);
+              window.history.replaceState({}, document.title, window.location.pathname);
+            } else {
+              setTokenValid(false);
+            }
+          } catch (err) {
+            setTokenValid(false);
+          }
         } else {
-          setTokenValid(false);
+          const { data: { session } } = await supabase.auth.getSession();
+          setTokenValid(!!session);
         }
       }
 
@@ -112,7 +133,6 @@ function ResetPassword() {
 
       if (updateError) throw updateError;
 
-      await supabase.auth.signOut();
       setSuccess(true);
     } catch (err: any) {
       console.error('Password update error:', err);
@@ -338,20 +358,20 @@ function ResetPassword() {
                     </div>
                     <h1 className="text-2xl font-bold text-white mb-2">Password Updated!</h1>
                     <p className="text-gray-400 mb-6">
-                      Your password has been successfully reset. You can now sign in with your new password.
+                      Your password has been successfully reset. You are now logged in.
                     </p>
 
                     <button
-                      onClick={() => navigateTo('signin')}
+                      onClick={() => navigateTo('wallet')}
                       className="w-full bg-[#f0b90b] hover:bg-[#f8d12f] text-black font-semibold py-3.5 rounded-lg transition-colors"
                     >
-                      Sign In Now
+                      Go to Dashboard
                     </button>
                   </div>
 
                   <div className="mt-6 p-4 bg-[#252837] rounded-lg">
                     <p className="text-xs text-gray-400 text-center">
-                      For security, you've been logged out of all sessions. Please sign in again to continue.
+                      Your password has been changed successfully. You can now continue using your account.
                     </p>
                   </div>
                 </>

@@ -19,6 +19,8 @@ interface WalletBalances {
   copy_wallet: number;
   futures_available: number;
   futures_locked: number;
+  futures_transferable: number;
+  futures_locked_bonus: number;
 }
 
 const WALLET_CONFIG: Record<WalletType, { label: string; icon: typeof Wallet; color: string }> = {
@@ -60,7 +62,9 @@ export default function WalletTransferModal({
         copy_allocated: parseFloat(data?.copy_allocated || '0'),
         copy_wallet: parseFloat(data?.copy_wallet || '0'),
         futures_available: parseFloat(data?.futures_available || '0'),
-        futures_locked: parseFloat(data?.futures_locked || '0')
+        futures_locked: parseFloat(data?.futures_locked || '0'),
+        futures_transferable: parseFloat(data?.futures_transferable || '0'),
+        futures_locked_bonus: parseFloat(data?.futures_locked_bonus || '0')
       });
     } catch (err) {
       console.error('Error loading balances:', err);
@@ -70,7 +74,9 @@ export default function WalletTransferModal({
         copy_allocated: 0,
         copy_wallet: 0,
         futures_available: 0,
-        futures_locked: 0
+        futures_locked: 0,
+        futures_transferable: 0,
+        futures_locked_bonus: 0
       });
     } finally {
       setLoadingBalances(false);
@@ -94,7 +100,7 @@ export default function WalletTransferModal({
     }
   }, [fromWallet, toWallet]);
 
-  const getAvailableBalance = (walletType: WalletType): number => {
+  const getAvailableBalance = (walletType: WalletType, forTransfer = false): number => {
     if (!balances) return 0;
     switch (walletType) {
       case 'main':
@@ -102,13 +108,13 @@ export default function WalletTransferModal({
       case 'copy':
         return balances.copy_available;
       case 'futures':
-        return balances.futures_available;
+        return forTransfer ? balances.futures_transferable : balances.futures_available;
       default:
         return 0;
     }
   };
 
-  const currentAvailable = getAvailableBalance(fromWallet);
+  const currentAvailable = getAvailableBalance(fromWallet, true);
 
   const handleTransfer = async () => {
     if (!user) return;
@@ -266,7 +272,7 @@ export default function WalletTransferModal({
                 <div className="h-6 bg-gray-800 rounded animate-pulse"></div>
               ) : (
                 <div className="text-white font-bold">
-                  {getAvailableBalance(toWallet).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} USDT
+                  {getAvailableBalance(toWallet, false).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} USDT
                 </div>
               )}
             </div>
@@ -354,6 +360,17 @@ export default function WalletTransferModal({
               </p>
               <p className="text-xs text-gray-400 mt-1">
                 Stop copying traders to withdraw these funds.
+              </p>
+            </div>
+          )}
+
+          {fromWallet === 'futures' && balances && balances.futures_locked_bonus > 0 && (
+            <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4">
+              <p className="text-sm text-orange-200">
+                <span className="font-semibold">${balances.futures_locked_bonus.toLocaleString(undefined, { minimumFractionDigits: 2 })} USDT</span> is locked bonus funds and cannot be transferred.
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                Complete the trading volume requirement to unlock bonus funds. Your real deposits can be transferred freely.
               </p>
             </div>
           )}

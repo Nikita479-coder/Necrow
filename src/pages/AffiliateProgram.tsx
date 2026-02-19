@@ -794,13 +794,6 @@ function AffiliateProgram() {
                 <td className="text-center py-3 px-4 text-blue-400">Optimized</td>
               </tr>
               <tr className="border-b border-gray-800">
-                <td className="py-3 px-4">KYC Bonus</td>
-                <td className="text-center py-3 px-4 text-gray-500">-</td>
-                <td className="text-center py-3 px-4 text-green-400">$10</td>
-                <td className="text-center py-3 px-4 text-green-400">$10</td>
-                <td className="text-center py-3 px-4 text-blue-400">Optimized</td>
-              </tr>
-              <tr className="border-b border-gray-800">
                 <td className="py-3 px-4">First Deposit Bonus</td>
                 <td className="text-center py-3 px-4 text-gray-500">-</td>
                 <td className="text-center py-3 px-4 text-green-400">$25</td>

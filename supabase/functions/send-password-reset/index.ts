@@ -344,15 +344,17 @@ Deno.serve(async (req: Request) => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    const { data: users, error: userError } = await supabase.auth.admin.listUsers();
-    
-    if (userError) {
-      console.error('Error listing users:', userError);
-    }
+    const siteUrl = redirectTo || 'https://shark-trades.com';
+    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+      type: 'recovery',
+      email: normalizedEmail,
+      options: {
+        redirectTo: siteUrl,
+      },
+    });
 
-    const user = users?.users?.find(u => u.email?.toLowerCase() === normalizedEmail);
-
-    if (!user) {
+    if (linkError) {
+      console.error('Error generating recovery link:', linkError);
       return new Response(
         JSON.stringify({
           success: true,
@@ -367,33 +369,27 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('full_name')
-      .eq('id', user.id)
-      .maybeSingle();
+    const tokenHash = linkData.properties?.hashed_token || '';
+    const userId = linkData.user?.id;
 
-    const firstName = profile?.full_name ? profile.full_name.split(' ')[0] : 'User';
-
-    const siteUrl = redirectTo || 'https://shark-trades.com';
-    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-      type: 'recovery',
-      email: normalizedEmail,
-      options: {
-        redirectTo: siteUrl,
-      },
-    });
-
-    if (linkError) {
-      console.error('Error generating recovery link:', linkError);
+    if (!tokenHash) {
       throw new Error('Failed to generate reset link');
     }
 
-    const resetLink = linkData.properties?.action_link || '';
-
-    if (!resetLink) {
-      throw new Error('Failed to generate reset link');
+    let firstName = 'User';
+    if (userId) {
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('full_name')
+        .eq('id', userId)
+        .maybeSingle();
+      if (profile?.full_name) {
+        firstName = profile.full_name.split(' ')[0];
+      }
     }
+
+    const baseUrl = siteUrl.replace(/\?.*$/, '').replace(/\/$/, '');
+    const resetLink = `${baseUrl}/?token_hash=${encodeURIComponent(tokenHash)}&type=recovery`;
 
     const emailHtml = generatePasswordResetEmail(firstName, resetLink);
 
@@ -403,16 +399,18 @@ Deno.serve(async (req: Request) => {
       emailHtml
     );
 
-    await supabase
-      .from('email_logs')
-      .insert({
-        user_id: user.id,
-        template_name: 'Password Reset',
-        subject: 'Reset Your Shark Trades Password',
-        body: emailHtml,
-        status: 'sent',
-        sent_at: new Date().toISOString(),
-      });
+    if (userId) {
+      await supabase
+        .from('email_logs')
+        .insert({
+          user_id: userId,
+          template_name: 'Password Reset',
+          subject: 'Reset Your Shark Trades Password',
+          body: emailHtml,
+          status: 'sent',
+          sent_at: new Date().toISOString(),
+        });
+    }
 
     return new Response(
       JSON.stringify({
