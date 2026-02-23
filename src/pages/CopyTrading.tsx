@@ -78,6 +78,7 @@ function CopyTrading() {
   const [traders, setTraders] = useState<Trader[]>([]);
   const [activeCopies, setActiveCopies] = useState<CopyRelationship[]>([]);
   const [mockCopies, setMockCopies] = useState<CopyRelationship[]>([]);
+  const [hasAnyActiveRelationship, setHasAnyActiveRelationship] = useState(false);
   const [pendingTrades, setPendingTrades] = useState<PendingTrade[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTrader, setSelectedTrader] = useState<Trader | null>(null);
@@ -327,7 +328,20 @@ function CopyTrading() {
 
         const formattedCopies = await Promise.all(formattedCopiesPromises);
         setActiveCopies(formattedCopies);
+        if (formattedCopies.length > 0) {
+          setHasAnyActiveRelationship(true);
+          return;
+        }
       }
+
+      const { count } = await supabase
+        .from('copy_relationships')
+        .select('id', { count: 'exact', head: true })
+        .eq('follower_id', user.id)
+        .eq('is_active', true)
+        .eq('is_mock', true);
+
+      setHasAnyActiveRelationship((count || 0) > 0);
     } catch (error) {
       console.error('Error loading active copies:', error);
     }
@@ -535,17 +549,19 @@ function CopyTrading() {
           );
           const trader = relationship?.traders as any;
 
-          const walletTypeToUse = relationship?.is_mock ? 'mock' : 'copy';
-
-          const { data: walletData } = await supabase
-            .from('wallets')
-            .select('balance')
-            .eq('user_id', user.id)
-            .eq('currency', 'USDT')
-            .eq('wallet_type', walletTypeToUse)
-            .maybeSingle();
-
-          const followerBalance = walletData?.balance || 0;
+          let followerBalance = 0;
+          if (relationship?.is_mock) {
+            followerBalance = relationship?.current_balance || 0;
+          } else {
+            const { data: walletData } = await supabase
+              .from('wallets')
+              .select('balance')
+              .eq('user_id', user.id)
+              .eq('currency', 'USDT')
+              .eq('wallet_type', 'copy')
+              .maybeSingle();
+            followerBalance = walletData?.balance || 0;
+          }
 
           let allocatedAmount = (followerBalance * parseFloat(trade.margin_percentage)) / 100;
 
@@ -856,7 +872,7 @@ function CopyTrading() {
           </div>
         ) : activeTab === 'pending' ? (
           <div>
-            {user && activeCopies.length > 0 && (
+            {user && hasAnyActiveRelationship && (
               <div className="mb-6 p-4 bg-gradient-to-r from-[#2b3139]/80 to-[#252931]/80 rounded-xl border border-[#3a4149]/50">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex items-center gap-3">
