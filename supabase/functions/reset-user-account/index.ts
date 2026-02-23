@@ -36,12 +36,12 @@ Deno.serve(async (req: Request) => {
 
     const { data: adminProfile } = await supabase
       .from('user_profiles')
-      .select('is_admin, raw_app_meta_data')
+      .select('is_admin')
       .eq('id', adminUser.id)
       .single();
 
-    if (!adminProfile?.is_admin || adminProfile.raw_app_meta_data?.role !== 'super_admin') {
-      throw new Error('Only super admins can reset accounts');
+    if (!adminProfile?.is_admin) {
+      throw new Error('Only admins can reset accounts');
     }
 
     const { email, keepKyc = true, bonusAmount = 0 }: ResetRequest = await req.json();

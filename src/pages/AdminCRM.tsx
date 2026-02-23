@@ -3,7 +3,8 @@ import {
   Activity, DollarSign, Shield, AlertCircle, FileText, RefreshCw, Search, Filter,
   Users, TrendingUp, Download, Tag, BarChart3, UserCheck, UserX, Clock,
   ChevronDown, Check, X, Eye, Mail, Ban, Unlock, Bell, LogIn, Copy, ExternalLink, Image,
-  UserPlus, Phone, Lock, Megaphone, Gift, Send, GitBranch
+  UserPlus, Phone, Lock, Megaphone, Gift, Send, GitBranch, ArrowUpDown, ArrowUp, ArrowDown,
+  Monitor, Smartphone, Globe
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import PopupBannerManager from '../components/admin/PopupBannerManager';
@@ -49,6 +50,8 @@ interface FilteredUser {
   tags: string[] | null;
   is_online?: boolean;
   last_activity?: string;
+  platform?: string;
+  last_sign_in_at?: string;
 }
 
 interface UserTag {
@@ -132,6 +135,9 @@ export default function AdminCRM() {
     hasDeposits: 'all',
   });
 
+  const [sortBy, setSortBy] = useState<'created_at' | 'last_activity' | 'total_balance'>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(100);
   const [showBulkActions, setShowBulkActions] = useState(false);
@@ -186,27 +192,13 @@ export default function AdminCRM() {
   const onlineUserIds = useMemo(() => new Set(onlineUsers.map(u => u.id)), [onlineUsers]);
 
   const displayedUsers = useMemo(() => {
-    const enrichedUsers = users.map(u => ({
+    return users.map(u => ({
       ...u,
-      is_online: onlineUserIds.has(u.id),
+      is_online: u.is_online || onlineUserIds.has(u.id),
     }));
+  }, [users, onlineUserIds]);
 
-    if (filters.onlineStatus === 'online') {
-      return enrichedUsers.filter(u => u.is_online);
-    } else if (filters.onlineStatus === 'offline') {
-      return enrichedUsers.filter(u => !u.is_online);
-    }
-    return enrichedUsers;
-  }, [users, onlineUserIds, filters.onlineStatus]);
-
-  const displayedCount = useMemo(() => {
-    if (filters.onlineStatus === 'online') {
-      return onlineUsers.filter(u => !(u as any).is_admin_observer).length;
-    } else if (filters.onlineStatus === 'offline') {
-      return totalUsers - onlineUsers.filter(u => !(u as any).is_admin_observer).length;
-    }
-    return totalUsers;
-  }, [filters.onlineStatus, onlineUsers, totalUsers]);
+  const displayedCount = totalUsers;
 
   const broadcastTemplates = [
     {
@@ -325,7 +317,7 @@ export default function AdminCRM() {
     } else if (mainTab === 'phones') {
       loadPhoneNumbers();
     }
-  }, [mainTab, filters, page, pageSize, logTab, dateFilter, phoneSearch]);
+  }, [mainTab, filters, page, pageSize, logTab, dateFilter, phoneSearch, sortBy, sortOrder]);
 
   const handleTabChange = useCallback((newTab: MainTab) => {
     setMainTab(newTab);
@@ -387,6 +379,9 @@ export default function AdminCRM() {
       if (filters.maxBalance) filterObj.maxBalance = parseFloat(filters.maxBalance);
       if (filters.withdrawalBlocked !== 'all') filterObj.withdrawalBlocked = filters.withdrawalBlocked === 'true';
       if (filters.hasDeposits !== 'all') filterObj.hasDeposits = filters.hasDeposits;
+      if (filters.onlineStatus !== 'all') filterObj.onlineStatus = filters.onlineStatus;
+      filterObj.sortBy = sortBy;
+      filterObj.sortOrder = sortOrder;
 
       const { data } = await supabase.rpc('get_filtered_users', {
         p_filters: filterObj,
@@ -395,8 +390,24 @@ export default function AdminCRM() {
       });
 
       if (data) {
-        setUsers(data.users || []);
+        const rawUsers = data.users || [];
         setTotalUsers(data.total || 0);
+
+        if (rawUsers.length > 0) {
+          const userIds = rawUsers.map((u: any) => u.id);
+          const { data: authInfo } = await supabase.rpc('get_user_auth_info_bulk', { user_ids: userIds });
+          const authMap = new Map(
+            (authInfo || []).map((a: any) => [a.id, { email: a.email, last_sign_in_at: a.last_sign_in_at }])
+          );
+          const enriched = rawUsers.map((u: any) => ({
+            ...u,
+            email: authMap.get(u.id)?.email || u.email || '',
+            last_sign_in_at: authMap.get(u.id)?.last_sign_in_at || u.last_sign_in_at || null,
+          }));
+          setUsers(enriched);
+        } else {
+          setUsers([]);
+        }
       }
     } catch (error) {
       console.error('Error loading users:', error);
@@ -789,6 +800,44 @@ export default function AdminCRM() {
     return num.toFixed(2);
   };
 
+  const formatLastSeen = (lastActivity: string | undefined, isOnline: boolean | undefined) => {
+    if (isOnline) return 'Online';
+    if (!lastActivity) return 'Never';
+    const diff = Date.now() - new Date(lastActivity).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    if (days < 30) return `${Math.floor(days / 7)}w ago`;
+    return new Date(lastActivity).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const handleSort = (column: 'created_at' | 'last_activity' | 'total_balance') => {
+    if (sortBy === column) {
+      setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortBy(column);
+      setSortOrder('desc');
+    }
+    setPage(0);
+  };
+
+  const SortIcon = ({ column }: { column: string }) => {
+    if (sortBy !== column) return <ArrowUpDown className="w-3 h-3 text-gray-600" />;
+    return sortOrder === 'desc'
+      ? <ArrowDown className="w-3 h-3 text-[#f0b90b]" />
+      : <ArrowUp className="w-3 h-3 text-[#f0b90b]" />;
+  };
+
+  const PlatformIcon = ({ platform }: { platform?: string }) => {
+    if (platform === 'app') return <Smartphone className="w-3 h-3" />;
+    if (platform === 'mobile_web') return <Globe className="w-3 h-3" />;
+    return <Monitor className="w-3 h-3" />;
+  };
+
   if (!profile?.is_admin) {
     return (
       <div className="min-h-screen bg-[#0a0d10] text-white">
@@ -1099,6 +1148,15 @@ export default function AdminCRM() {
                   <option value="true">Has Deposits</option>
                   <option value="false">No Deposits</option>
                 </select>
+                <select
+                  value={filters.onlineStatus}
+                  onChange={(e) => setFilters({ ...filters, onlineStatus: e.target.value })}
+                  className="bg-[#1a1d24] border border-gray-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-[#f0b90b]"
+                >
+                  <option value="all">All Activity</option>
+                  <option value="online">Online Now</option>
+                  <option value="offline">Offline</option>
+                </select>
                 <input
                   type="number"
                   placeholder="Min Balance"
@@ -1166,9 +1224,33 @@ export default function AdminCRM() {
                       <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">User</th>
                       <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Status</th>
                       <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">VIP</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Balance</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Tags</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Joined</th>
+                      <th
+                        className="px-4 py-3 text-left text-sm font-medium text-gray-400 cursor-pointer hover:text-white transition-colors select-none"
+                        onClick={() => handleSort('total_balance')}
+                      >
+                        <div className="flex items-center gap-1">
+                          Balance
+                          <SortIcon column="total_balance" />
+                        </div>
+                      </th>
+                      <th
+                        className="px-4 py-3 text-left text-sm font-medium text-gray-400 cursor-pointer hover:text-white transition-colors select-none"
+                        onClick={() => handleSort('last_activity')}
+                      >
+                        <div className="flex items-center gap-1">
+                          Last Seen
+                          <SortIcon column="last_activity" />
+                        </div>
+                      </th>
+                      <th
+                        className="px-4 py-3 text-left text-sm font-medium text-gray-400 cursor-pointer hover:text-white transition-colors select-none"
+                        onClick={() => handleSort('created_at')}
+                      >
+                        <div className="flex items-center gap-1">
+                          Joined
+                          <SortIcon column="created_at" />
+                        </div>
+                      </th>
                       <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Actions</th>
                     </tr>
                   </thead>
@@ -1185,7 +1267,8 @@ export default function AdminCRM() {
                         </td>
                         <td className="px-4 py-3">
                           <div>
-                            <p className="text-white font-medium">
+                            <p className="text-white font-medium flex items-center gap-1.5">
+                              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${u.is_online ? 'bg-green-400' : 'bg-transparent'}`} />
                               {u.full_name || 'No name'}
                             </p>
                             {u.username && (
@@ -1193,6 +1276,10 @@ export default function AdminCRM() {
                             )}
                             <p className="text-gray-500 text-sm">{u.email}</p>
                             <p className="text-gray-600 text-xs font-mono">ID: {u.id.slice(0, 8)}...</p>
+                            <p className="text-gray-500 text-xs flex items-center gap-1 mt-0.5">
+                              <Clock className="w-3 h-3" />
+                              {u.is_online ? 'Online now' : u.last_sign_in_at ? formatLastSeen(u.last_sign_in_at, false) : u.last_activity ? formatLastSeen(u.last_activity, false) : 'Never'}
+                            </p>
                           </div>
                         </td>
                         <td className="px-4 py-3">
@@ -1226,15 +1313,29 @@ export default function AdminCRM() {
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex flex-wrap gap-1">
-                            {u.tags?.slice(0, 2).map((tag) => (
-                              <span key={tag} className="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded-full text-xs">
-                                {tag}
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                              u.is_online ? 'bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.5)]' : 'bg-gray-600'
+                            }`} />
+                            <div className="flex flex-col">
+                              <span className={`text-sm ${
+                                u.is_online ? 'text-green-400 font-medium' : 'text-gray-400'
+                              }`}>
+                                {formatLastSeen(u.last_activity, u.is_online)}
                               </span>
-                            ))}
-                            {(u.tags?.length || 0) > 2 && (
-                              <span className="text-gray-500 text-xs">+{u.tags!.length - 2}</span>
-                            )}
+                              {u.platform && !u.is_online && u.last_activity && (
+                                <span className="flex items-center gap-1 text-gray-600 text-xs">
+                                  <PlatformIcon platform={u.platform} />
+                                  {u.platform === 'mobile_web' ? 'Mobile' : u.platform === 'app' ? 'App' : 'Web'}
+                                </span>
+                              )}
+                              {u.is_online && u.platform && (
+                                <span className="flex items-center gap-1 text-green-400/60 text-xs">
+                                  <PlatformIcon platform={u.platform} />
+                                  {u.platform === 'mobile_web' ? 'Mobile' : u.platform === 'app' ? 'App' : 'Web'}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td className="px-4 py-3 text-gray-400 text-sm">

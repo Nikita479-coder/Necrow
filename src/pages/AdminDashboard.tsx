@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Users, Search, TrendingUp, DollarSign, AlertTriangle, Activity, Shield, Filter, X, ArrowUpDown, LogIn, Copy, ExternalLink, AlertCircle, Check, Bot, UserPlus, Eye, Image, Megaphone, Send, RefreshCw, Gift, Smartphone, Monitor, Globe } from 'lucide-react';
+import { Users, Search, TrendingUp, DollarSign, AlertTriangle, Activity, Shield, Filter, X, ArrowUpDown, LogIn, Copy, ExternalLink, AlertCircle, Check, Bot, UserPlus, Eye, Image, Megaphone, Send, RefreshCw, Gift, Smartphone, Monitor, Globe, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '../App';
@@ -24,12 +24,28 @@ interface UserSummary {
   referral_count?: number;
   total_deposits?: number;
   platform?: string;
+  last_sign_in_at?: string;
 }
 
 interface PlatformStats {
   platform: string;
   total_users: number;
   online_users: number;
+}
+
+function formatTimeAgo(dateStr: string): string {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const seconds = Math.floor((now - then) / 1000);
+  if (seconds < 60) return 'Just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  return `${months}mo ago`;
 }
 
 export default function AdminDashboard() {
@@ -1356,6 +1372,10 @@ export default function AdminDashboard() {
                             </div>
                             <div className="text-sm text-gray-400">{user.email}</div>
                             <div className="text-xs text-gray-500 mt-1">ID: {user.id.slice(0, 8)}...</div>
+                            <div className={`text-xs flex items-center gap-1 mt-0.5 ${isUserOnline(user.id) ? 'text-emerald-400' : 'text-gray-500'}`}>
+                              <Clock className="w-3 h-3" />
+                              {isUserOnline(user.id) ? 'Online now' : (user.last_activity || user.last_sign_in_at) ? formatTimeAgo((user.last_activity || user.last_sign_in_at)!) : 'Never seen'}
+                            </div>
                           </div>
                         </td>
                         <td className="py-4 px-4">

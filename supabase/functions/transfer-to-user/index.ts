@@ -57,26 +57,39 @@ Deno.serve(async (req: Request) => {
 
     let recipientId: string | null = null;
     let recipientName: string | null = null;
+    let recipientEmail: string | null = null;
 
-    const { data: profileByEmail, error: emailError } = await supabase
-      .from('user_profiles')
-      .select('id, username, email')
-      .eq('email', identifier)
-      .maybeSingle();
+    // First try to find by email in auth.users
+    const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers();
 
-    if (profileByEmail) {
-      recipientId = profileByEmail.id;
-      recipientName = profileByEmail.username || profileByEmail.email;
-    } else {
-      const { data: profileByUsername, error: usernameError } = await supabase
+    if (!usersError && users) {
+      const userByEmail = users.find(u => u.email?.toLowerCase() === identifier);
+      if (userByEmail) {
+        recipientId = userByEmail.id;
+        recipientEmail = userByEmail.email || '';
+
+        // Get username from profile
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('username, full_name')
+          .eq('id', recipientId)
+          .maybeSingle();
+
+        recipientName = profile?.username || profile?.full_name || recipientEmail;
+      }
+    }
+
+    // If not found by email, try by username
+    if (!recipientId) {
+      const { data: profileByUsername } = await supabase
         .from('user_profiles')
-        .select('id, username, email')
+        .select('id, username, full_name')
         .eq('username', identifier)
         .maybeSingle();
 
       if (profileByUsername) {
         recipientId = profileByUsername.id;
-        recipientName = profileByUsername.username || profileByUsername.email;
+        recipientName = profileByUsername.username || profileByUsername.full_name;
       }
     }
 

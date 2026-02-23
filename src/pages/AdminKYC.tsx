@@ -57,9 +57,15 @@ export default function AdminKYC() {
   const [verificationNotes, setVerificationNotes] = useState('');
   const [processingAction, setProcessingAction] = useState(false);
   const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [allLoaded, setAllLoaded] = useState(false);
+  const [loadingAll, setLoadingAll] = useState(false);
+  const [totalDocCount, setTotalDocCount] = useState(0);
+  const [totalUserCount, setTotalUserCount] = useState(0);
+
+  const INITIAL_LIMIT = 50;
 
   useEffect(() => {
-    loadData();
+    loadData(INITIAL_LIMIT);
   }, []);
 
   const fetchAllPaginated = async <T,>(
@@ -96,53 +102,88 @@ export default function AdminKYC() {
     return allData;
   };
 
-  const loadData = async () => {
+  const enrichDocsWithUsers = (docsData: Document[], usersData: User[]) => {
+    return docsData.map(doc => {
+      const userInfo = usersData.find(u => u.id === doc.user_id);
+      return {
+        ...doc,
+        user_email: userInfo?.username || doc.user_id.substring(0, 8),
+        user_name: userInfo?.full_name || 'Unknown User'
+      };
+    });
+  };
+
+  const fetchUsersForIds = async (userIds: string[]): Promise<User[]> => {
+    if (userIds.length === 0) return [];
+    const unique = [...new Set(userIds)];
+    const batches: User[] = [];
+    for (let i = 0; i < unique.length; i += 50) {
+      const batch = unique.slice(i, i + 50);
+      const { data } = await supabase
+        .from('user_profiles')
+        .select('id, username, full_name, kyc_level, kyc_status')
+        .in('id', batch);
+      if (data) batches.push(...(data as User[]));
+    }
+    return batches;
+  };
+
+  const loadData = async (limit?: number) => {
     try {
-      // Load all user profiles with pagination
-      const usersData = await fetchAllPaginated<User>(
-        'user_profiles',
-        'id, username, full_name, kyc_level, kyc_status, created_at',
-        'created_at'
-      );
+      const { count } = await supabase
+        .from('kyc_documents')
+        .select('id', { count: 'exact', head: true });
+      setTotalDocCount(count || 0);
 
-      // Load all documents with pagination
-      const docsData = await fetchAllPaginated<Document>(
-        'kyc_documents',
-        'id, user_id, document_type, file_name, file_size, mime_type, uploaded_at, verified, verification_notes',
-        'uploaded_at'
-      );
+      const { count: userCount } = await supabase
+        .from('user_profiles')
+        .select('id', { count: 'exact', head: true });
+      setTotalUserCount(userCount || 0);
 
-      // Join user data with documents
-      const docsWithUsers = docsData.map(doc => {
-        const userInfo = usersData.find(u => u.id === doc.user_id);
-        return {
-          ...doc,
-          user_email: userInfo?.username || doc.user_id.substring(0, 8),
-          user_name: userInfo?.full_name || 'Unknown User'
-        };
-      });
+      let docsData: Document[];
+      if (limit) {
+        const { data, error } = await supabase
+          .from('kyc_documents')
+          .select('id, user_id, document_type, file_name, file_size, mime_type, uploaded_at, verified, verification_notes')
+          .order('uploaded_at', { ascending: false })
+          .range(0, limit - 1);
+        if (error) throw error;
+        docsData = (data || []) as Document[];
+      } else {
+        docsData = await fetchAllPaginated<Document>(
+          'kyc_documents',
+          'id, user_id, document_type, file_name, file_size, mime_type, uploaded_at, verified, verification_notes',
+          'uploaded_at'
+        );
+        setAllLoaded(true);
+      }
+
+      const docUserIds = docsData.map(d => d.user_id);
+      const usersData = await fetchUsersForIds(docUserIds);
 
       setUsers(usersData);
-      setDocuments(docsWithUsers);
+      setDocuments(enrichDocsWithUsers(docsData, usersData));
 
-      // Load Otto AI verifications with pagination
       try {
-        const ottoData = await fetchAllPaginated<OttoVerification>(
-          'otto_verification_results',
-          '*',
-          'created_at'
-        );
+        const { data: ottoData } = await supabase
+          .from('otto_verification_results')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(0, INITIAL_LIMIT - 1);
 
-        const ottoWithUsers = ottoData.map(verification => {
-          const userInfo = usersData.find(u => u.id === verification.user_id);
-          return {
-            ...verification,
-            user_email: userInfo?.username || verification.user_id.substring(0, 8),
-            user_name: userInfo?.full_name || 'Unknown User'
-          };
-        });
-
-        setOttoVerifications(ottoWithUsers);
+        if (ottoData && ottoData.length > 0) {
+          const ottoUserIds = ottoData.map((v: any) => v.user_id);
+          const ottoUsers = await fetchUsersForIds(ottoUserIds);
+          const ottoWithUsers = (ottoData as OttoVerification[]).map(verification => {
+            const userInfo = ottoUsers.find(u => u.id === verification.user_id);
+            return {
+              ...verification,
+              user_email: userInfo?.username || verification.user_id.substring(0, 8),
+              user_name: userInfo?.full_name || 'Unknown User'
+            };
+          });
+          setOttoVerifications(ottoWithUsers);
+        }
       } catch (ottoError) {
         console.error('Error loading Otto verifications:', ottoError);
       }
@@ -150,6 +191,30 @@ export default function AdminKYC() {
       console.error('Error loading data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAllDocuments = async () => {
+    setLoadingAll(true);
+    try {
+      const docsData = await fetchAllPaginated<Document>(
+        'kyc_documents',
+        'id, user_id, document_type, file_name, file_size, mime_type, uploaded_at, verified, verification_notes',
+        'uploaded_at'
+      );
+      const docUserIds = docsData.map(d => d.user_id);
+      const usersData = await fetchUsersForIds(docUserIds);
+      setUsers(prev => {
+        const existingIds = new Set(prev.map(u => u.id));
+        const newUsers = usersData.filter(u => !existingIds.has(u.id));
+        return [...prev, ...newUsers];
+      });
+      setDocuments(enrichDocsWithUsers(docsData, [...users, ...usersData]));
+      setAllLoaded(true);
+    } catch (error) {
+      console.error('Error loading all documents:', error);
+    } finally {
+      setLoadingAll(false);
     }
   };
 
@@ -218,7 +283,7 @@ export default function AdminKYC() {
         }
       }
 
-      await loadData();
+      await loadData(allLoaded ? undefined : INITIAL_LIMIT);
       setImageUrl(null);
       setSelectedDoc(null);
       setVerificationNotes('');
@@ -276,7 +341,7 @@ export default function AdminKYC() {
     }
 
     setBulkProcessing(false);
-    await loadData();
+    await loadData(allLoaded ? undefined : INITIAL_LIMIT);
 
     alert(
       `Bulk approval completed!\n\nApproved: ${successCount}\nFailed: ${failCount}\n\nNote: KYC levels will be automatically upgraded based on verified documents.`
@@ -373,11 +438,11 @@ export default function AdminKYC() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6">
             <div className="text-slate-400 text-sm mb-1">Total Users</div>
-            <div className="text-3xl font-bold text-white">{users.length}</div>
+            <div className="text-3xl font-bold text-white">{totalUserCount}</div>
           </div>
           <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6">
             <div className="text-slate-400 text-sm mb-1">Total Documents</div>
-            <div className="text-3xl font-bold text-white">{documents.length}</div>
+            <div className="text-3xl font-bold text-white">{totalDocCount}</div>
           </div>
           <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6">
             <div className="text-slate-400 text-sm mb-1">Pending Review</div>
@@ -555,6 +620,21 @@ export default function AdminKYC() {
               </tbody>
             </table>
           </div>
+
+          {!allLoaded && totalDocCount > INITIAL_LIMIT && (
+            <div className="border-t border-slate-700 px-6 py-4 flex items-center justify-between bg-slate-800/30">
+              <span className="text-slate-400 text-sm">
+                Showing {documents.length} of {totalDocCount} documents
+              </span>
+              <button
+                onClick={loadAllDocuments}
+                disabled={loadingAll}
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors text-sm"
+              >
+                {loadingAll ? 'Loading...' : `Load All ${totalDocCount} Documents`}
+              </button>
+            </div>
+          )}
         </div>
         )}
 
