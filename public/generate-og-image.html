@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OG Image Generator - Shark Trades</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #0a0b0d;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    }
+    h1 {
+      color: #f0b90b;
+      margin-bottom: 20px;
+    }
+    p {
+      color: #848e9c;
+      margin-bottom: 30px;
+    }
+    .og-container {
+      width: 1200px;
+      height: 630px;
+      background: linear-gradient(135deg, #0f1116 0%, #181a20 50%, #12141a 100%);
+      position: relative;
+      overflow: hidden;
+      border-radius: 8px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+    .grid-overlay {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(to right, #1e222d 1px, transparent 1px),
+        linear-gradient(to bottom, #1e222d 1px, transparent 1px);
+      background-size: 60px 60px;
+      opacity: 0.3;
+    }
+    .glow-circle {
+      position: absolute;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(240, 185, 11, 0.08) 0%, transparent 70%);
+    }
+    .glow-1 {
+      width: 400px;
+      height: 400px;
+      top: -100px;
+      left: -100px;
+    }
+    .glow-2 {
+      width: 500px;
+      height: 500px;
+      bottom: -150px;
+      right: -150px;
+    }
+    .accent-line {
+      position: absolute;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(240, 185, 11, 0.2), transparent);
+    }
+    .line-1 { width: 400px; top: 180px; left: 0; transform: rotate(-2deg); }
+    .line-2 { width: 350px; top: 230px; left: 30px; transform: rotate(-1deg); opacity: 0.5; }
+    .line-3 { width: 400px; bottom: 150px; right: 0; transform: rotate(2deg); }
+    .line-4 { width: 350px; bottom: 200px; right: 30px; transform: rotate(1deg); opacity: 0.5; }
+    .content {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+    .logo-container {
+      width: 160px;
+      height: 160px;
+      position: relative;
+      margin-bottom: 30px;
+    }
+    .logo-diamond {
+      width: 140px;
+      height: 140px;
+      background: linear-gradient(135deg, #f0b90b 0%, #f8d12f 50%, #f0b90b 100%);
+      border-radius: 24px;
+      transform: rotate(45deg);
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      margin-left: -70px;
+      margin-top: -70px;
+      box-shadow:
+        0 0 40px rgba(240, 185, 11, 0.4),
+        0 0 80px rgba(240, 185, 11, 0.2);
+    }
+    .logo-bolt {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+    }
+    .logo-bolt svg {
+      width: 70px;
+      height: 100px;
+    }
+    .title {
+      font-size: 72px;
+      font-weight: 800;
+      background: linear-gradient(90deg, #f0b90b 0%, #f8d12f 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 8px;
+      text-shadow: 0 0 30px rgba(240, 185, 11, 0.3);
+      margin-bottom: 15px;
+    }
+    .tagline {
+      font-size: 28px;
+      font-weight: 500;
+      color: #848e9c;
+      letter-spacing: 4px;
+      margin-bottom: 50px;
+    }
+    .features {
+      display: flex;
+      gap: 30px;
+    }
+    .feature {
+      background: #1e222d;
+      border: 1px solid #2b3139;
+      border-radius: 6px;
+      padding: 12px 28px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #f0b90b;
+      letter-spacing: 1px;
+    }
+    .top-bar, .bottom-bar {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #f0b90b 0%, #f8d12f 50%, #f0b90b 100%);
+    }
+    .top-bar { top: 0; }
+    .bottom-bar { bottom: 0; }
+    .download-btn {
+      margin-top: 30px;
+      background: linear-gradient(135deg, #f0b90b 0%, #f8d12f 100%);
+      color: #0b0e11;
+      border: none;
+      padding: 15px 40px;
+      font-size: 18px;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(240, 185, 11, 0.3);
+    }
+    .instructions {
+      margin-top: 20px;
+      color: #5e6673;
+      font-size: 14px;
+      text-align: center;
+      max-width: 600px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Shark Trades OG Image</h1>
+  <p>1200 x 630 pixels - Perfect for social media sharing</p>
+
+  <div class="og-container" id="og-image">
+    <div class="grid-overlay"></div>
+    <div class="glow-circle glow-1"></div>
+    <div class="glow-circle glow-2"></div>
+    <div class="accent-line line-1"></div>
+    <div class="accent-line line-2"></div>
+    <div class="accent-line line-3"></div>
+    <div class="accent-line line-4"></div>
+
+    <div class="content">
+      <div class="logo-container">
+        <div class="logo-diamond"></div>
+        <div class="logo-bolt">
+          <svg viewBox="0 0 70 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M45 5 L15 50 L35 50 L15 95 L55 40 L32 40 L45 5 Z" fill="#0b0e11" stroke="#0b0e11" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="title">SHARK TRADES</div>
+      <div class="tagline">PROFESSIONAL CRYPTO FUTURES TRADING</div>
+
+      <div class="features">
+        <div class="feature">200x LEVERAGE</div>
+        <div class="feature">COPY TRADING</div>
+        <div class="feature">70% REFERRAL</div>
+      </div>
+    </div>
+
+    <div class="top-bar"></div>
+    <div class="bottom-bar"></div>
+  </div>
+
+  <button class="download-btn" onclick="downloadImage()">Download as PNG</button>
+  <p class="instructions">
+    Click the button above to download the image as PNG.<br>
+    If the download doesn't work, take a screenshot of the image above at 1200x630 pixels.
+  </p>
+
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  <script>
+    async function downloadImage() {
+      const element = document.getElementById('og-image');
+      const canvas = await html2canvas(element, {
+        width: 1200,
+        height: 630,
+        scale: 1,
+        useCORS: true,
+        backgroundColor: '#181a20'
+      });
+
+      const link = document.createElement('a');
+      link.download = 'og-image.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+  </script>
+</body>
+</html>
