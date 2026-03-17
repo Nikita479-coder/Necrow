@@ -1,0 +1,169 @@
+/*
+  # Fix Admin Process Withdrawal Log Table Reference
+
+  1. Problem
+    - Function references non-existent table admin_action_logs
+    
+  2. Solution
+    - Use correct table name: admin_activity_logs
+*/
+
+CREATE OR REPLACE FUNCTION admin_process_withdrawal(
+  p_transaction_id uuid,
+  p_action text,
+  p_tx_hash text DEFAULT NULL,
+  p_admin_notes text DEFAULT NULL,
+  p_network text DEFAULT NULL,
+  p_wallet_address text DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_transaction RECORD;
+  v_user_id uuid;
+  v_amount numeric;
+  v_currency text;
+  v_wallet RECORD;
+  v_admin_id uuid;
+BEGIN
+  v_admin_id := auth.uid();
+  
+  IF NOT is_user_admin(v_admin_id) THEN
+    RAISE EXCEPTION 'Unauthorized: Admin access required';
+  END IF;
+
+  SELECT * INTO v_transaction
+  FROM transactions
+  WHERE id = p_transaction_id
+    AND transaction_type = 'withdrawal'
+    AND status = 'pending';
+
+  IF v_transaction IS NULL THEN
+    RAISE EXCEPTION 'Withdrawal transaction not found or not pending';
+  END IF;
+
+  v_user_id := v_transaction.user_id;
+  v_amount := ABS(v_transaction.amount);
+  v_currency := v_transaction.currency;
+
+  IF p_action = 'approve' THEN
+    UPDATE transactions
+    SET 
+      status = 'completed',
+      details = jsonb_build_object(
+        'tx_hash', COALESCE(p_tx_hash, ''),
+        'network', COALESCE(p_network, ''),
+        'wallet_address', COALESCE(p_wallet_address, ''),
+        'processed_at', NOW(),
+        'processed_by', v_admin_id,
+        'admin_notes', COALESCE(p_admin_notes, '')
+      ),
+      updated_at = NOW()
+    WHERE id = p_transaction_id;
+
+    SELECT * INTO v_wallet
+    FROM wallets
+    WHERE user_id = v_user_id
+      AND currency = v_currency
+      AND wallet_type = 'main';
+
+    IF v_wallet IS NOT NULL AND v_wallet.balance >= v_amount THEN
+      UPDATE wallets
+      SET 
+        balance = balance - v_amount,
+        updated_at = NOW()
+      WHERE id = v_wallet.id;
+    END IF;
+
+    INSERT INTO notifications (user_id, type, title, message, read)
+    VALUES (
+      v_user_id,
+      'withdrawal_approved',
+      'Withdrawal Approved',
+      format('Your withdrawal of %s %s has been approved and processed.', v_amount, v_currency),
+      false
+    );
+
+    INSERT INTO admin_activity_logs (admin_id, action_type, target_user_id, details)
+    VALUES (
+      v_admin_id,
+      'withdrawal_approved',
+      v_user_id,
+      jsonb_build_object(
+        'transaction_id', p_transaction_id,
+        'amount', v_amount,
+        'currency', v_currency,
+        'tx_hash', p_tx_hash,
+        'network', p_network,
+        'wallet_address', p_wallet_address,
+        'admin_notes', p_admin_notes
+      )
+    );
+
+    RETURN jsonb_build_object(
+      'success', true,
+      'message', 'Withdrawal approved successfully'
+    );
+
+  ELSIF p_action = 'reject' THEN
+    UPDATE transactions
+    SET 
+      status = 'failed',
+      details = jsonb_build_object(
+        'rejection_reason', COALESCE(p_admin_notes, 'Withdrawal rejected by admin'),
+        'processed_at', NOW(),
+        'processed_by', v_admin_id
+      ),
+      updated_at = NOW()
+    WHERE id = p_transaction_id;
+
+    SELECT * INTO v_wallet
+    FROM wallets
+    WHERE user_id = v_user_id
+      AND currency = v_currency
+      AND wallet_type = 'main';
+
+    IF v_wallet IS NOT NULL THEN
+      UPDATE wallets
+      SET 
+        balance = balance + v_amount,
+        updated_at = NOW()
+      WHERE id = v_wallet.id;
+    END IF;
+
+    INSERT INTO notifications (user_id, type, title, message, read)
+    VALUES (
+      v_user_id,
+      'withdrawal_rejected',
+      'Withdrawal Rejected',
+      format('Your withdrawal of %s %s has been rejected. Reason: %s', 
+        v_amount, v_currency, COALESCE(p_admin_notes, 'Contact support for details')),
+      false
+    );
+
+    INSERT INTO admin_activity_logs (admin_id, action_type, target_user_id, details)
+    VALUES (
+      v_admin_id,
+      'withdrawal_rejected',
+      v_user_id,
+      jsonb_build_object(
+        'transaction_id', p_transaction_id,
+        'amount', v_amount,
+        'currency', v_currency,
+        'reason', p_admin_notes
+      )
+    );
+
+    RETURN jsonb_build_object(
+      'success', true,
+      'message', 'Withdrawal rejected and funds returned to user'
+    );
+
+  ELSE
+    RAISE EXCEPTION 'Invalid action. Use approve or reject';
+  END IF;
+END;
+$$;
